@@ -1,0 +1,10 @@
+# Buildroot for Anbernic H700 devices
+## Build
+
+To build and use the buildroot stuff, do the following:
+0) run 'sudo apt-get install libncurses-dev parted dosfstools swig'
+1) run 'make O=output.h700 h700_defconfig && cd output.h700'
+2) run 'make menuconfig'
+4) run 'make -j$(nproc)'
+6) find the kernel, bootloader, root filesystem, etc. in output.h700/images
+7) run 'sudo board/h700/mk-flashable-img.sh' to make flashable img file (instruction below)

@@ -134,6 +134,47 @@
 #define KEY_ARROW_UP RAW_PLUS
 #define KEY_ARROW_DOWN RAW_MINUS
 
+#elif RG35XXPLUS_SDL12COMPAT
+
+#define RAW_UP 544
+#define RAW_DOWN 545
+#define RAW_LEFT 546
+#define RAW_RIGHT 547
+#define RAW_A 305
+#define RAW_B 304
+#define RAW_X 307
+#define RAW_Y 308
+#define RAW_START 315
+#define RAW_SELECT 314
+#define RAW_MENU 708
+#define RAW_L1 310
+#define RAW_L2 312
+#define RAW_L3 706
+#define RAW_R1 311
+#define RAW_R2 313
+#define RAW_R3 707
+#define RAW_PLUS 115
+#define RAW_MINUS 114
+#define RAW_POWER 116
+
+#define KEY_UP RAW_UP
+#define KEY_DOWN RAW_DOWN
+#define KEY_LEFT RAW_LEFT
+#define KEY_RIGHT RAW_RIGHT
+#define KEY_ENTER RAW_A
+#define KEY_TOGGLE RAW_R1
+#define KEY_BACKSPACE RAW_B
+#define KEY_SHIFT RAW_L1
+#define KEY_LOCATION RAW_Y
+#define KEY_ACTIVATE RAW_X
+#define KEY_QUIT RAW_MENU
+#define KEY_TAB RAW_SELECT
+#define KEY_RETURN RAW_START
+#define KEY_ARROW_LEFT RAW_L2
+#define KEY_ARROW_RIGHT RAW_R2
+#define KEY_ARROW_UP RAW_PLUS
+#define KEY_ARROW_DOWN RAW_MINUS
+
 #elif TRIMUISP
 
 #define RAW_UP 103

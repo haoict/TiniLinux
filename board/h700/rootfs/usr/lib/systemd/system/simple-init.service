@@ -1,0 +1,11 @@
+[Unit]
+Description=Simple Init Script
+
+[Service]
+Type=simple
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/simple-init.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

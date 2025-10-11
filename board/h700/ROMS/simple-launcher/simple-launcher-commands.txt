@@ -1,0 +1,19 @@
+TiniLinux
+Retroarch
+/usr/local/bin/freqfunctions.sh performance && HOME=/roms /usr/local/bin/retroarch && /usr/local/bin/freqfunctions.sh powersave
+Pico-8 (native)
+if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8_64" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >> /dev/tty1; sleep 5; else /roms/pico-8/pico8_64 -splore -home /roms/pico-8; fi
+File Manager
+cd /root/351Files && /root/351Files/351Files
+Simple Terminal
+SDL12COMPAT_SCALE_METHOD=nearest LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/SimpleTerminal
+Wifi
+/usr/local/bin/Wifi.sh
+Quit launcher
+killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >> /dev/tty1
+Sleep
+systemctl suspend
+Reboot
+echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
+Poweroff
+echo "Powering off..." >> /dev/tty1 && systemctl poweroff

@@ -9,7 +9,7 @@ SIMPLE_TERMINAL_SITE = package/simple-terminal
 SIMPLE_TERMINAL_SITE_METHOD = local
 
 define SIMPLE_TERMINAL_BUILD_CMDS
-    $(MAKE) UNION_PLATFORM=rgb30-sdl12compat CC="$(TARGET_CC)" LD="$(TARGET_LD)" -C $(@D)
+    $(MAKE) UNION_PLATFORM=rg35xxplus-sdl12compat CC="$(TARGET_CC)" LD="$(TARGET_LD)" -C $(@D)
 endef
 
 define SIMPLE_TERMINAL_INSTALL_TARGET_CMDS
