@@ -1,28 +1,73 @@
-Check board/<device>/README for more info
-
-Buildroot is a simple, efficient and easy-to-use tool to generate embedded
-Linux systems through cross-compilation.
-
-The documentation can be found in docs/manual. You can generate a text
-document with 'make manual-text' and read output/docs/manual/manual.text.
-Online documentation can be found at http://buildroot.org/docs.html
+# Tinilinux
+## Build
 
 To build and use the buildroot stuff, do the following:
+```bash
+# Install required packages
+sudo apt install build-essential libncurses-dev parted dosfstools swig
+# Build
+export BOARD=<boardname> # e.g. rgb30, h700
+make O=output.${BOARD} ${BOARD}_defconfig
+make O=output.${BOARD} menuconfig # you can also cd to output.${BOARD} and run make menuconfig
+make O=output.${BOARD} -j$(nproc) # you can also cd to output.${BOARD} and run make -j$(nproc)
+# The kernel, bootloader, root filesystem, etc. are in output images directory
+# Make flashable img file
+sudo board/${BOARD}/mk-flashable-img.sh
+```
 
-1) run 'make menuconfig'
-2) select the target architecture and the packages you wish to compile
-3) run 'make'
-4) wait while it compiles
-5) find the kernel, bootloader, root filesystem, etc. in output/images
+## Install
+## Flash to sdcard
+There are many tools to flash img file to SDCard such as Rufus, Balena Etcher.
+But if you prefer command line:
+```bash
+# Check your sdcard device
+lsblk
+# Assuming your sdcard is /dev/sdb, unmount all mounted partitions of your sdcard if automount 
+sudo umount /dev/sdb*
+# Flash the img to sdcard
+sudo dd if=output.${BOARD}/images/tinilinux-${BOARD}.img of=/dev/sdb bs=1M conv=fsync status=progress
+sudo sync
+sudo udisksctl power-off -b /dev/sdb
+```
 
-You do not need to be root to build or run buildroot.  Have fun!
+## Update rootfs only without reflashing sdcard
+```bash
+sudo mount -t ext4 /dev/sdb /mnt/rootfs
+sudo rm -rf /mnt/rootfs/*
+sudo tar -xvf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs && sync 
+sudo umount /dev/sdb
+sudo eject /dev/sdb
+```
 
-Buildroot comes with a basic configuration for a number of boards. Run
-'make list-defconfigs' to view the list of provided configurations.
+## Notes
+### Clean target build without rebuild all binaries and libraries
+Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
 
-Please feed suggestions, bug reports, insults, and bribes back to the
-buildroot mailing list: buildroot@buildroot.org
-You can also find us on #buildroot on OFTC IRC.
+```bash
+cd output.${BOARD}
+rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
+```
 
-If you would like to contribute patches, please read
-https://buildroot.org/manual.html#submitting-patches
+### Unpack/Repack uInitrd
+Unpack
+```bash
+mkdir uInitrd-root
+cd uInitrd-root
+zcat ../uInitrd | cpio -id
+```
+
+Repack
+```bash
+find . | cpio -o -H newc | gzip > ../uInitrd-modified
+```
+
+### Run Docker
+```bash
+wget https://download.docker.com/linux/static/stable/aarch64/docker-26.1.4.tgz
+tar -xzvf docker-26.1.4.tgz
+cp docker/* /usr/bin/
+dockerd &
+docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
+docker ps -a
+curl localhost:8080
+```

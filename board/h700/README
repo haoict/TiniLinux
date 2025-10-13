@@ -1,10 +1,15 @@
-# Buildroot for Anbernic H700 devices
-## Build
+# Buildroot for Anbernic H700
 
-To build and use the buildroot stuff, do the following:
-0) run 'sudo apt-get install libncurses-dev parted dosfstools swig'
-1) run 'make O=output.h700 h700_defconfig && cd output.h700'
-2) run 'make menuconfig'
-4) run 'make -j$(nproc)'
-6) find the kernel, bootloader, root filesystem, etc. in output.h700/images
-7) run 'sudo board/h700/mk-flashable-img.sh' to make flashable img file (instruction below)
+## U-boot
+
+More info about u-boot:  
+  - https://docs.u-boot.org/en/latest/board/allwinner/sunxi.html
+
+| Partition | start (sector) | start (bytes) | size (sector) | size (bytes) |   requirement  | note                          |
+|:---------:|:--------------:|:-------------:|:-------------:|:------------:|:--------------:|:-----------------------------:|
+| mbr       | 0              | 0             | 1             | 512          | -              |                               |
+| uboot     | 16             | 8KiB          | ~             | ~            | -              | u-boot-sunxi-with-spl.bin     |
+| BOOT      | 32768          | 16.0MiB       | 135167        | 50M          | /dev/mmcblk1p1 |                               |
+| rootfs    | 135168         | 66.0MiB       | 1024MiB       | 2097152      | /dev/mmcblk1p2 |                               |
+| ROMS      | 2232320        | 1091MiB       | start - 100%  | start - 100% | /dev/mmcblk1p3 | will be created at first boot |
+

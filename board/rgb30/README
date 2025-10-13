@@ -1,87 +1,15 @@
 # Buildroot for Powkiddy RGB30 (RK3566 SoC)
-## Build
 
-To build and use the buildroot stuff, do the following:
-0) run 'sudo apt-get install libncurses-dev parted dosfstools swig'
-1) run 'make O=output.rgb30 rgb30_defconfig && cd output.rgb30'
-2) run 'make menuconfig'
-4) run 'make -j$(nproc)'
-6) find the kernel, bootloader, root filesystem, etc. in output.rgb30/images
-7) run 'sudo board/rgb30/mk-flashable-img.sh' to make flashable img file (instruction below)
-
-## Install
-
-### Make flashable img file
+## U-boot
 
 More info about u-boot:  
   - https://docs.u-boot.org/en/latest/board/anbernic/rgxx3.html
 
-Ref about commands: https://raspberrypi.stackexchange.com/questions/78466/how-to-make-an-image-file-from-scratch/78467#78467
-
 | Partition | start (sector) | start (bytes) | size (sector) | size (bytes) |   requirement  | note                          |
 |:---------:|:--------------:|:-------------:|:-------------:|:------------:|:--------------:|:-----------------------------:|
-| mbr       | 0              | 0             | 1             | 512          | -              | part of u-boot-rockchip.bin   |
-| idbloader | 1              | 512           | 8191          | 4M - 512     | idbloader.img  | part of u-boot-rockchip.bin   |
-| uboot     | 16384          | 8M            | 8192          | 4M           | uboot.img      | part of u-boot-rockchip.bin   |
-| trust     | 24576          | 12M           | 8192          | 4M           | trust.img      | part of u-boot-rockchip.bin   |
+| mbr       | 0              | 0             | 1             | 512          | -              |                               |
+| uboot     | 64             | 32KiB         | ~             | ~            | -              | u-boot-rockchip.bin           |
 | BOOT      | 32768          | 16.0MiB       | 135167        | 50M          | /dev/mmcblk1p1 |                               |
 | rootfs    | 135168         | 66.0MiB       | 1024MiB       | 2097152      | /dev/mmcblk1p2 |                               |
 | ROMS      | 2232320        | 1091MiB       | start - 100%  | start - 100% | /dev/mmcblk1p3 | will be created at first boot |
-
-### Flash to sdcard
-
-```bash
-# Check your sdcard device
-lsblk
-# Assuming your sdcard is /dev/sdb, unmount all mounted partitions of your sdcard if automount 
-sudo umount /dev/sdb*
-# Flash the img to sdcard
-sudo dd if=output.rgb30/images/tinilinux-rgb30.img of=/dev/sdb bs=1M conv=fsync status=progress
-# pv output.rgb30/images/tinilinux-rgb30.img | sudo dd of=/dev/sdb bs=1M conv=fsync
-sudo sync
-sudo udisksctl power-off -b /dev/sdb
-```
-
-### Update rootfs only
-
-```bash
-sudo mount -t ext4 /dev/sdb /mnt/rootfs
-sudo rm -rf /mnt/rootfs/*
-sudo tar -xvf output.rgb30/images/rootfs.tar -C /mnt/rootfs && sync 
-sudo umount /dev/sdb
-sudo eject /dev/sdb
-```
-
-## Clean target build without rebuild all binaries and libraries
-Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
-
-```bash
-cd output.rgb30
-rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
-```
-
-## Appendix
-### Unpack/Repack uInitrd
-Unpack
-```bash
-mkdir uInitrd-root
-cd uInitrd-root
-zcat ../uInitrd | cpio -id
-```
-
-Repack
-```bash
-find . | cpio -o -H newc | gzip > ../uInitrd-modified
-```
-
-### Run Docker
-```bash
-wget https://download.docker.com/linux/static/stable/aarch64/docker-26.1.4.tgz
-tar -xzvf docker-26.1.4.tgz
-cp docker/* /usr/bin/
-dockerd &
-docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
-docker ps -a
-curl localhost:8080
-```
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Ref about commands: https://raspberrypi.stackexchange.com/questions/78466/how-to-make-an-image-file-from-scratch/78467#78467
 # Check if user is root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root." 
