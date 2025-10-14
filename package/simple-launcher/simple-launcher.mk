@@ -6,10 +6,18 @@
 
 SIMPLE_LAUNCHER_VERSION = 1.0
 SIMPLE_LAUNCHER_SITE = package/simple-launcher
-SIMPLE_LAUNCHER_SITE_METHOD = local# Other methods like git,wget,scp,file etc. are also available.
+SIMPLE_LAUNCHER_SITE_METHOD = local
+
+$(info BR2_DEFCONFIG: $(BR2_DEFCONFIG))
+ifeq ($(findstring h700,$(BR2_DEFCONFIG)),h700)
+	SIMPLE_LAUNCHER_MAKE_OPTS = UNION_PLATFORM=buildroot_h700
+else ifeq ($(findstring rgb30,$(BR2_DEFCONFIG)),rgb30)
+	SIMPLE_LAUNCHER_MAKE_OPTS = UNION_PLATFORM=buildroot_rgb30
+endif
+$(info SIMPLE_LAUNCHER_MAKE_OPTS: $(SIMPLE_LAUNCHER_MAKE_OPTS))
 
 define SIMPLE_LAUNCHER_BUILD_CMDS
-    $(MAKE) UNION_PLATFORM=rgb30 CC="$(TARGET_CC)" LD="$(TARGET_LD)" -C $(@D)
+    $(MAKE) $(SIMPLE_LAUNCHER_MAKE_OPTS) CC="$(TARGET_CC)" LD="$(TARGET_LD)" -C $(@D)
 endef
 
 define SIMPLE_LAUNCHER_INSTALL_TARGET_CMDS

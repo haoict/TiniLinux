@@ -13,84 +13,87 @@
 
 #define VERSION "1.0.0"
 
+
 #if defined(RG35XXP)
 // RG35XXP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
-
 #define BTN_A 0
 #define BTN_B 1
 #define BTN_UP 4 // use L1 because UP is SDL_JOYHATMOTION
 #define BTN_DOWN 5 // use R1 because DOWN is SDL_JOYHATMOTION
 #define BTN_LEFT 9
 #define BTN_RIGHT 10
-
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
 #define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-
 #define CREDIT "Simple Launcher " VERSION " (RG35) | "
-
 
 #elif defined(TRIMUISP)
 // TRIMUISP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
-
 #define BTN_A 1
 #define BTN_B 0
 #define BTN_UP 4 // use L1 because UP is SDL_JOYHATMOTION
 #define BTN_DOWN 5 // use R1 because DOWN is SDL_JOYHATMOTION
 #define BTN_LEFT 9
 #define BTN_RIGHT 10
-
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
 #define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-
 #define CREDIT "Simple Launcher " VERSION " (TRIMUISP) | "
-
 
 #elif defined(R36S)
 // R36S:  Up:8, Down:9, Left:10, Right:11, A:1, B:0, X:2, Y:3, L1:4, R1:5, L2:6, R2:7, L3:14, R3:15, Select:12, Start:13, Fn:16
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
-
 #define BTN_A 1
 #define BTN_B 0
 #define BTN_UP 8
 #define BTN_DOWN 9
 #define BTN_LEFT 10
 #define BTN_RIGHT 11
-
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get Playback | awk -F'[][]' '/Left:/ { print $2 }'"
-
 #define CREDIT "Simple Launcher " VERSION " (R36S) | "
 
-#else
-// RGB30:  Up:544, Down:545, Left:546, Right:547, A:305, B:304, X:307, Y:308, L1:310, R1:311, L2:312, R2:313, Select:314, Start:315, L3:317, R3:318
-#define SCREEN_WIDTH 720
-#define SCREEN_HEIGHT 720
-#define ITEMS_PER_PAGE 15
-
+#elif defined(BR2)
+// Up:544, Down:545, Left:546, Right:547, A:305, B:304, X:307, Y:308, L1:310, R1:311, L2:312, R2:313, Select:314, Start:315, L3:317, R3:318
 #define BTN_A 1
 #define BTN_B 0
 #define BTN_UP 13
 #define BTN_DOWN 14
 #define BTN_LEFT 15
 #define BTN_RIGHT 16
+#endif
 
+
+#if defined(RGB30)
+#define SCREEN_WIDTH 720
+#define SCREEN_HEIGHT 720
+#define ITEMS_PER_PAGE 15
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/rk817-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Left:/ { print $2 }'"
-
 #define CREDIT "Simple Launcher " VERSION " (RGB30) | "
+
+#elif defined(H700)
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 640
+#define ITEMS_PER_PAGE 8
+#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
+#define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
+#define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Mono:/ { print $2 }'"
+#define CREDIT "Simple Launcher " VERSION " (H700) | "
+
 #endif
+
+
 
 const char *FONT_PATH = "./simple-launcher.ttf";
 const char *COMMANDS_FILE = "./simple-launcher-commands.txt";
