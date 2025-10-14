@@ -52,12 +52,16 @@ mkdir -p /mnt/rootfs && mount -t ext4 ${DEV_LOOP}p2 /mnt/rootfs
 echo "mkflashableimg: Copy kernel, initrd, dtb to /mnt/BOOT"
 cp -r board/rgb30/BOOT/* /mnt/BOOT/
 cp output.rgb30/images/Image /mnt/BOOT/
+cp output.rgb30/images/initramfs /mnt/BOOT/
 cp output.rgb30/build/linux-6.12.43/arch/arm64/boot/dts/rockchip/rk3566-powkiddy-rgb30.dtb /mnt/BOOT/
 mkdir -p /mnt/BOOT/overlays/ && cp output.rgb30/images/rk3566-dtbo/* /mnt/BOOT/overlays/
 
 # Extract buildroot (output.rgb30/images/rootfs.tar) to /mnt/rootfs
 echo "mkflashableimg: Extract buildroot (output.rgb30/images/rootfs.tar) to /mnt/rootfs"
 tar -xf output.rgb30/images/rootfs.tar -C /mnt/rootfs --no-same-owner
+# Create roms.tar.xz to /root to be used in firstboot
+tar -Jcf /mnt/rootfs/root/roms.tar.xz board/rgb30/ROMS
+
 sync
 
 # Unmount and Detach the img

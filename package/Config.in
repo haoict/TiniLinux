@@ -2974,6 +2974,7 @@ menu "Text editors and viewers"
 endmenu
 
 menu "Tinilinux Packages"
+	source "package/tinilinux-initramfs/Config.in"
 	source "package/sdl12-compat/Config.in"
 	source "package/simple-launcher/Config.in"
 	source "package/simple-terminal/Config.in"

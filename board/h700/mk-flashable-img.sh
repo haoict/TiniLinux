@@ -52,10 +52,14 @@ mkdir -p /mnt/rootfs && mount -t ext4 ${DEV_LOOP}p2 /mnt/rootfs
 echo "mkflashableimg: Copy kernel, initrd, dtb to /mnt/BOOT"
 cp -r board/h700/BOOT/* /mnt/BOOT/
 cp output.h700/images/Image /mnt/BOOT/
+cp output.h700/images/initramfs /mnt/BOOT/
 
 # Extract buildroot (output.h700/images/rootfs.tar) to /mnt/rootfs
 echo "mkflashableimg: Extract buildroot (output.h700/images/rootfs.tar) to /mnt/rootfs"
 tar -xf output.h700/images/rootfs.tar -C /mnt/rootfs --no-same-owner
+# Create roms.tar.xz to /root to be used in firstboot
+tar -Jcf /mnt/rootfs/root/roms.tar.xz board/rgb30/ROMS
+
 sync
 
 # Unmount and Detach the img

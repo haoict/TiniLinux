@@ -1,0 +1,35 @@
+#!/bin/sh
+
+#####
+#
+# /init for BusyBox initramfs -> real root
+#
+#####
+echo "[initramfs] Booting..."
+
+# Mount pseudo filesystems
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+mount -t tmpfs tmpfs /run
+
+# Parse kernel command line
+for param in $(cat /proc/cmdline); do
+    case $param in
+        root=*)
+            root="${param#root=}"
+            ;;
+    esac
+done
+
+echo "[initramfs] Mounting root filesystem ($root)..."
+mount -o rw "$root" /newroot || exec sh
+
+# Mount runtime dirs for systemd
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+mount --move /dev /newroot/dev
+mount --move /run /newroot/run
+
+echo "[initramfs] Switching to real root..."
+exec switch_root /newroot /usr/lib/systemd/systemd

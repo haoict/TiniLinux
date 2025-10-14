@@ -14,6 +14,21 @@
 *~
 *.pyc
 
-**/roms.tar.xz
+# Ignore all rom files & pico-8 binaries
+**/pico8_64
+**/pico8.dat
+**/pico8_dyn
+**/*.gba
+**/*.gbc
+**/*.gb
+**/*.nes
+**/*.snes
+**/*.smc
+**/*.sfc
+**/*.n64
+**/*.nds
+**/*.cue
+**/*.chd
 
-**/*[.nes|.sfc|.gba|.gb|.gbc|.n64|.nds|.cue|.chd]
+
+
