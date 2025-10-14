@@ -8,7 +8,7 @@ RETROARCH_VERSION = 1.21.0
 RETROARCH_SITE = https://github.com/libretro/RetroArch/releases/download/v${RETROARCH_VERSION}
 RETROARCH_SOURCE = retroarch-sourceonly-${RETROARCH_VERSION}.tar.xz
 RETROARCH_SOURCE_SUBDIR = retroarch-$(RETROARCH_VERSION)
-RETROARCH_DEPENDENCIES = host-pkgconf sdl2 alsa-lib freetype zlib ffmpeg libpng libdrm
+RETROARCH_DEPENDENCIES = host-pkgconf sdl2 alsa-lib freetype zlib libpng libdrm
 RETROARCH_INSTALL_TARGET = YES
 RETROARCH_CONF_OPTS = --prefix=$(TARGET_DIR)/usr/local \
     --disable-qt \
@@ -25,7 +25,7 @@ RETROARCH_CONF_OPTS = --prefix=$(TARGET_DIR)/usr/local \
     --disable-sdl \
     --enable-sdl2 \
     --enable-kms \
-    --enable-ffmpeg \
+    --disable-ffmpeg \
     --disable-neon \
     --disable-wayland \
     --enable-opengles --enable-opengles3 --enable-opengles3_1 --disable-opengl \
