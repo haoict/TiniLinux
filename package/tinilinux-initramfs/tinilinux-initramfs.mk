@@ -25,8 +25,8 @@ endef
 
 define TINILINUX_INITRAMFS_INSTALL_TARGET_CMDS
 	# run busybox make install
-    rm -rf $(@D)/initramfs
-	$(MAKE) CONFIG_PREFIX=$(@D)/initramfs -C $(@D) install
+	rm -rf $(@D)/initramfs
+	$(TARGET_MAKE_ENV) $(MAKE) $(TINILINUX_INITRAMFS_MAKE_OPTS) CONFIG_PREFIX=$(@D)/initramfs -C $(@D) install
 
 	# prepare filesystem
 	mkdir -p $(@D)/initramfs/{dev,proc,sys,run,tmp,newroot}
