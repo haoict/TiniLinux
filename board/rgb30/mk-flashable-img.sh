@@ -23,7 +23,7 @@ parted ${OUT_IMG} mktable msdos
 
 # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
 echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
-dd if=output.rgb30/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=sync,notrunc
+dd if=output.rgb30/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
 
 # mkflashableimg: Making BOOT partitions
 echo "mkflashableimg: Making BOOT partitions"
