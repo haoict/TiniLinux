@@ -28,17 +28,26 @@ export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
 export SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt"
 
-## hack: since we have getty3 (buildroot login promt), it will interfere with dialog, so we need to use an empty tty (3)
-chvt 3
+chvt 6
+# Detect current tty number
+current_tty=$(tty | grep -o '[0-9]*$' || echo "")
+echo "Current TTY: $(tty), TTY Number: $current_tty"
+# if tty is "not a tty", do nothing, if tty is not 6, open tty6 and rerun script there
+if [ -z "$current_tty" ]; then
+  echo "Not running in a tty. Continue..."
+elif [ "$current_tty" != "6" ]; then
+  echo "Switching to tty6..."
+  exec sudo openvt -f -c 6 -- "$0" "$@"
+fi
 
-sudo chmod 666 /dev/tty3
+sudo chmod 666 /dev/tty6
 reset
 
 # hide cursor
-printf "\e[?25l" >/dev/tty3
+printf "\e[?25l" >/dev/tty6
 dialog --clear
-printf "\033c" >/dev/tty3
-printf "Starting Wifi Manager.  Please wait..." >/dev/tty3
+printf "\033c" >/dev/tty6
+printf "Starting Wifi Manager.  Please wait..." >/dev/tty6
 
 height="15"
 width="55"
@@ -59,7 +68,7 @@ getCurrentConnectedSSID() {
 deleteConnection() {
 
   dialog --clear --title "Removing $1" --clear \
-    --yesno "\nWould you like to continue to remove this connection?" $height $width 2>&1 >/dev/tty3
+    --yesno "\nWould you like to continue to remove this connection?" $height $width 2>&1 >/dev/tty6
   if [[ $? != 0 ]]; then
     chvt 1
     exit 1
@@ -74,7 +83,7 @@ deleteConnection() {
 connectExisting() {
   getCurrentConnectedSSID
 
-  dialog --infobox "\nConnecting to: $1 ..." 5 $width >/dev/tty3
+  dialog --infobox "\nConnecting to: $1 ..." 5 $width >/dev/tty6
 
   nmcli con down "$CURRENT_CONNECTED_SSID" >>/dev/null
   sleep 1
@@ -84,7 +93,7 @@ connectExisting() {
   success=$(echo "$output" | grep successfully)
 
   if [ -z "$success" ]; then
-    dialog --infobox "\nFailed to connect to $1" 6 $width >/dev/tty3
+    dialog --infobox "\nFailed to connect to $1" 6 $width >/dev/tty6
     sleep 3
     ActivateExistingMenu
   else
@@ -101,7 +110,7 @@ makeConnection() {
   rm -f /tmp/wifi-password.txt
   /usr/local/bin/gptokeyb2 -1 "Wifi.sh" -c "/root/gptokeyb2.ini" >/dev/null &
 
-  dialog --infobox "\nConnecting to: $1 ..." 5 $width >/dev/tty3
+  dialog --infobox "\nConnecting to: $1 ..." 5 $width >/dev/tty6
   clist2=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
   WPA3=$(echo "$clist2" | grep "$1" | grep "WPA3")
 
@@ -121,7 +130,7 @@ makeConnection() {
 
   if [ -z "$success" ]; then
     sudo rm -f /etc/NetworkManager/system-connections/"$1".nmconnection
-    dialog --infobox "\nActivation failed: Secrets were required, but not provided!" 6 $width >/dev/tty3
+    dialog --infobox "\nActivation failed: Secrets were required, but not provided!" 6 $width >/dev/tty6
     sleep 3
     MainMenu
   else
@@ -168,7 +177,7 @@ MainMenu() {
       --cancel-label "Exit"
       --menu "Please make your selection" $height $width 15)
 
-    mainchoices=$("${mainselection[@]}" "${mainoptions[@]}" 2>&1 >/dev/tty3)
+    mainchoices=$("${mainselection[@]}" "${mainoptions[@]}" 2>&1 >/dev/tty6)
     if [[ $? != 0 ]]; then
       chvt 1
       exit 1
@@ -188,7 +197,7 @@ MainMenu() {
 }
 
 ToggleWifi() {
-  dialog --infobox "\nTurning Wifi $1, please wait..." 5 $width >/dev/tty3
+  dialog --infobox "\nTurning Wifi $1, please wait..." 5 $width >/dev/tty6
   if [[ ${1} == "Off" ]]; then
     sudo systemctl stop NetworkManager &
     sudo systemctl disable NetworkManager &
@@ -215,7 +224,7 @@ ActivateExistingMenu() {
       --cancel-label "Back"
       --menu "" $height $width 15)
 
-    achoice=$("${aselection[@]}" "${aoptions[@]}" 2>&1 >/dev/tty3) || MainMenu
+    achoice=$("${aselection[@]}" "${aoptions[@]}" 2>&1 >/dev/tty6) || MainMenu
     if [[ $? != 0 ]]; then
       chvt 1
       exit 1
@@ -227,7 +236,7 @@ ActivateExistingMenu() {
 }
 
 ScanAndConnectMenu() {
-  dialog --infobox "\nScanning available Wi-Fi access points..." 5 $width >/dev/tty3
+  dialog --infobox "\nScanning available Wi-Fi access points..." 5 $width >/dev/tty6
   clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
   if [ -z "$clist" ]; then
     clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
@@ -257,7 +266,7 @@ ScanAndConnectMenu() {
       --cancel-label "Back"
       --menu "" $height $width 15)
 
-    cchoices=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty3) || MainMenu
+    cchoices=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty6) || MainMenu
     if [[ $? != 0 ]]; then
       chvt 1
       exit 1
@@ -286,7 +295,7 @@ DeleteMenu() {
       --menu "" $height $width 15)
 
     # There is only a single choice possible
-    delchoice=$("${delselection[@]}" "${deloptions[@]}" 2>&1 >/dev/tty3) || MainMenu
+    delchoice=$("${delselection[@]}" "${deloptions[@]}" 2>&1 >/dev/tty6) || MainMenu
     if [[ $? != 0 ]]; then
       chvt 1
       exit 1
@@ -310,7 +319,7 @@ NetworkInfo() {
   message=$1
   details=$(ip a | sed 's/$/\\n/')
   
-  dialog --clear --title "Your Network Information" --clear --msgbox "\n$message\n$connectionName\nIP: $currentip\nGateway: $gateway\nDNS: $currentdns\n\n\nDetails:\n$details" $height $width 2>&1 >/dev/tty3
+  dialog --clear --title "Your Network Information" --clear --msgbox "\n$message\n$connectionName\nIP: $currentip\nGateway: $gateway\nDNS: $currentdns\n\n\nDetails:\n$details" $height $width 2>&1 >/dev/tty6
   if [[ $? != 0 ]]; then
     chvt 1
     exit 1
@@ -336,7 +345,7 @@ CountryMenu() {
       --cancel-label "Back"
       --menu "" $height $width 15)
 
-    cchoice=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty3) || MainMenu
+    cchoice=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty6) || MainMenu
     if [[ $? != 0 ]]; then
       chvt 1
       exit 1
@@ -354,7 +363,7 @@ CountryMenu() {
 }
 
 ExitMenu() {
-  printf "\033c" >/dev/tty3
+  printf "\033c" >/dev/tty6
   ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
   chvt 1
   exit 0
@@ -368,7 +377,7 @@ if [[ ! -z $(ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}') ]]; then
   ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
 fi
 /usr/local/bin/gptokeyb2 -1 "Wifi.sh" -c "/root/gptokeyb2.ini" >/dev/null 2>&1 &
-printf "\033c" >/dev/tty3
+printf "\033c" >/dev/tty6
 dialog --clear
 trap ExitMenu EXIT
 MainMenu
