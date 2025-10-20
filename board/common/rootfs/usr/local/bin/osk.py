@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# Offline install urwid==2.1.2
+# With internet connection, we can run  pip install urwid==2.1.2
+# But for offline env, we need to install it from .whl file
+# Steps to create urwid-2.1.2-py3-none-any.whl (from another handheld machine with internet access):
+# 1. Run: pip download urwid==2.1.2 --dest /root/urwid_offline
+# 2. Run: cd /root/urwid_offline && tar xzf urwid-2.1.2.tar.gz && cd urwid-2.1.2
+# 3. Run: python3 setup.py bdist_wheel
+# 4. The .whl file will be created in the dist/ folder: dist/urwid-2.1.2-py3-none-any.whl
+# 5. Copy the .whl file to the target system and install it using pip:
+#    pip install urwid-2.1.2-py3-none-any.whl
+
 """
 This file is part of The RetroPie Project
 The RetroPie Project is the legal property of its developers, whose names are
@@ -34,15 +46,17 @@ from os import get_terminal_size
 from argparse import ArgumentParser
 
 import urwid
+from urwid import WidgetWrap
 from urwid.widget import Text, Divider
-from urwid.container import Columns, Frame, GridFlow, Overlay, Pile, WidgetWrap
+from urwid.container import Columns, Frame, GridFlow, Overlay, Pile
 from urwid.decoration import AttrMap, AttrWrap, Filler, Padding
 from urwid.graphics import LineBox
 from urwid.signals import connect_signal
 from urwid.command_map import ACTIVATE
+from urwid.widget import FLOW
 
 
-ASCII_BLOCK = '█'
+ASCII_BLOCK = ' '  # U+2588 Full Block
 
 # What we consider a small screen
 SMALL_SCREEN_COLS = 43
@@ -108,7 +122,7 @@ class CenteredButton(WidgetWrap):
         else:
             cols = self._label
 
-        self.__super.__init__(cols)
+        super().__init__(cols)
 
         if on_press:
             connect_signal(self, 'click', on_press, user_data)
@@ -139,7 +153,7 @@ class KeyButton(CenteredButton):
     It has primary and secondary key values, returned based on the shift state
     """
     def __init__(self, text, primary=None, secondary=None, on_press=None, user_data=None):
-        self.__super.__init__(text, on_press, user_data, delimiters=False)
+        super().__init__(text, on_press, user_data, delimiters=False)
 
         # store the primary and secondary key values
         if primary is None:
@@ -182,7 +196,7 @@ class WrappableColumns(Columns):
     Adds the ability to wrap-around the children (left-right) when navigating
     """
     def keypress(self, size, key):
-        if self.__super.keypress(size, key):
+        if super().keypress(size, key):
             if key not in ('left', 'right'):
                 return key
 
@@ -333,11 +347,11 @@ class OSK:
                 # 5th (last) keyboard row
                 WrappableColumns([
                     (1, Text(" ")),
-                    (9, Key('↑ Shift', shifted='↑ SHIFT', callback=self.shift_key_press)),
+                    (9, Key('Shift', shifted='SHIFT', callback=self.shift_key_press)),
                     (2, Text(" ")),
                     (15, Key('Space', value=' ', shifted=' ')),
                     (2, Text(" ")),
-                    (10, Key('Delete ←', callback=self.bksp_key_press)),
+                    (10, Key('Delete', callback=self.bksp_key_press)),
                     ], 0),
                 Divider()
               ])
@@ -604,10 +618,13 @@ class OSK:
         otherwise assume the user has used 'Esc' to close the dialog
         """
 
-        tty_in = open('/dev/tty1', 'r')
+        tty_in = open('/dev/tty6', 'r')
         screen = urwid.raw_display.Screen(input=tty_in)
-        self.loop = urwid.MainLoop(self.frame, PALETTE, screen=screen, unhandled_input=self.unhandled_key)
+        screen.set_input_timeouts(max_wait=0.2)
+        screen.set_terminal_properties(colors=16)
+        self.loop = urwid.MainLoop(self.frame, PALETTE, screen=screen, unhandled_input=self.unhandled_key, handle_mouse=False)
         try:
+            self.loop.screen.set_input_timeouts(max_wait=0.2)
             self.loop.run()
             return self.on_exit(1)
         except ViewExit as e:
@@ -617,7 +634,7 @@ class OSK:
 def parse_arguments(args):
     parser = ArgumentParser(description="Reads a string using an On Screen Keyboard")
 
-    parser.add_argument('--backtitle', type=str, help='Window title', default="ArkOS", required=False)
+    parser.add_argument('--backtitle', type=str, help='Window title', default="On Screen Keyboard", required=False)
     parser.add_argument('--inputbox', type=str, help='Name of the string being captured', required=False)
     parser.add_argument(
         '--minchars', type=int, nargs='?',

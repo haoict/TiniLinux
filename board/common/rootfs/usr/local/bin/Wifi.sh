@@ -41,12 +41,8 @@ elif [ "$current_tty" != "6" ]; then
 fi
 
 sudo chmod 666 /dev/tty6
-reset
-
-# hide cursor
-printf "\e[?25l" >/dev/tty6
-dialog --clear
 printf "\033c" >/dev/tty6
+dialog --clear
 printf "Starting Wifi Manager.  Please wait..." >/dev/tty6
 
 height="15"
@@ -104,9 +100,7 @@ connectExisting() {
 
 makeConnection() {
   ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
-  # get password from input
-  LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/SimpleTerminal -d "/usr/local/bin/enter-wifi-password.sh"
-  PASS=$(cat /tmp/wifi-password.txt)
+  PASS=`/usr/local/bin/osk.sh "Enter Wi-Fi password for ${1:0:15}" | tail -n 1`
   rm -f /tmp/wifi-password.txt
   /usr/local/bin/gptokeyb2 -1 "Wifi.sh" -c "/root/gptokeyb2.ini" >/dev/null &
 
