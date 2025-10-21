@@ -38,7 +38,6 @@ if [ -e ${ROMS_PART_DEV_FILE} ]; then
 else
     # Create a new primary partition 3 on ${MMC_DEV_FILE} starting at sector 2232320 and using the rest of the disk
     # equivalent parted command: parted ${MMC_DEV_FILE} mkpart primary ext4 2232320s 100% >> /dev/tty1 2>&1
-    ROMS_PART_START=$((${ROOTFS_PART_END} + 1))
     echo -e "n\np\n3\n${ROMS_PART_START}\n\nw\n" | fdisk ${MMC_DEV_FILE} >> /dev/tty1 2>&1
     sleep 3
 

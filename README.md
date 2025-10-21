@@ -14,7 +14,9 @@ make O=output.${BOARD} menuconfig # you can also cd to output.${BOARD} and run m
 make O=output.${BOARD} -j$(nproc) # you can also cd to output.${BOARD} and run make -j$(nproc)
 # The kernel, bootloader, root filesystem, etc. are in output images directory
 # Make flashable img file
-sudo board/${BOARD}/mk-flashable-img.sh
+sudo board/common/mk-flashable-img.sh
+# or rootless version (but slower)
+board/common/mk-flashable-img-rootless.sh
 ```
 
 ## Install
