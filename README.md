@@ -1,10 +1,12 @@
+[![Build](https://github.com/haoict/tinilinux-buildroot/actions/workflows/build.yaml/badge.svg?branch=master)](https://github.com/haoict/tinilinux-buildroot/actions/workflows/build.yaml)
+
 # Tinilinux
 ## Build
 
 To build and use the buildroot stuff, do the following:
 ```bash
 # Install required packages
-sudo apt install build-essential libncurses-dev parted dosfstools swig
+sudo apt install build-essential libncurses-dev parted dosfstools mtools swig
 # Build
 export BOARD=<boardname> # e.g. rgb30, h700
 make O=output.${BOARD} ${BOARD}_defconfig

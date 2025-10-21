@@ -1025,5 +1025,19 @@ source "package/Config.in.host"
 
 source "Config.in.legacy"
 
+
+menu "Tinilinux Packages"
+	source "package/populatefs/Config.in.host"
+	source "package/tinilinux-initramfs/Config.in"
+	source "package/gptokeyb2/Config.in"
+	source "package/sdl12-compat/Config.in"
+	source "package/simple-launcher/Config.in"
+	source "package/simple-terminal/Config.in"
+	source "package/retroarch/Config.in"
+	source "package/rocknix-joypad/Config.in"
+	source "package/rk3566-dtbo/Config.in"
+endmenu
+
+
 # br2-external menus definitions
 source "$BR2_BASE_DIR/.br2-external.in.menus"

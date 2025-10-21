@@ -1,0 +1,2 @@
+config BR2_PACKAGE_HOST_POPULATEFS
+	bool "host populatefs"
