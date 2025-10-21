@@ -61,14 +61,13 @@ jobs:
           mkdir -p output.${OUTPUT_DIR}/images/allwinner
           mkdir -p output.${OUTPUT_DIR}/images/rockchip
           mkdir -p output.${OUTPUT_DIR}/images/rk3566-dtbo/
-          mkdir -p output.${OUTPUT_DIR}/build/uboot-2025.07/
           touch output.${OUTPUT_DIR}/images/Image
           touch output.${OUTPUT_DIR}/images/initramfs
           touch output.${OUTPUT_DIR}/images/allwinner/h700.dtb
           touch output.${OUTPUT_DIR}/images/u-boot-rockchip.bin
           touch output.${OUTPUT_DIR}/images/rockchip/rk3566.dtb
           touch output.${OUTPUT_DIR}/images/rk3566-dtbo/rk3566.dtbo
-          touch output.${OUTPUT_DIR}/build/uboot-2025.07/u-boot-sunxi-with-spl.bin
+          touch output.${OUTPUT_DIR}/images/u-boot-sunxi-with-spl.bin
           mkdir -p output.${OUTPUT_DIR}/target/root
           touch output.${OUTPUT_DIR}/target/root/init.sh
           tar -cvf output.${OUTPUT_DIR}/images/rootfs.tar -C output.${OUTPUT_DIR}/target/ .
@@ -77,10 +76,10 @@ jobs:
           set -x
           if sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo board/${OUTPUT_DIR}/mk-flashable-img.sh
+            sudo BOARD=${OUTPUT_DIR} board/common/mk-flashable-img.sh
           else
             echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            ./board/${OUTPUT_DIR}/mk-flashable-img-rootless.sh
+            BOARD=${OUTPUT_DIR} board/common/mk-flashable-img-rootless.sh
           fi
       - name: Archive build output
         uses: actions/upload-artifact@v4

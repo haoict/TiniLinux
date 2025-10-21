@@ -63,10 +63,10 @@ jobs:
           set -x
           if sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo board/${OUTPUT_DIR}/mk-flashable-img.sh
+            sudo BOARD=${OUTPUT_DIR} board/common/mk-flashable-img.sh
           else
             echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            ./board/${OUTPUT_DIR}/mk-flashable-img-rootless.sh
+            BOARD=${OUTPUT_DIR} board/common/mk-flashable-img-rootless.sh
           fi
       - name: Archive build output
         uses: actions/upload-artifact@v4

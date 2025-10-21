@@ -5,7 +5,6 @@ set -euo pipefail
 # SETUP ENV
 #####################################################
 
-BOARD=h700
 # Load partition info variables
 source board/${BOARD}/rootfs/root/partition-info.sh
 OUT_IMG=output.${BOARD}/images/tinilinux-${BOARD}.img
@@ -24,9 +23,15 @@ truncate -s ${DISK_SIZE}M ${OUT_IMG}
 echo "mkflashableimg: Make the disk MBR type (msdos)"
 parted ${OUT_IMG} mktable msdos
 
-# mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
-echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
-dd if=output.${BOARD}/build/uboot-2025.07/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+if [ "${BOARD}" == "rgb30" ]; then
+    # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
+    echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
+    dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
+elif [ "${BOARD}" == "h700" ]; then
+    # mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
+    echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
+    dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+fi
 
 # mkflashableimg: Making BOOT partitions
 echo "mkflashableimg: Making BOOT partitions"
@@ -54,7 +59,12 @@ mkfs.fat -F32 -n BOOT ${P1_IMG}
 mcopy -i ${P1_IMG} -o board/${BOARD}/BOOT/* ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/Image ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/initramfs ::/
-mcopy -i ${P1_IMG} -o output.${BOARD}/images/allwinner/ ::/dtb
+if [ "${BOARD}" == "rgb30" ]; then
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/rockchip/ ::/dtb
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/rk3566-dtbo/*.dtbo ::/dtb
+elif [ "${BOARD}" == "h700" ]; then
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/allwinner/ ::/dtb
+fi
 # mkflashableimg: Verify part1
 mdir -i output.${BOARD}/images/p1.img ::/
 sync
@@ -62,6 +72,7 @@ fsck.fat -n ${P1_IMG}
 # mkflashableimg: Merge part1 to output img
 dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notrunc
 rm -f ${P1_IMG}
+
 
 # mkflashableimg: Create part2 (rootfs partition)
 P2_IMG=output.${BOARD}/images/p2.img
@@ -74,7 +85,7 @@ tar -xf output.${BOARD}/images/rootfs.tar -C $rootfstmp
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/
 if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
-tar -Jcf $rootfstmp/roms.tar.xz -C ${romtmp}/ROMS/ .
+tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 if [[ "$(uname -m)" == "x86_64" ]]; then
     ./board/common/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
@@ -82,6 +93,7 @@ elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
     ./board/common/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
 fi
 sync
+# mkflashableimg: Verify part2
 e2fsck -n ${P2_IMG}
 rm -rf ${rootfstmp}
 # mkflashableimg: Merge part12 to output img
