@@ -1,0 +1,90 @@
+name: Build (dry run)
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: 'Select board to build'
+        required: true
+        type: choice
+        options:
+          - h700
+          - h700_consoleonly
+          - rgb30
+          - rgb30_consoleonly
+      runner:
+        description: 'Select runner type'
+        required: true
+        type: choice
+        options:
+          - github-hosted_ubuntu-24.04
+          - self-hosted_debian12-sachchat2
+          - self-hosted_ubuntu-24.04
+          - self-hosted_ubuntu-25.04-arm
+
+run-name: (Dry run) Build for ${{ inputs.board }} on ${{ inputs.runner }}
+
+jobs:
+  build:
+    runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
+    steps:
+      - name: Select board
+        run: |
+          if [ "${{ inputs.board }}" = "h700" ] || [ "${{ inputs.board }}" = "rgb30" ]; then
+            if [ "$(echo ${{ inputs.runner }} | cut -d'_' -f1)" = "github-hosted" ]; then
+              echo "Full build for board with display is not supported on github-hosted runners due to disk limits (14GB, while the full build is 30GB). Please use a self-hosted runner to build for these boards."
+              exit 1
+            fi
+          fi
+          # cut _consoleonly from input
+          echo OUTPUT_DIR=$(echo ${{ inputs.board }} | sed 's/_consoleonly//') >> $GITHUB_ENV
+          echo BOARD=${{ inputs.board }} >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install deps
+        if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' }}
+        run: sudo apt update && sudo apt install -y build-essential bc mtools && sudo apt clean
+      - name: Fix absolute paths in configs
+        run: |
+          set -x
+          sed -i -e "s|/home/haoict/tinilinux-buildroot|$(pwd)|" board/h700/linux.conf
+          cat board/h700/linux.conf | grep CONFIG_EXTRA_FIRMWARE_DIR
+          ls -la $(pwd)/board/h700/external-firmware
+      - name: Build
+        run: |
+          set -x
+          make O=output.${OUTPUT_DIR} ${BOARD}_defconfig
+          # if [ "${{ inputs.runner }}" = "self-hosted_debian12-sachchat2" ]; then
+          #   time make O=output.${OUTPUT_DIR} -j1
+          # else
+          #   time make O=output.${OUTPUT_DIR} -j$(nproc)
+          # fi
+          mkdir -p output.${OUTPUT_DIR}/images/allwinner
+          mkdir -p output.${OUTPUT_DIR}/images/rockchip
+          mkdir -p output.${OUTPUT_DIR}/images/rk3566-dtbo/
+          mkdir -p output.${OUTPUT_DIR}/build/uboot-2025.07/
+          touch output.${OUTPUT_DIR}/images/Image
+          touch output.${OUTPUT_DIR}/images/initramfs
+          touch output.${OUTPUT_DIR}/images/allwinner/h700.dtb
+          touch output.${OUTPUT_DIR}/images/u-boot-rockchip.bin
+          touch output.${OUTPUT_DIR}/images/rockchip/rk3566.dtb
+          touch output.${OUTPUT_DIR}/images/rk3566-dtbo/rk3566.dtbo
+          touch output.${OUTPUT_DIR}/build/uboot-2025.07/u-boot-sunxi-with-spl.bin
+          mkdir -p output.${OUTPUT_DIR}/target/root
+          touch output.${OUTPUT_DIR}/target/root/init.sh
+          tar -cvf output.${OUTPUT_DIR}/images/rootfs.tar -C output.${OUTPUT_DIR}/target/ .
+      - name: Make flashable image
+        run: |
+          set -x
+          if sudo -n true &> /dev/null; then
+            echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
+            sudo board/${OUTPUT_DIR}/mk-flashable-img.sh
+          else
+            echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
+            ./board/${OUTPUT_DIR}/mk-flashable-img-rootless.sh
+          fi
+      - name: Archive build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinilinux-${{ env.BOARD }}.img
+          path: output.${{ env.OUTPUT_DIR }}/images/tinilinux-${{ env.OUTPUT_DIR }}.img
+          retention-days: 2
