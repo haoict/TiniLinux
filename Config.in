@@ -1027,6 +1027,7 @@ source "Config.in.legacy"
 
 
 menu "Tinilinux Packages"
+	source "package/btop/Config.in"
 	source "package/populatefs/Config.in.host"
 	source "package/tinilinux-initramfs/Config.in"
 	source "package/gptokeyb2/Config.in"

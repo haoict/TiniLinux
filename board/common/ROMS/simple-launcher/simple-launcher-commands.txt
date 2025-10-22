@@ -7,6 +7,8 @@ File Manager
 cd /root/351Files && /root/351Files/351Files
 Simple Terminal
 SDL12COMPAT_SCALE_METHOD=nearest LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/SimpleTerminal
+Btop
+/usr/local/bin/run-btop.sh
 Wifi
 /usr/local/bin/Wifi.sh
 Quit launcher
