@@ -52,6 +52,7 @@ define RETROARCH_BUILD_CMDS
 endef
 
 define RETROARCH_INSTALL_TARGET_CMDS
+	mkdir -p $(TARGET_DIR)/usr/local/bin
 	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D) install
 	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/libretro-common/audio/dsp_filters install
 	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/gfx/video_filters install

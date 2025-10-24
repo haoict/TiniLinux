@@ -91,6 +91,14 @@
 #define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Mono:/ { print $2 }'"
 #define CREDIT "Simple Launcher " VERSION " (H700) | "
 
+#else
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 480
+#define ITEMS_PER_PAGE 8
+#define BATTERY_CAPACITY_FILE "/dev/zero" // Dummy file, no battery
+#define BRIGHTNESS_FILE "/dev/zero" // Dummy file, no brightness
+#define VOLUME_COMMAND "amixer get Playback | awk -F'[][]' '/Left:/ { print $2 }'"
+#define CREDIT "Simple Launcher " VERSION " | (Generic) "
 #endif
 
 

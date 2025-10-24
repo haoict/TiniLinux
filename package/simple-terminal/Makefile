@@ -15,6 +15,8 @@ else ifeq ($(UNION_PLATFORM),buildroot_rgb30)
 include makefiles/config-buildroot-rgb30.mk
 else ifeq ($(UNION_PLATFORM),buildroot_h700)
 include makefiles/config-buildroot-h700.mk
+else ifeq ($(UNION_PLATFORM),buildroot_raspberrypi)
+include makefiles/config-buildroot-raspberrypi.mk
 endif
 
 SRC = $(wildcard src/*.c)

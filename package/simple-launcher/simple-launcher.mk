@@ -13,6 +13,8 @@ ifeq ($(findstring h700,$(BR2_DEFCONFIG)),h700)
 	SIMPLE_LAUNCHER_MAKE_OPTS = UNION_PLATFORM=buildroot_h700
 else ifeq ($(findstring rgb30,$(BR2_DEFCONFIG)),rgb30)
 	SIMPLE_LAUNCHER_MAKE_OPTS = UNION_PLATFORM=buildroot_rgb30
+else ifeq ($(findstring raspberrypi,$(BR2_DEFCONFIG)),raspberrypi)
+	SIMPLE_LAUNCHER_MAKE_OPTS = UNION_PLATFORM=buildroot_raspberrypi
 endif
 # $(info SIMPLE_LAUNCHER_MAKE_OPTS: $(SIMPLE_LAUNCHER_MAKE_OPTS))
 
