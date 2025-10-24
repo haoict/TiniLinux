@@ -11,6 +11,7 @@ on:
           - h700_consoleonly
           - rgb30
           - rgb30_consoleonly
+          - raspberrypi3_64
       runner:
         description: 'Select runner type'
         required: true
@@ -61,7 +62,9 @@ jobs:
       - name: Make flashable image
         run: |
           set -x
-          if sudo -n true &> /dev/null; then
+          if [ "${{ inputs.board }}" = "raspberrypi3_64" ]; then
+            mv output.${OUTPUT_DIR}/images/sdcard.img output.${OUTPUT_DIR}/images/tinilinux-${OUTPUT_DIR}.img
+          elif sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
             sudo BOARD=${OUTPUT_DIR} board/common/mk-flashable-img.sh
           else
