@@ -25,8 +25,8 @@ endef
 define SIMPLE_LAUNCHER_INSTALL_TARGET_CMDS
     mkdir -p $(TARGET_DIR)/usr/local/bin
     $(INSTALL) -D -m 0755 $(@D)/simple-launcher  $(TARGET_DIR)/usr/local/bin
-    $(INSTALL) -D -m 0755 $(@D)/simple-launcher-commands.txt  $(TARGET_DIR)/usr/local/bin
-    $(INSTALL) -D -m 0755 $(@D)/simple-launcher.ttf  $(TARGET_DIR)/usr/local/bin
+    $(INSTALL) -D -m 0644 $(@D)/simple-launcher-commands.txt  $(TARGET_DIR)/root/
+    $(INSTALL) -D -m 0644 $(@D)/Fiery_Turk.ttf  $(TARGET_DIR)/usr/share/fonts/
 endef
 
 $(eval $(generic-package))

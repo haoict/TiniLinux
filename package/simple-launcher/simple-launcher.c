@@ -16,8 +16,8 @@
 
 #if defined(RG35XXP)
 // RG35XXP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define FALLBACK_SCREEN_WIDTH 640
+#define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BTN_A 0
 #define BTN_B 1
@@ -28,12 +28,12 @@
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
 #define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (RG35) | "
+#define CREDIT "Simple Launcher " VERSION " (RG35)"
 
 #elif defined(TRIMUISP)
 // TRIMUISP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define FALLBACK_SCREEN_WIDTH 640
+#define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BTN_A 1
 #define BTN_B 0
@@ -44,12 +44,12 @@
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
 #define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (TRIMUISP) | "
+#define CREDIT "Simple Launcher " VERSION " (TRIMUISP)"
 
 #elif defined(R36S)
 // R36S:  Up:8, Down:9, Left:10, Right:11, A:1, B:0, X:2, Y:3, L1:4, R1:5, L2:6, R2:7, L3:14, R3:15, Select:12, Start:13, Fn:16
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define FALLBACK_SCREEN_WIDTH 640
+#define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BTN_A 1
 #define BTN_B 0
@@ -60,7 +60,7 @@
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get Playback | awk -F'[][]' '/Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (R36S) | "
+#define CREDIT "Simple Launcher " VERSION " (R36S)"
 
 #elif defined(BR2)
 // Up:544, Down:545, Left:546, Right:547, A:305, B:304, X:307, Y:308, L1:310, R1:311, L2:312, R2:313, Select:314, Start:315, L3:317, R3:318
@@ -74,41 +74,54 @@
 
 
 #if defined(RGB30)
-#define SCREEN_WIDTH 720
-#define SCREEN_HEIGHT 720
+#define FALLBACK_SCREEN_WIDTH 720
+#define FALLBACK_SCREEN_HEIGHT 720
 #define ITEMS_PER_PAGE 15
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/rk817-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (RGB30) | "
+#define CREDIT "Simple Launcher " VERSION " (RGB30)"
 
 #elif defined(H700)
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 480
+#define FALLBACK_SCREEN_WIDTH 480
+#define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Mono:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (H700) | "
+#define CREDIT "Simple Launcher " VERSION " (H700)"
+
+#elif defined(RASBERRYPI)
+#define FALLBACK_SCREEN_WIDTH 800
+#define FALLBACK_SCREEN_HEIGHT 600
+#define ITEMS_PER_PAGE 10
+#define BATTERY_CAPACITY_FILE "" // no battery
+#define BRIGHTNESS_FILE "" // no brightness
+#define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Front Left:/ { print $2 }'"
+#define CREDIT "Simple Launcher " VERSION " (RPI)"
 
 #else
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 480
+#define FALLBACK_SCREEN_WIDTH 480
+#define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
-#define BATTERY_CAPACITY_FILE "/dev/zero" // Dummy file, no battery
-#define BRIGHTNESS_FILE "/dev/zero" // Dummy file, no brightness
-#define VOLUME_COMMAND "amixer get Playback | awk -F'[][]' '/Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " | (Generic) "
+#define BATTERY_CAPACITY_FILE "" // no battery
+#define BRIGHTNESS_FILE "" // no brightness
+#define VOLUME_COMMAND ""
+#define CREDIT "Simple Launcher " VERSION " (Generic) "
 #endif
 
 
 
-const char *FONT_PATH = "./simple-launcher.ttf";
-const char *COMMANDS_FILE = "./simple-launcher-commands.txt";
+const char *FONT_PATH = "/roms/simple-launcher/font.ttf";
+const char *FONT_PATH_FALLBACK = "/usr/share/fonts/Fiery_Turk.ttf";
+const char *COMMANDS_FILE = "/roms/simple-launcher/simple-launcher-commands.txt";
+const char *COMMANDS_FILE_FALLBACK = "/root/simple-launcher-commands.txt";
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Joystick *joystick;
+int windowWidth;
+int windowHeight;
 
 TTF_Font *xsFont;
 TTF_Font *sFont;
@@ -127,27 +140,30 @@ Command *commands = NULL;
 int numCommands = 0;
 char title[MAX_BUFFER_SIZE];
 char batteryCapacity[8];
-char batteryCapacityDisplayString[20] = "Batt: 0%";
+char batteryCapacityDisplayString[20] = "";
 char brightness[8];
-char brightnessDisplayString[20] = "Brightness: 0%";
+char brightnessDisplayString[20] = "";
 char volume[8];
 char volumeDisplayString[20] = "Volume: 0%";
 char creditDisplayString[MAX_BUFFER_SIZE];
 char pagesDisplayString[MAX_BUFFER_SIZE];
 
-void loadCommands(const char *filename)
-{
-	FILE *file = fopen(filename, "r");
+void loadCommands() {
+	FILE *file = fopen(COMMANDS_FILE, "r");
 	if (file == NULL) {
-		printf("Could not open file %s\n", filename);
-		return;
+		printf("Could not open %s, fallback to %s\n", COMMANDS_FILE, COMMANDS_FILE_FALLBACK);
+		file = fopen(COMMANDS_FILE_FALLBACK, "r");
+		if (file == NULL) {
+			printf("Could not open %s. Exit!\n", COMMANDS_FILE_FALLBACK);
+			exit(1);
+		}
 	}
 
 	char line[MAX_BUFFER_SIZE];
 
 	if (fgets(title, sizeof(title), file) == NULL) {
 		printf("Could not read title\n");
-		return;
+		exit(1);
 	}
 	title[strlen(title) - 1] = '\0';
 
@@ -182,8 +198,7 @@ void loadCommands(const char *filename)
 		// Check line overflow
 		if (strchr(line, '\n') == NULL) {
 			perror("Line is too long (max 512 chars). Skip this command\n");
-			strcpy(commands[numCommands].command,
-			       "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty1 && sleep 2");
+			strcpy(commands[numCommands].command, "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty1 && sleep 2");
 			// If the buffer doesn't contain a newline character, read and discard remaining characters
 			int ch;
 			while ((ch = fgetc(file)) != '\n' && ch != EOF) {
@@ -207,53 +222,61 @@ void loadCommands(const char *filename)
 	fclose(file);
 }
 
-void updateHwInfo()
-{
+void updateHwInfo() {
 	// Update battery percentage
-	FILE *batteryFile = fopen(BATTERY_CAPACITY_FILE, "r");
-	if (batteryFile == NULL) {
-		printf("Could not open battery file\n");
-	} else {
-		fgets(batteryCapacity, sizeof(batteryCapacity), batteryFile);
-		fclose(batteryFile);
-		batteryCapacity[strlen(batteryCapacity) - 1] = '\0';
-		strcpy(batteryCapacityDisplayString, "Batt: ");
-		strcat(batteryCapacityDisplayString, batteryCapacity);
-		strcat(batteryCapacityDisplayString, "%");
+	if (strlen(BATTERY_CAPACITY_FILE) > 0) {
+		FILE *batteryFile = fopen(BATTERY_CAPACITY_FILE, "r");
+		if (batteryFile == NULL) {
+			printf("Could not open battery file\n");
+		} else {
+			fgets(batteryCapacity, sizeof(batteryCapacity), batteryFile);
+			fclose(batteryFile);
+			batteryCapacity[strlen(batteryCapacity) - 1] = '\0';
+			strcpy(batteryCapacityDisplayString, "Batt: ");
+			strcat(batteryCapacityDisplayString, batteryCapacity);
+			strcat(batteryCapacityDisplayString, "%");
+		}
 	}
+
+	strcpy(creditDisplayString, CREDIT);
 	// Read brightness
-	FILE *brightnessFile = fopen(BRIGHTNESS_FILE, "r");
-	if (brightnessFile == NULL) {
-		printf("Could not open brightness file\n");
-	} else {
-		fgets(brightness, sizeof(brightness), brightnessFile);
-		fclose(brightnessFile);
-		strcpy(brightnessDisplayString, "Brightness: ");
-		brightness[strlen(brightness) - 1] = '\0';
-		strcat(brightnessDisplayString, brightness);
+	if (strlen(BRIGHTNESS_FILE) > 0) {
+		FILE *brightnessFile = fopen(BRIGHTNESS_FILE, "r");
+		if (brightnessFile == NULL) {
+			printf("Could not open brightness file\n");
+		} else {
+			fgets(brightness, sizeof(brightness), brightnessFile);
+			fclose(brightnessFile);
+			strcpy(brightnessDisplayString, "Brightness: ");
+			brightness[strlen(brightness) - 1] = '\0';
+			strcat(brightnessDisplayString, brightness);
+
+			strcat(creditDisplayString, " | ");
+			strcat(creditDisplayString, brightnessDisplayString);
+		}
 	}
 	// Read volume
-	FILE *pipe = popen(VOLUME_COMMAND, "r");
-	if (pipe == NULL) {
-		printf("Failed to open pipe\n");
-	} else {
-		fgets(volume, sizeof(volume), pipe);
-		pclose(pipe);
-		if (volume == NULL || strlen(volume) == 0) {
-			strcpy(volume, "0%\n");
+	if (strlen(VOLUME_COMMAND) > 0) {
+		FILE *pipe = popen(VOLUME_COMMAND, "r");
+		if (pipe == NULL) {
+			printf("Failed to open pipe\n");
+		} else {
+			fgets(volume, sizeof(volume), pipe);
+			pclose(pipe);
+			if (volume == NULL || strlen(volume) == 0) {
+				strcpy(volume, "0%\n");
+			}
+			volume[strlen(volume) - 1] = '\0';
+			strcpy(volumeDisplayString, "Volume: ");
+			strcat(volumeDisplayString, volume);
+
+			strcat(creditDisplayString, " | ");
+			strcat(creditDisplayString, volumeDisplayString);
 		}
-		volume[strlen(volume) - 1] = '\0';
-		strcpy(volumeDisplayString, "Volume: ");
-		strcat(volumeDisplayString, volume);
 	}
-	strcpy(creditDisplayString, CREDIT);
-	strcat(creditDisplayString, brightnessDisplayString);
-	strcat(creditDisplayString, " | ");
-	strcat(creditDisplayString, volumeDisplayString);
 }
 
-void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor)
-{
+void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
 	SDL_SetRenderDrawColor(renderer, 14, 14, 14, 255); // Set the color to gray
 	SDL_RenderClear(renderer);
 
@@ -278,7 +301,7 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor)
 	sprintf(pagesDisplayString, "Page %d / %d", selectedPage + 1, totalPages);
 	SDL_Surface *pagesSurface = TTF_RenderText_Blended(xsFont, pagesDisplayString, color);
 	SDL_Texture *pagesTexture = SDL_CreateTextureFromSurface(renderer, pagesSurface);
-	SDL_Rect pagesRect = { 20, SCREEN_HEIGHT - pagesSurface->h - 10, pagesSurface->w, pagesSurface->h };
+	SDL_Rect pagesRect = { 20, windowHeight - pagesSurface->h - 40, pagesSurface->w, pagesSurface->h };
 	SDL_RenderCopy(renderer, pagesTexture, NULL, &pagesRect);
 	SDL_FreeSurface(pagesSurface);
 	SDL_DestroyTexture(pagesTexture);
@@ -291,16 +314,19 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor)
 	SDL_FreeSurface(titleSurface);
 	SDL_DestroyTexture(titleTexture);
 	// battery
-	SDL_Surface *batterySurface = TTF_RenderText_Blended(sFont, batteryCapacityDisplayString, color);
-	SDL_Texture *batteryTexture = SDL_CreateTextureFromSurface(renderer, batterySurface);
-	SDL_Rect batteryRect = { SCREEN_WIDTH - batterySurface->w - 10, 5, batterySurface->w, batterySurface->h };
-	SDL_RenderCopy(renderer, batteryTexture, NULL, &batteryRect);
-	SDL_FreeSurface(batterySurface);
-	SDL_DestroyTexture(batteryTexture);
+	if (strlen(batteryCapacityDisplayString) > 0) {
+		SDL_Surface *batterySurface = TTF_RenderText_Blended(sFont, batteryCapacityDisplayString, color);
+		SDL_Texture *batteryTexture = SDL_CreateTextureFromSurface(renderer, batterySurface);
+		SDL_Rect batteryRect = { windowWidth - batterySurface->w - 10, 5, batterySurface->w, batterySurface->h };
+		SDL_RenderCopy(renderer, batteryTexture, NULL, &batteryRect);
+		SDL_FreeSurface(batterySurface);
+		SDL_DestroyTexture(batteryTexture);
+	}
+
 	// Credit
 	SDL_Surface *creditSurface = TTF_RenderText_Blended(xsFont, creditDisplayString, color);
 	SDL_Texture *creditTexture = SDL_CreateTextureFromSurface(renderer, creditSurface);
-	SDL_Rect creditRect = { SCREEN_WIDTH - creditSurface->w - 10, SCREEN_HEIGHT - pagesSurface->h - 10, creditSurface->w, creditSurface->h };
+	SDL_Rect creditRect = { 20, windowHeight - creditSurface->h - 10, creditSurface->w, creditSurface->h };
 	SDL_RenderCopy(renderer, creditTexture, NULL, &creditRect);
 	SDL_FreeSurface(creditSurface);
 	SDL_DestroyTexture(creditTexture);
@@ -310,8 +336,7 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor)
 }
 
 // Function to execute a shell script
-void executeShellScript(const char *script)
-{
+void executeShellScript(const char *script) {
 	// Close SDL window
 	SDL_JoystickClose(joystick);
 	SDL_DestroyRenderer(renderer);
@@ -326,53 +351,52 @@ void executeShellScript(const char *script)
 
 	// Recreate SDL window
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_FULLSCREEN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	joystick = SDL_JoystickOpen(0);
 #if defined(TRIMUISP) || defined(RGB30)
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
 #endif
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	SDL_Color color = { 255, 255, 255, 80 }; // Low White color
 	SDL_Color highlightColor = { 255, 255, 255, 255 }; // White color
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	TTF_Init();
 
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	int displayIndex = 0; // usually 0 unless you have multiple screens
+	SDL_DisplayMode mode;
+	if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
+		printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
+		windowWidth = FALLBACK_SCREEN_WIDTH;
+		windowHeight = FALLBACK_SCREEN_HEIGHT;
+	} else {
+		printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
+		windowWidth = mode.w;
+		windowHeight = mode.h;
+	}
+	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_FULLSCREEN);
 	if (window == NULL) {
 		printf("Could not create window: %s\n", SDL_GetError());
 		return 1;
 	}
 
-	char cwd[PATH_MAX];
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-		printf("Current working dir: %s\n", cwd);
-	} else {
-		strcpy(cwd, ".");
-	}
-	char fontPath[PATH_MAX];
-	strcpy(fontPath, cwd);
-	strcat(fontPath, "/");
-	strcat(fontPath, FONT_PATH);
-	char commandFilePath[PATH_MAX];
-	strcpy(commandFilePath, cwd);
-	strcat(commandFilePath, "/");
-	strcat(commandFilePath, COMMANDS_FILE);
-
 	renderer = SDL_CreateRenderer(window, -1, 0);
 #if defined(TRIMUISP) || defined(RGB30)
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
 #endif
-	xsFont = TTF_OpenFont(fontPath, 16);
-	sFont = TTF_OpenFont(fontPath, 20);
-	mFont = TTF_OpenFont(fontPath, 24);
-	lFont = TTF_OpenFont(fontPath, 28);
-	xlFont = TTF_OpenFont(fontPath, 32);
-	titleFont = TTF_OpenFont(fontPath, 44);
+	if (access(FONT_PATH, F_OK) == -1) {
+		printf("Font file %s not found, fallback to %s\n", FONT_PATH, FONT_PATH_FALLBACK);
+		FONT_PATH = FONT_PATH_FALLBACK;
+	}
+	xsFont = TTF_OpenFont(FONT_PATH, 16);
+	sFont = TTF_OpenFont(FONT_PATH, 20);
+	mFont = TTF_OpenFont(FONT_PATH, 24);
+	lFont = TTF_OpenFont(FONT_PATH, 28);
+	xlFont = TTF_OpenFont(FONT_PATH, 32);
+	titleFont = TTF_OpenFont(FONT_PATH, 44);
 	if (xsFont == NULL || sFont == NULL || mFont == NULL || lFont == NULL || xlFont == NULL || titleFont == NULL) {
 		printf("Failed to load font: %s\n", TTF_GetError());
 		return 1;
@@ -380,7 +404,7 @@ int main(int argc, char *argv[])
 
 	joystick = SDL_JoystickOpen(0);
 
-	loadCommands(commandFilePath);
+	loadCommands();
 
 	int running = 1;
 	int suspend = 0;
