@@ -9,3 +9,5 @@ fi
 
 # btop++ needs an interactive shell to run
 openvt -s -w -- /usr/local/bin/btop --force-utf
+
+ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9

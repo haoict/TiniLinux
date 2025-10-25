@@ -4,6 +4,8 @@
 # See http://buildroot.org/manual.html#rootfs-custom
 # and http://elinux.org/RPiconfig for a description of config.txt syntax
 
+### NOTE: when you change it, you should "make rpi-firmware-dirclean" to make update to sdcard.img
+
 start_file=start.elf
 fixup_file=fixup.dat
 
@@ -19,8 +21,8 @@ disable_overscan=1
 # How much memory in MB to assign to the GPU on Pi models having
 # 256, 512 or 1024 MB total memory
 gpu_mem_256=100
-gpu_mem_512=100
-gpu_mem_1024=100
+gpu_mem_512=200
+gpu_mem_1024=300
 
 # Enable KMS
 dtoverlay=vc4-kms-v3d
