@@ -10,12 +10,10 @@ SDL12_COMPAT_SITE_METHOD = git
 SDL12_COMPAT_DEPENDENCIES = host-pkgconf sdl2
 #SDL12_COMPAT_CONF_OPTS = -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
 SDL12_COMPAT_CONF_OPTS = -DCMAKE_BUILD_TYPE=Release
-SDL12_COMPAT_INSTALL_STAGING = YES
 SDL12_COMPAT_INSTALL_TARGET = YES
 
 define SDL12_COMPAT_INSTALL_TARGET_CMDS
-    mkdir -p $(TARGET_DIR)/usr/local/lib
-    $(INSTALL) -D -m 0755 $(@D)/libSDL-1.2.so.0  $(TARGET_DIR)/usr/local/lib
+    $(INSTALL) -D -m 0644 $(@D)/libSDL-1.2.so.0  $(TARGET_DIR)/usr/lib
 endef
 
 $(eval $(cmake-package))

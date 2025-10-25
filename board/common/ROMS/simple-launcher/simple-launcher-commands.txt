@@ -6,7 +6,7 @@ if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8_64" ]; then ec
 File Manager
 cd /root/351Files && /root/351Files/351Files
 Simple Terminal
-SDL12COMPAT_SCALE_METHOD=nearest LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/SimpleTerminal
+SDL12COMPAT_SCALE_METHOD=nearest /usr/local/bin/SimpleTerminal
 Btop
 /usr/local/bin/run-btop.sh
 Wifi
