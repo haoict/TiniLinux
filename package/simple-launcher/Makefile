@@ -12,8 +12,9 @@ else ifeq ($(UNION_PLATFORM),buildroot_h700)
 include makefiles/config-buildroot-h700.mk
 else ifeq ($(UNION_PLATFORM),buildroot_raspberrypi)
 include makefiles/config-buildroot-raspberrypi.mk
+else ifeq ($(UNION_PLATFORM),x64)
+include makefiles/config-x64.mk
 endif
-
 
 .PHONY: clean
 .PHONY: simple-launcher
@@ -21,5 +22,8 @@ endif
 simple-launcher: simple-launcher.c
 	$(CC) -o '$@' '$<' ${CFLAGS} ${LDFLAGS}
 
+check-available-videodriver: check-available-videodriver.c
+	$(CC) -o '$@' '$<' ${CFLAGS} ${LDFLAGS}
+
 clean:
-	-rm simple-launcher
+	-rm simple-launcher check-available-videodriver

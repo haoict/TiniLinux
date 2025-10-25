@@ -70,6 +70,14 @@
 #define BTN_DOWN 14
 #define BTN_LEFT 15
 #define BTN_RIGHT 16
+
+#else
+#define BTN_A SDLK_RETURN
+#define BTN_B SDLK_BACKSPACE
+#define BTN_UP SDLK_UP
+#define BTN_DOWN SDLK_DOWN
+#define BTN_LEFT SDLK_LEFT
+#define BTN_RIGHT SDLK_RIGHT
 #endif
 
 
@@ -377,7 +385,11 @@ int main(int argc, char *argv[]) {
 		windowWidth = mode.w;
 		windowHeight = mode.h;
 	}
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_FULLSCREEN);
+#if defined(X64)
+	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, FALLBACK_SCREEN_WIDTH, FALLBACK_SCREEN_HEIGHT, 0);
+#else
+	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
+#endif
 	if (window == NULL) {
 		printf("Could not create window: %s\n", SDL_GetError());
 		return 1;
