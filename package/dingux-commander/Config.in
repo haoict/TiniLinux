@@ -1,0 +1,3 @@
+config BR2_PACKAGE_DINGUX_COMMANDER
+    bool "dingux-commander"
+    select BR2_PACKAGE_SDL2

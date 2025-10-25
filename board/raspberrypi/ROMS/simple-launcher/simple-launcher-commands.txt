@@ -2,11 +2,11 @@ TiniLinux
 Retroarch
 HOME=/roms /usr/local/bin/retroarch
 Pico-8 (native)
-if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8_64" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >> /dev/tty1; sleep 5; else /roms/pico-8/pico8_64 -splore -home /roms/pico-8; fi
-File Manager
-cd /root/351Files && /root/351Files/351Files
+if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8_64" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >> /dev/tty1; sleep 5; else /roms/pico-8/pico8_64 -pixel_perfect 1 -splore -home /roms/pico-8; fi
+File Commander
+HOME=/root /usr/local/bin/commander >/dev/tty1 2>&1
 Simple Terminal
-SDL12COMPAT_SCALE_METHOD=nearest /usr/local/bin/SimpleTerminal
+SDL12COMPAT_SCALE_METHOD=nearest /usr/local/bin/SimpleTerminal >/dev/tty1 2>&1
 Btop
 /usr/local/bin/run-btop.sh
 Wifi

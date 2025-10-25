@@ -1035,6 +1035,7 @@ menu "Tinilinux Packages"
 	source "package/simple-launcher/Config.in"
 	source "package/simple-terminal/Config.in"
 	source "package/retroarch/Config.in"
+	source "package/dingux-commander/Config.in"
 	source "package/rocknix-joypad/Config.in"
 	source "package/rk3566-dtbo/Config.in"
 endmenu

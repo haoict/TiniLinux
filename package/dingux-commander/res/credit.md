@@ -1,0 +1,1 @@
+https://github.com/MustardOS/internal/tree/main/share/application/Dingux%20Commander/res
