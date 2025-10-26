@@ -362,9 +362,6 @@ void executeShellScript(const char *script) {
 	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_FULLSCREEN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	joystick = SDL_JoystickOpen(0);
-#if defined(TRIMUISP) || defined(RGB30)
-	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
-#endif
 }
 
 int main(int argc, char *argv[]) {
@@ -396,9 +393,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	renderer = SDL_CreateRenderer(window, -1, 0);
-#if defined(TRIMUISP) || defined(RGB30)
-	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
-#endif
+	// #if defined(TRIMUISP) || defined(RGB30)
+	// 	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
+	// #endif
 	if (access(FONT_PATH, F_OK) == -1) {
 		printf("Font file %s not found, fallback to %s\n", FONT_PATH, FONT_PATH_FALLBACK);
 		FONT_PATH = FONT_PATH_FALLBACK;

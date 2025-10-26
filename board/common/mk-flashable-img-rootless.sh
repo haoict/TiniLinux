@@ -23,14 +23,17 @@ truncate -s ${DISK_SIZE}M ${OUT_IMG}
 echo "mkflashableimg: Make the disk MBR type (msdos)"
 parted ${OUT_IMG} mktable msdos
 
-if [ "${BOARD}" == "rgb30" ]; then
+if [[ "${BOARD}" == "rgb30"* ]]; then
     # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
     echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
     dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
-elif [ "${BOARD}" == "h700" ]; then
+elif [[ "${BOARD}" == "h700"* ]]; then
     # mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
     echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
     dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+else
+    echo "u-boot writing not implemented for board ${BOARD}"
+    exit 1
 fi
 
 # mkflashableimg: Making BOOT partitions
@@ -59,10 +62,10 @@ mkfs.fat -F32 -n BOOT ${P1_IMG}
 mcopy -i ${P1_IMG} -o board/${BOARD}/BOOT/* ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/Image ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/initramfs ::/
-if [ "${BOARD}" == "rgb30" ]; then
+if [[ "${BOARD}" == "rgb30"* ]]; then
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/rockchip/ ::/dtb
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/rk3566-dtbo/*.dtbo ::/dtb
-elif [ "${BOARD}" == "h700" ]; then
+elif [[ "${BOARD}" == "h700"* ]]; then
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/allwinner/ ::/dtb
 fi
 # mkflashableimg: Verify part1
