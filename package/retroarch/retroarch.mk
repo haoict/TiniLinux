@@ -12,6 +12,7 @@ RETROARCH_DEPENDENCIES = host-pkgconf sdl2 alsa-lib freetype zlib libpng libdrm
 RETROARCH_INSTALL_TARGET = YES
 RETROARCH_CONF_OPTS = --prefix=$(TARGET_DIR)/usr/local \
     --disable-qt \
+    --disable-tinyalsa \
     --enable-alsa \
     --disable-pipewire \
     --disable-pulse \
@@ -27,9 +28,14 @@ RETROARCH_CONF_OPTS = --prefix=$(TARGET_DIR)/usr/local \
     --enable-kms \
     --disable-ffmpeg \
     --disable-neon \
-    --disable-wayland \
     --enable-opengles --enable-opengles3 --enable-opengles3_1 --disable-opengl \
     --disable-vulkan
+
+ifeq ($(BR2_PACKAGE_SDL2_WAYLAND),y)
+RETROARCH_CONF_OPTS += --enable-wayland
+else
+RETROARCH_CONF_OPTS += --disable-wayland
+endif
 
 # $(eval $(autotools-package))
 
@@ -53,9 +59,10 @@ endef
 
 define RETROARCH_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/local/bin
-	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D) install
-	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/libretro-common/audio/dsp_filters install
-	$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/gfx/video_filters install
+	$(INSTALL) -D -m 0755 $(@D)/retroarch $(TARGET_DIR)/usr/local/bin
+	#$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D) install
+	#$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/libretro-common/audio/dsp_filters install
+	#$(TARGET_MAKE_ENV) $(MAKE) PREFIX=$(TARGET_DIR)/usr/local -C $(@D)/gfx/video_filters install
 endef
 
 $(eval $(generic-package))
