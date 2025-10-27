@@ -74,44 +74,44 @@ onlinethreads() {
 
 performance() {
   set_cpu_gov performance
-  set_gpu_gov performance
+  # set_gpu_gov performance
 }
 
 ondemand() {
   set_cpu_gov ondemand
-  set_gpu_gov ondemand
+  # set_gpu_gov ondemand
 }
 
 schedutil() {
   set_cpu_gov schedutil
-  set_gpu_gov ondemand
+  # set_gpu_gov ondemand
 }
 
 powersave() {
   set_cpu_gov powersave
-  set_gpu_gov powersave
+  # set_gpu_gov powersave
 }
 
 case ${1} in
   performance)
-    onlinethreads all
+    # onlinethreads all
     performance
   ;;
   balanced_performance)
-    onlinethreads all
+    # onlinethreads all
     ondemand
   ;;
   balanced_powersave)
-    onlinethreads 4
+    # onlinethreads 4
     powersave
   ;;
   powersave)
-    onlinethreads 4
+    # onlinethreads 4
     powersave
   ;;
   *)
     # Default Settings
-    onlinethreads all
+    # onlinethreads all
     schedutil
   ;;
 esac
