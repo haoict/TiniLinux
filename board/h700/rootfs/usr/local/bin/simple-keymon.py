@@ -79,7 +79,7 @@ async def handle_event(device):
                     if event.code == Joypad.start and event.value == 1:
                         runcmd("systemctl restart simple-init\n", shell=True)
                 if event.code == Joypad.start and event.value == 1:
-                    runcmd("killall retroarch; killall pico8_64; killall 351Files; true\n", shell=True)
+                    runcmd("killall retroarch; killall pico8_64; killall commander; killall SimpleTerminal; true\n", shell=True)
                 if event.code == Joypad.up and event.value == 1:
                     brightness(1)
                 if event.code == Joypad.down and event.value == 1:

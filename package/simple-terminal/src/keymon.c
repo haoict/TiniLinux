@@ -22,7 +22,7 @@
 #define MENU_ITEM_SPACING 10
 
 int gpio_keys_polled_fd;
-int event_0_fd;
+int extra_keys_polled_fd;
 pthread_t adc_thread;
 
 #define RAW_UP 103
@@ -198,7 +198,7 @@ void *read_adc2key_thread(void *dummy)
 			polldata[0].fd = gpio_keys_polled_fd;
 			polldata[0].events = POLLIN;
 		}
-		if (event_0_fd < 1)
+		if (extra_keys_polled_fd < 1)
 		{
 			if (0 >= gpio_keys_polled_fd)
 			{
@@ -208,7 +208,7 @@ void *read_adc2key_thread(void *dummy)
 		}
 		else
 		{
-			polldata[1].fd = event_0_fd;
+			polldata[1].fd = extra_keys_polled_fd;
 			polldata[1].events = POLLIN;
 		}
 		ret = poll(polldata, 2, 300);
@@ -238,11 +238,11 @@ void *read_adc2key_thread(void *dummy)
 				}
 				else
 				{
-					// event_0_fd;
+					// extra_keys_polled_fd;
 					rd = read(polldata[1].fd, &input_ev, sizeof(input_ev));
 					if (rd < 0)
 					{
-						printf("read event_0_fd error ");
+						printf("read extra_keys_polled_fd error ");
 					}
 					else
 					{
@@ -278,13 +278,13 @@ int open_adc_bnt_input()
 		return -1;
 	}
 #if defined(RGB30_SDL12COMPAT)
-	event_0_fd = open("/dev/input/event1", 0);
+	extra_keys_polled_fd = open("/dev/input/event1", 0);
 #elif defined(H700_SDL12COMPAT)
-	event_0_fd = open("/dev/input/event2", 0);
+	extra_keys_polled_fd = open("/dev/input/event2", 0);
 #else
-	event_0_fd = open("/dev/input/event0", 0);
+	extra_keys_polled_fd = open("/dev/input/event0", 0);
 #endif
-	if (event_0_fd < 0)
+	if (extra_keys_polled_fd < 0)
 	{
 		printf("Open %s error\n", "/dev/input/event0");
 		close(gpio_keys_polled_fd);
@@ -297,7 +297,7 @@ int open_adc_bnt_input()
 	}
 	else
 	{
-		printf("open_adc_bnt_input: good\n");
+		printf("keymon started\n");
 		return 0;
 	}
 }

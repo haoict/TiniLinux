@@ -425,6 +425,7 @@ static int usedfontsize = 0;
 static int high_res = 0;
 static int initial_width = 320;
 static int initial_height = 240;
+static volatile int thread_should_exit = 0;
 
 ssize_t xwrite(int fd, char *s, size_t len)
 {
@@ -509,13 +510,24 @@ void sdlloadfonts(char *fontstr, int fontsize)
 	TTF_SetFontStyle(dc.ibfont, TTF_STYLE_ITALIC);*/
 }
 
+static int shutdown_called = 0;
 void sdlshutdown(void)
 {
-	if (SDL_WasInit(SDL_INIT_EVERYTHING) != 0)
+	if (SDL_WasInit(SDL_INIT_EVERYTHING) != 0 && !shutdown_called)
 	{
-		fprintf(stderr, "SDL shutdown\n");
-		if (thread)
-			SDL_KillThread(thread);
+		shutdown_called = 1;
+		fprintf(stderr, "SDL shutting down\n");
+		if (thread) {
+			printf( "Signaling ttythread to exit...\n" );
+			thread_should_exit = 1;
+			// ttywrite n key to answer y/n question if blocked on ttyread
+			ttywrite("n", 1);
+
+			ttywrite("\033[?1000l", 7); // disable mouse tracking to unblock ttyread
+			SDL_WaitThread(thread, NULL); // Wait for thread to exit cleanly
+			// SDL_KillThread(thread);
+			thread = NULL;
+		}
 		if (xw.win)
 			SDL_FreeSurface(xw.win);
 #if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
@@ -540,7 +552,6 @@ void sdlinit(void)
 		exit(EXIT_FAILURE);
 	}
 
-	fprintf(stderr, "SDL font\n");
 	SDL_EnableUNICODE(1);
 	SDL_ShowCursor(0);
 
@@ -559,7 +570,7 @@ void sdlinit(void)
 	usedfont = (opt_font == NULL) ? font : opt_font;
 	sdlloadfonts(usedfont, fontsize);
 
-	fprintf(stderr, "SDL font\n");
+	fprintf(stderr, "SDL font: %s\n", usedfont);
 	/* colors */
 	initcolormap();
 
@@ -3296,6 +3307,7 @@ void resize(SDL_Event *e)
 	cresize(e->resize.w, e->resize.h);
 }
 
+
 int ttythread(void *unused)
 {
 	int i;
@@ -3311,6 +3323,8 @@ int ttythread(void *unused)
 
 	for (i = 0;; i++)
 	{
+		if (thread_should_exit)
+			break;
 		FD_ZERO(&rfd);
 		FD_SET(cmdfd, &rfd);
 		if (select(cmdfd + 1, &rfd, NULL, NULL, tv) < 0)
