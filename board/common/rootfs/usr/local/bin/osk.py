@@ -618,7 +618,7 @@ class OSK:
         otherwise assume the user has used 'Esc' to close the dialog
         """
 
-        tty_in = open('/dev/tty6', 'r')
+        tty_in = open('/dev/tty', 'r')
         screen = urwid.raw_display.Screen(input=tty_in)
         screen.set_input_timeouts(max_wait=0.2)
         screen.set_terminal_properties(colors=16)

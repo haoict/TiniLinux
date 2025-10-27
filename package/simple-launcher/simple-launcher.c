@@ -87,7 +87,7 @@
 #define ITEMS_PER_PAGE 15
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/rk817-battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
-#define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Left:/ { print $2 }'"
+#define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Front Left:/ { print $2 }'"
 #define CREDIT "Simple Launcher " VERSION " (RGB30)"
 
 #elif defined(H700)
@@ -96,7 +96,7 @@
 #define ITEMS_PER_PAGE 8
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
-#define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Mono:/ { print $2 }'"
+#define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Front Left:/ { print $2 }'"
 #define CREDIT "Simple Launcher " VERSION " (H700)"
 
 #elif defined(RASBERRYPI)
