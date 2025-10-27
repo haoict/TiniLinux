@@ -11,6 +11,7 @@ echo -ne "\033[9;0]" > /dev/tty1
 
 amixer -c 1 set "Master" "80%"
 
+/usr/local/bin/led-control.sh &
 /usr/local/bin/freqfunctions.sh powersave
 
 killall python3
