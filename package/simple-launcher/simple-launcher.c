@@ -13,56 +13,7 @@
 
 #define VERSION "1.0.0"
 
-
-#if defined(RG35XXP)
-// RG35XXP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
-#define FALLBACK_SCREEN_WIDTH 640
-#define FALLBACK_SCREEN_HEIGHT 480
-#define ITEMS_PER_PAGE 8
-#define BTN_A 0
-#define BTN_B 1
-#define BTN_UP 4 // use L1 because UP is SDL_JOYHATMOTION
-#define BTN_DOWN 5 // use R1 because DOWN is SDL_JOYHATMOTION
-#define BTN_LEFT 9
-#define BTN_RIGHT 10
-#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
-#define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
-#define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (RG35)"
-
-#elif defined(TRIMUISP)
-// TRIMUISP: A:0, B:1, X:2, Y:3, L1:4, R1:5, L2:9, R2:10, Select:6, Start:7, Fn:8/11, Up Down Left Right: SDL_JOYHATMOTION
-#define FALLBACK_SCREEN_WIDTH 640
-#define FALLBACK_SCREEN_HEIGHT 480
-#define ITEMS_PER_PAGE 8
-#define BTN_A 1
-#define BTN_B 0
-#define BTN_UP 4 // use L1 because UP is SDL_JOYHATMOTION
-#define BTN_DOWN 5 // use R1 because DOWN is SDL_JOYHATMOTION
-#define BTN_LEFT 9
-#define BTN_RIGHT 10
-#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/axp2202-battery/capacity"
-#define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness" // TODO: find correct path
-#define VOLUME_COMMAND "amixer get 'digital volume' | awk -F'[][]' '/Mono:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (TRIMUISP)"
-
-#elif defined(R36S)
-// R36S:  Up:8, Down:9, Left:10, Right:11, A:1, B:0, X:2, Y:3, L1:4, R1:5, L2:6, R2:7, L3:14, R3:15, Select:12, Start:13, Fn:16
-#define FALLBACK_SCREEN_WIDTH 640
-#define FALLBACK_SCREEN_HEIGHT 480
-#define ITEMS_PER_PAGE 8
-#define BTN_A 1
-#define BTN_B 0
-#define BTN_UP 8
-#define BTN_DOWN 9
-#define BTN_LEFT 10
-#define BTN_RIGHT 11
-#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
-#define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
-#define VOLUME_COMMAND "amixer get Playback | awk -F'[][]' '/Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (R36S)"
-
-#elif defined(BR2)
+#if defined(BR2)
 // Up:544, Down:545, Left:546, Right:547, A:305, B:304, X:307, Y:308, L1:310, R1:311, L2:312, R2:313, Select:314, Start:315, L3:317, R3:318
 #define BTN_A 1
 #define BTN_B 0
@@ -70,6 +21,14 @@
 #define BTN_DOWN 14
 #define BTN_LEFT 15
 #define BTN_RIGHT 16
+#define BTN_SELECT 8
+#define BTN_START 9
+#define BTN_L1 4
+#define BTN_R1 5
+#define BTN_L2 6
+#define BTN_R2 7
+#define BTN_L3 11
+#define BTN_R3 12
 
 #else
 #define BTN_A SDLK_RETURN
@@ -78,6 +37,14 @@
 #define BTN_DOWN SDLK_DOWN
 #define BTN_LEFT SDLK_LEFT
 #define BTN_RIGHT SDLK_RIGHT
+#define BTN_SELECT SDLK_ESCAPE
+#define BTN_START SDLK_SPACE
+#define BTN_L1 SDLK_LCTRL
+#define BTN_R1 SDLK_LALT
+#define BTN_L2 SDLK_LSHIFT
+#define BTN_R2 SDLK_TAB
+#define BTN_L3 SDLK_LSUPER
+#define BTN_R3 SDLK_RSUPER
 #endif
 
 
@@ -86,36 +53,40 @@
 #define FALLBACK_SCREEN_HEIGHT 720
 #define ITEMS_PER_PAGE 15
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/rk817-battery/capacity"
+#define BATTERY_STATUS_FILE "/sys/class/power_supply/rk817-battery/status"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Front Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (RGB30)"
+#define CREDIT "TiniLinux " VERSION " (RGB30)"
 
 #elif defined(H700)
 #define FALLBACK_SCREEN_WIDTH 480
 #define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
+#define BATTERY_STATUS_FILE "/sys/class/power_supply/battery/status"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Front Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (H700)"
+#define CREDIT "TiniLinux " VERSION " (H700)"
 
 #elif defined(RASBERRYPI)
 #define FALLBACK_SCREEN_WIDTH 800
 #define FALLBACK_SCREEN_HEIGHT 600
 #define ITEMS_PER_PAGE 10
 #define BATTERY_CAPACITY_FILE "" // no battery
+#define BATTERY_STATUS_FILE "" // no battery
 #define BRIGHTNESS_FILE "" // no brightness
 #define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Front Left:/ { print $2 }'"
-#define CREDIT "Simple Launcher " VERSION " (RPI)"
+#define CREDIT "TiniLinux " VERSION " (RPI)"
 
 #else
 #define FALLBACK_SCREEN_WIDTH 480
 #define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
 #define BATTERY_CAPACITY_FILE "" // no battery
+#define BATTERY_STATUS_FILE "" // no battery
 #define BRIGHTNESS_FILE "" // no brightness
 #define VOLUME_COMMAND ""
-#define CREDIT "Simple Launcher " VERSION " (Generic) "
+#define CREDIT "TiniLinux " VERSION " (Generic) "
 #endif
 
 
@@ -142,6 +113,7 @@ typedef struct Command Command;
 struct Command {
 	char name[MAX_NAME_LENGTH];
 	char command[MAX_COMMAND_LENGTH];
+	int needsConfirmation;
 };
 
 Command *commands = NULL;
@@ -154,7 +126,11 @@ char brightnessDisplayString[20] = "";
 char volume[8];
 char volumeDisplayString[20] = "Volume: 0%";
 char creditDisplayString[MAX_BUFFER_SIZE];
-char pagesDisplayString[MAX_BUFFER_SIZE];
+char pagesDisplayString[20];
+char dialogBoxString[1024];
+int showDialogBox = 0;
+int dialogSelectedButton = 0; // 0: Ok, 1: Cancel
+int isShowingSystemInfo = 0;
 
 void loadCommands() {
 	FILE *file = fopen(COMMANDS_FILE, "r");
@@ -219,8 +195,17 @@ void loadCommands() {
 				line[len - 1] = '\0';
 			}
 
-			// Copy command
-			strncpy(commands[numCommands].command, line, MAX_COMMAND_LENGTH - 1);
+			// Check for CONFIRM:: prefix
+			const char *confirmPrefix = "CONFIRM::";
+			if (strncmp(line, confirmPrefix, strlen(confirmPrefix)) == 0) {
+				commands[numCommands].needsConfirmation = 1;
+				// Copy command without prefix
+				strncpy(commands[numCommands].command, line + strlen(confirmPrefix), MAX_COMMAND_LENGTH - 1);
+			} else {
+				commands[numCommands].needsConfirmation = 0;
+				// Copy command
+				strncpy(commands[numCommands].command, line, MAX_COMMAND_LENGTH - 1);
+			}
 			commands[numCommands].command[MAX_COMMAND_LENGTH - 1] = '\0';
 		}
 
@@ -243,6 +228,19 @@ void updateHwInfo() {
 			strcpy(batteryCapacityDisplayString, "Batt: ");
 			strcat(batteryCapacityDisplayString, batteryCapacity);
 			strcat(batteryCapacityDisplayString, "%");
+			// Read battery status
+			if (strlen(BATTERY_STATUS_FILE) > 0) {
+				FILE *batteryStatusFile = fopen(BATTERY_STATUS_FILE, "r");
+				if (batteryStatusFile == NULL) {
+					printf("Could not open battery status file\n");
+				} else {
+					char batteryStatus[32];
+					fgets(batteryStatus, sizeof(batteryStatus), batteryStatusFile);
+					fclose(batteryStatusFile);
+					if (strncmp(batteryStatus, "Charging", 8) == 0)
+						strcat(batteryCapacityDisplayString, " (C)");
+				}
+			}
 		}
 	}
 
@@ -284,6 +282,53 @@ void updateHwInfo() {
 	}
 }
 
+void get_command_output(const char *cmd, char *buf, size_t size) {
+	FILE *fp = popen(cmd, "r");
+	if (fp == NULL) {
+		snprintf(buf, size, "N/A");
+		return;
+	}
+
+	if (fgets(buf, size, fp) == NULL) {
+		snprintf(buf, size, "N/A");
+	} else {
+		// Remove trailing newline
+		buf[strcspn(buf, "\n")] = 0;
+	}
+
+	pclose(fp);
+}
+
+char* loadSystemInfo() {
+	char systemInfoString[1024], hostname[128], kernel[128], build[128], ram[128], disk[128], ssid[128], ip[128];
+	get_command_output("hostname", hostname, sizeof(hostname));
+	get_command_output("uname -r", kernel, sizeof(kernel));
+	get_command_output("cat /etc/os-release | grep BUILD_ID | cut -d '=' -f2", build, sizeof(build));
+	get_command_output("free -h | awk '/Mem:/ {print $3 \"/\" $2 \"\"}'", ram, sizeof(ram));
+	get_command_output("df -h / | awk 'NR==2 {print $3 \"/\" $2 \"\"}'", disk, sizeof(disk));
+	get_command_output("nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\\: -f1", ssid, sizeof(ssid));
+	if (ssid[0] == '\0') {
+		strncpy(ssid, "eth0", sizeof(ssid));
+		get_command_output("ip -f inet addr show eth0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
+	} else {
+		get_command_output("ip -f inet addr show wlan0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
+	}
+	
+
+	snprintf(systemInfoString, sizeof(systemInfoString),
+		"System Information:\n"
+		"-------------------\n"
+		"Hostname: %s\n"
+		"Kernel: %s\n"
+		"Build: %s\n"
+		"RAM: %s\n"
+		"Disk: %s\n"
+		"SSID: %s\n"
+		"IP: %s\n",
+		hostname, kernel, build, ram, disk, ssid, ip);
+	return strdup(systemInfoString);
+}
+
 void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
 	SDL_SetRenderDrawColor(renderer, 14, 14, 14, 255); // Set the color to gray
 	SDL_RenderClear(renderer);
@@ -295,8 +340,8 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
 			char itemName[MAX_NAME_LENGTH] = "> ";
 			SDL_Surface *surface =
 				TTF_RenderText_Blended(mFont,
-						       selectedItem == i ? strcat(itemName, commands[i].name) : commands[i].name,
-						       selectedItem == i ? highlightColor : color);
+							   selectedItem == i ? strcat(itemName, commands[i].name) : commands[i].name,
+							   selectedItem == i ? highlightColor : color);
 			SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
 			SDL_Rect rect = { 20, 80 + (i - (selectedPage * ITEMS_PER_PAGE)) * 40, surface->w, surface->h };
 			SDL_RenderCopy(renderer, texture, NULL, &rect);
@@ -338,6 +383,89 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
 	SDL_RenderCopy(renderer, creditTexture, NULL, &creditRect);
 	SDL_FreeSurface(creditSurface);
 	SDL_DestroyTexture(creditTexture);
+
+	// Dialog box
+	if (showDialogBox) {
+		
+		// grayout background but let it visible
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+		SDL_SetRenderDrawColor(renderer, 100, 100, 100, 150); // semi-transparent black
+		SDL_Rect fullRect = { 0, 0, windowWidth, windowHeight };
+		SDL_RenderFillRect(renderer, &fullRect);
+
+		// create a simple dialog box with Ok & cancel button
+		double dialogWidthRatio = 0.5;
+		double dialogHeightRatio = 0.5;
+		#if defined(H700)
+		if (isShowingSystemInfo) {
+			dialogWidthRatio = 0.5;
+			dialogHeightRatio = 0.7;
+		}
+		#endif
+		SDL_Rect dialogRect = { windowWidth * (1-dialogWidthRatio)/2, windowHeight * (1-dialogHeightRatio)/2, windowWidth * dialogWidthRatio, windowHeight * dialogHeightRatio };
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // black
+		SDL_RenderFillRect(renderer, &dialogRect);
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
+		SDL_RenderDrawRect(renderer, &dialogRect);
+		// Draw Ok button
+		int buttonWidth = 100;
+		int buttonHeight = 40;
+		int buttonSpacing = 20;
+		int buttonsTotalWidth = buttonWidth * 2 + buttonSpacing;
+		int startX = dialogRect.x + (dialogRect.w - buttonsTotalWidth) / 2;
+		int buttonsY = dialogRect.y + dialogRect.h - 60;
+		SDL_Rect okButtonRect = { startX, buttonsY, buttonWidth, buttonHeight };
+		if (dialogSelectedButton == 0) {
+			SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255); // highlighted gray
+			SDL_RenderFillRect(renderer, &okButtonRect);
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
+			SDL_RenderDrawRect(renderer, &okButtonRect);
+		} else {
+			SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); // gray
+			SDL_RenderFillRect(renderer, &okButtonRect);
+			SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // white border
+			SDL_RenderDrawRect(renderer, &okButtonRect);
+		}
+		SDL_Surface *okSurface = TTF_RenderText_Blended(sFont, "OK", color);
+		SDL_Texture *okTexture = SDL_CreateTextureFromSurface(renderer, okSurface);
+		SDL_Rect okTextRect = { okButtonRect.x + (okButtonRect.w - okSurface->w) / 2,
+					okButtonRect.y + (okButtonRect.h - okSurface->h) / 2,
+					okSurface->w, okSurface->h };
+		SDL_RenderCopy(renderer, okTexture, NULL, &okTextRect);
+		SDL_FreeSurface(okSurface);
+		SDL_DestroyTexture(okTexture);
+		// Draw Cancel button
+		SDL_Rect cancelButtonRect = { startX + buttonWidth + buttonSpacing, buttonsY, buttonWidth, buttonHeight };
+		if (dialogSelectedButton == 1) {
+			SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255); // highlighted gray
+			SDL_RenderFillRect(renderer, &cancelButtonRect);
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
+			SDL_RenderDrawRect(renderer, &cancelButtonRect);
+		} else {
+			SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); // gray
+			SDL_RenderFillRect(renderer, &cancelButtonRect);
+			SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // white border
+			SDL_RenderDrawRect(renderer, &cancelButtonRect);
+		}
+		SDL_Surface *cancelSurface = TTF_RenderText_Blended(sFont, "Cancel", color);
+		SDL_Texture *cancelTexture = SDL_CreateTextureFromSurface(renderer, cancelSurface);
+		SDL_Rect cancelTextRect = { cancelButtonRect.x + (cancelButtonRect.w - cancelSurface->w) / 2,
+						cancelButtonRect.y + (cancelButtonRect.h - cancelSurface->h) / 2,
+						cancelSurface->w, cancelSurface->h };
+		SDL_RenderCopy(renderer, cancelTexture, NULL, &cancelTextRect);
+		SDL_FreeSurface(cancelSurface);
+		SDL_DestroyTexture(cancelTexture);
+
+		// Draw dialogBoxString
+		SDL_Surface *infoSurface = TTF_RenderText_Blended_Wrapped(sFont, dialogBoxString, color, dialogRect.w - 40);
+		SDL_Texture *infoTexture = SDL_CreateTextureFromSurface(renderer, infoSurface);
+		SDL_Rect infoRect = { dialogRect.x + 20, dialogRect.y + 20, infoSurface->w, infoSurface->h };
+		SDL_RenderCopy(renderer, infoTexture, NULL, &infoRect);
+		SDL_FreeSurface(infoSurface);
+		SDL_DestroyTexture(infoTexture);
+
+		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+	}
 
 	// render all
 	SDL_RenderPresent(renderer);
@@ -425,7 +553,7 @@ int main(int argc, char *argv[]) {
 	const Uint32 SCROLL_DELAY = 150; // milliseconds between auto-scroll
 
 	Uint32 lastHwUpdate = 0;
-	const Uint32 HW_UPDATE_INTERVAL = 2000; // 2000 ms = 2 seconds
+	const Uint32 HW_UPDATE_INTERVAL = 5000; // 5000 ms = 5 seconds
 
 	updateHwInfo();
 
@@ -529,37 +657,79 @@ int main(int argc, char *argv[]) {
 				break;
 #endif
 			case SDL_JOYBUTTONDOWN:
-#if defined(DEBUG)
-				printf("Key pressed: %d\n", event.jbutton.button);
-#endif
+
+				SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Joy button pressed: %d\n", event.jbutton.button);
+
 				switch (event.jbutton.button) {
 				case BTN_A:
-					executeShellScript(commands[selectedItem].command);
+					if (showDialogBox) {
+						if (isShowingSystemInfo) {
+							// just close the dialog box
+							showDialogBox = 0;
+							isShowingSystemInfo = 0;
+							break;
+						}
+						if (dialogSelectedButton == 0) {
+							printf("Ok button pressed\n");
+							executeShellScript(commands[selectedItem].command);
+							showDialogBox = 0;
+						} else {
+							printf("Cancel button pressed\n");
+							showDialogBox = 0;
+						}
+						break;
+					}
+					if (commands[selectedItem].needsConfirmation) {
+						showDialogBox = 1;
+						strcpy(dialogBoxString, "Are you sure?");
+						dialogSelectedButton = 0; // reset to Ok button
+						break;
+					} else {
+						executeShellScript(commands[selectedItem].command);
+					}
 					break;
 				case BTN_B:
+					if (showDialogBox) {
+						break;
+					}
 					selectedItem = 0;
 					break;
 				case BTN_UP:
-					// if (selectedItem > 0)
-					// 	selectedItem--;
-					// else
-					// 	selectedItem = numCommands - 1;
+					if (showDialogBox) {
+						break;
+					}
 					buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
 					buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
 					break;
 				case BTN_DOWN:
-					// if (selectedItem < numCommands - 1)
-					// 	selectedItem++;
-					// else
-					// 	selectedItem = 0;
+					if (showDialogBox) {
+						break;
+					}
 					buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
 					buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
 					break;
 				case BTN_LEFT:
+					if (showDialogBox) {
+						dialogSelectedButton = !dialogSelectedButton;
+						break;
+					}
 					selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
 					break;
 				case BTN_RIGHT:
+					if (showDialogBox) {
+						dialogSelectedButton = !dialogSelectedButton;
+						break;
+					}
 					selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+					break;
+				case BTN_SELECT:
+					if (!showDialogBox) {
+						const char *systemInfoString = loadSystemInfo();
+						strcpy(dialogBoxString, systemInfoString);
+						isShowingSystemInfo = 1;
+						dialogSelectedButton = 0; // reset to Ok button
+						showDialogBox = 1;
+					}
 					break;
 				}
 
@@ -593,7 +763,7 @@ int main(int argc, char *argv[]) {
 			lastScrollTime = now;
 		}
 		
-		// Update hardware info every 2 seconds
+		// Update hardware info
 		if (now - lastHwUpdate >= HW_UPDATE_INTERVAL) {
 			updateHwInfo();
 			lastHwUpdate = now;

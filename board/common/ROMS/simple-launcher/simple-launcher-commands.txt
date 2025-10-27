@@ -14,8 +14,8 @@ Wifi
 Quit launcher
 killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >> /dev/tty1
 Sleep
-systemctl suspend
+CONFIRM::systemctl suspend
 Reboot
-echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
+CONFIRM::echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
 Poweroff
-echo "Powering off..." >> /dev/tty1 && systemctl poweroff
+CONFIRM::echo "Powering off..." >> /dev/tty1 && systemctl poweroff
