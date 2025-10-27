@@ -2,8 +2,8 @@
 # Ref about commands: https://raspberrypi.stackexchange.com/questions/78466/how-to-make-an-image-file-from-scratch/78467#78467
 # Check if user is root
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root." 
-   exit 1
+    echo "This script must be run as root." 
+    exit 1
 fi
 
 set -euo pipefail
@@ -23,16 +23,16 @@ echo "mkflashableimg: Make the disk MBR type (msdos)"
 parted ${OUT_IMG} mktable msdos
 
 if [[ "${BOARD}" == "rgb30"* ]]; then
-   # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
-   echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
-   dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
+    # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
+    echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
+    dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
 elif [[ "${BOARD}" == "h700"* ]]; then
-   # mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
-   echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
-   dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+    # mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
+    echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
+    dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
 else
-   echo "u-boot writing not implemented for board ${BOARD}"
-   exit 1
+    echo "u-boot writing not implemented for board ${BOARD}"
+    exit 1
 fi
 
 # mkflashableimg: Making BOOT partitions
@@ -49,6 +49,14 @@ parted -s ${OUT_IMG} set 1 boot on
 sync
 
 
+
+# Unmount and Detach the img if previously mounted
+echo "mkflashableimg: Unmount and Detach the img"
+umount /mnt/BOOT || true
+umount /mnt/rootfs || true
+rm -rf /mnt/BOOT /mnt/rootfs
+losetup --detach-all || true
+
 # Format partitions and mount
 echo "mkflashableimg: Format partitions and mount"
 DEV_LOOP=$(losetup --show --find --partscan ${OUT_IMG})
@@ -64,10 +72,10 @@ cp -r board/${BOARD}/BOOT/* /mnt/BOOT/
 cp output.${BOARD}/images/Image /mnt/BOOT/
 cp output.${BOARD}/images/initramfs /mnt/BOOT/
 if [[ "${BOARD}" == "rgb30"* ]]; then
-   cp -r output.${BOARD}/images/rockchip /mnt/BOOT/dtb
-   cp output.${BOARD}/images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
+    cp -r output.${BOARD}/images/rockchip /mnt/BOOT/dtb
+    cp output.${BOARD}/images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
 elif [[ "${BOARD}" == "h700"* ]]; then
-   cp -r output.${BOARD}/images/allwinner /mnt/BOOT/dtb
+    cp -r output.${BOARD}/images/allwinner /mnt/BOOT/dtb
 fi
 
 # Extract buildroot (output.${BOARD}/images/rootfs.tar) to /mnt/rootfs
