@@ -84,6 +84,8 @@ truncate -s ${ROOTFS_SIZE}M ${P2_IMG}
 mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
 rootfstmp=$(mktemp -d)
 tar -xf output.${BOARD}/images/rootfs.tar -C $rootfstmp
+# Update build info: replace BUILD_ID=buildroot with BUILD_ID=yyyyMMdd-hhmmJST in /etc/os-release
+sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/etc/os-release
 # Create roms.tar.xz to /root to be used in firstboot
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/

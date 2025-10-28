@@ -1,0 +1,13 @@
+[Unit]
+Description=Sway Wayland Compositor
+
+[Service]
+Environment=HOME=/root
+Environment=XDG_RUNTIME_DIR=/run/user/0
+ExecStartPre=/bin/mkdir -p /run/user/0
+ExecStart=/usr/bin/sway
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

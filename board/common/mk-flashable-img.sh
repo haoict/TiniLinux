@@ -81,6 +81,8 @@ fi
 # Extract buildroot (output.${BOARD}/images/rootfs.tar) to /mnt/rootfs
 echo "mkflashableimg: Extract buildroot (output.${BOARD}/images/rootfs.tar) to /mnt/rootfs"
 tar -xf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs --no-same-owner
+# Update build info: replace BUILD_ID=buildroot with BUILD_ID=yyyyMMdd-hhmmJST in /etc/os-release
+sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" /mnt/rootfs/etc/os-release
 # Create roms.tar.xz to /root to be used in firstboot
 mktempdir=$(mktemp -d)
 cp -r board/common/ROMS/ ${mktempdir}/

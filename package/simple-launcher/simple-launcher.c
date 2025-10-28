@@ -307,13 +307,14 @@ char* loadSystemInfo() {
 	get_command_output("free -h | awk '/Mem:/ {print $3 \"/\" $2 \"\"}'", ram, sizeof(ram));
 	get_command_output("df -h / | awk 'NR==2 {print $3 \"/\" $2 \"\"}'", disk, sizeof(disk));
 	get_command_output("nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\\: -f1", ssid, sizeof(ssid));
-	if (ssid[0] == '\0') {
-		strncpy(ssid, "eth0", sizeof(ssid));
+	if (strcmp(ssid, "N/A") == 0) {
 		get_command_output("ip -f inet addr show eth0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
+		if (strcmp(ip, "N/A") != 0) {
+			strncpy(ssid, "eth0", sizeof(ssid));
+		}
 	} else {
 		get_command_output("ip -f inet addr show wlan0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
 	}
-	
 
 	snprintf(systemInfoString, sizeof(systemInfoString),
 		"System Information:\n"
@@ -394,11 +395,15 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
 		SDL_RenderFillRect(renderer, &fullRect);
 
 		// create a simple dialog box with Ok & cancel button
-		double dialogWidthRatio = 0.5;
-		double dialogHeightRatio = 0.5;
-		#if defined(H700)
+		double dialogWidthRatio = 0.4;
+		double dialogHeightRatio = 0.3;
 		if (isShowingSystemInfo) {
 			dialogWidthRatio = 0.5;
+			dialogHeightRatio = 0.5;
+		}
+		#if defined(H700)
+		if (isShowingSystemInfo) {
+			dialogWidthRatio = 0.55;
 			dialogHeightRatio = 0.7;
 		}
 		#endif
