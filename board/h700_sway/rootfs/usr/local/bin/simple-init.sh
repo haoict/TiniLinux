@@ -18,6 +18,7 @@ amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"
 
 /usr/local/bin/freqfunctions.sh powersave
+rfkill block bluetooth
 
 killall python3
 PYTHONUNBUFFERED=1 /usr/bin/python3 /usr/local/bin/simple-keymon.py

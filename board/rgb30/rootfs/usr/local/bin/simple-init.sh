@@ -13,6 +13,7 @@ amixer -c 1 set "Master" "80%"
 
 /usr/local/bin/led-control.sh &
 /usr/local/bin/freqfunctions.sh powersave
+rfkill block bluetooth
 
 killall python3
 export PYTHONUNBUFFERED=1

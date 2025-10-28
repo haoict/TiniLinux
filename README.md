@@ -48,7 +48,14 @@ sudo eject /dev/sdb
 Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
 
 ```bash
+# list all built packages
 cd output.${BOARD}
+make show-targets
+
+# clean some packages that usually change
+make alsa-lib-dirclean alsa-plugins-dirclean alsa-utils-dirclean btop-dirclean dingux-commander-dirclean gptokeyb2-dirclean retroarch-dirclean rocknix-joypad-dirclean sdl12-compat-dirclean sdl2-dirclean simple-launcher-dirclean simple-terminal-dirclean systemd-dirclean tinilinux-initramfs-dirclean wayland-dirclean wayland-protocols-dirclean wpa_supplicant-dirclean
+
+# clean target without rebuild: make clean-target
 rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
 ```
 
