@@ -9,6 +9,7 @@ on:
         options:
           - h700
           - h700_consoleonly
+          - h700_sway
           - rgb30
           - rgb30_consoleonly
           - raspberrypi3_64
@@ -30,44 +31,62 @@ jobs:
     steps:
       - name: Select board
         run: |
-          if [ "${{ inputs.board }}" = "h700" ] || [ "${{ inputs.board }}" = "rgb30" ]; then
-            if [ "$(echo ${{ inputs.runner }} | cut -d'_' -f1)" = "github-hosted" ]; then
-              echo "Full build for board with display is not supported on github-hosted runners due to disk limits (14GB, while the full build is 30GB). Please use a self-hosted runner to build for these boards."
-              exit 1
-            fi
-          fi
+          # if [ "${{ inputs.board }}" = "h700" ] || [ "${{ inputs.board }}" = "rgb30" ]; then
+          #   if [ "$(echo ${{ inputs.runner }} | cut -d'_' -f1)" = "github-hosted" ]; then
+          #     echo "Full build for board with display is not supported on github-hosted runners due to disk limits (14GB, while the full build is 30GB). Please use a self-hosted runner to build for these boards."
+          #     exit 1
+          #   fi
+          # fi
           # cut _consoleonly from input
-          echo OUTPUT_DIR=$(echo ${{ inputs.board }} | sed 's/_consoleonly//') >> $GITHUB_ENV
+          # echo OUTPUT_DIR=$(echo ${{ inputs.board }} | sed 's/_consoleonly//') >> $GITHUB_ENV
           echo BOARD=${{ inputs.board }} >> $GITHUB_ENV
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Install deps
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' }}
-        run: sudo apt update && sudo apt install -y build-essential bc mtools && sudo apt clean
+        run: |
+          # disable mandb to save build time
+          sudo mv /usr/bin/mandb /usr/bin/mandb-OFF
+          sudo cp -p /bin/true /usr/bin/mandb 
+          sudo rm -r /var/cache/man
+          # install packages
+          sudo apt update && sudo apt install -y build-essential mtools && sudo apt clean
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+        # run: |
+        #   df -h
+        #   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        #   sudo docker image prune --all --force
+        #   sudo docker builder prune -a
+        #   df -h
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Build
         run: |
           set -x
-          make O=output.${OUTPUT_DIR} ${BOARD}_defconfig
+          make O=output.${BOARD} ${BOARD}_defconfig
           if [ "${{ inputs.runner }}" = "self-hosted_debian12-sachchat2" ]; then
-            time make O=output.${OUTPUT_DIR} -j1
+            time make O=output.${BOARD} -j1
           else
-            time make O=output.${OUTPUT_DIR} -j$(nproc)
+            time make O=output.${BOARD} -j$(nproc)
           fi
       - name: Make flashable image
         run: |
           set -x
           if [ "${{ inputs.board }}" = "raspberrypi3_64" ]; then
-            mv output.${OUTPUT_DIR}/images/sdcard.img output.${OUTPUT_DIR}/images/tinilinux-${OUTPUT_DIR}.img
+            mv output.${BOARD}/images/sdcard.img output.${BOARD}/images/tinilinux-${BOARD}.img
           elif sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo BOARD=${OUTPUT_DIR} board/common/mk-flashable-img.sh
+            sudo BOARD=${BOARD} board/common/mk-flashable-img.sh
           else
             echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            BOARD=${OUTPUT_DIR} board/common/mk-flashable-img-rootless.sh
+            BOARD=${BOARD} board/common/mk-flashable-img-rootless.sh
           fi
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:
           name: tinilinux-${{ env.BOARD }}.img
-          path: output.${{ env.OUTPUT_DIR }}/images/tinilinux-${{ env.OUTPUT_DIR }}.img
+          path: output.${{ env.BOARD }}/images/tinilinux-${{ env.BOARD }}.img
           retention-days: 2
