@@ -44,12 +44,6 @@ jobs:
       - name: Install deps
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' }}
         run: sudo apt update && sudo apt install -y build-essential bc mtools && sudo apt clean
-      - name: Fix absolute paths in configs
-        run: |
-          set -x
-          sed -i -e "s|/home/haoict/tinilinux-buildroot|$(pwd)|" board/h700/linux.conf
-          cat board/h700/linux.conf | grep CONFIG_EXTRA_FIRMWARE_DIR
-          ls -la $(pwd)/board/h700/external-firmware
       - name: Build
         run: |
           set -x
