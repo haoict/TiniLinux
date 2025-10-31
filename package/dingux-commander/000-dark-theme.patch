@@ -24,10 +24,10 @@ index 231e052..05de582 100755
 +#define COLOR_TEXT_TITLE      255, 255, 255    // White
 +#define COLOR_TEXT_DIR        97, 175, 239     // Soft blue
 +#define COLOR_TEXT_SELECTED   224, 108, 117    // Soft red
-+#define COLOR_CURSOR_1   80, 80, 80      // Charcoal gray
-+#define COLOR_CURSOR_2   100, 100, 100   // Slightly lighter gray
-+#define COLOR_BG_1            30, 34, 40       // Main dark background
-+#define COLOR_BG_2            36, 40, 48       // Slightly lighter background
++#define COLOR_CURSOR_1        100, 104, 108    // Active panel item highlight
++#define COLOR_CURSOR_2        40, 44, 48       // Inactive panel item
++#define COLOR_BG_1            28, 32, 36       // Main dark background
++#define COLOR_BG_2            32, 36, 40       // Slightly darker background
 +#define COLOR_BORDER          56, 60, 72       // Subtle borders
 +#define COLOR_BORDER_ERROR    191, 97, 106     // Muted red
  

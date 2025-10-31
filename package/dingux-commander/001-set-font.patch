@@ -6,8 +6,8 @@ index 1a36617..4ad4636 100644
  option(WITH_SYSTEM_SDL_TTF "Use system SDL_ttf library" OFF)
  
  set(RES_DIR \"res/\" CACHE STRING "Resources directory")
-+set(FONTS "{\"SourceCodePro-Semibold.ttf\",10},{\"FreeSans.ttf\",10},{\"DroidSansFallback.ttf\",9}" CACHE STRING "Default font")
-+set(LOW_DPI_FONTS "{\"Fiery_Turk.ttf\",8},{\"SourceCodePro-Semibold.ttf\",10},{\"FreeSans.ttf\",10},{\"DroidSansFallback.ttf\",9}" CACHE STRING "Default low DPI font")
++set(FONTS "{\"SourceCodePro-Semibold.ttf\",10},{\"Ubuntu.ttf\",11},{\"FreeSans.ttf\",9}" CACHE STRING "Default font")
++set(LOW_DPI_FONTS "{\"Fiery_Turk.ttf\",8},{\"SourceCodePro-Semibold.ttf\",11},{\"Ubuntu.ttf\",10},{\"FreeSans.ttf\",9}" CACHE STRING "Default low DPI font")
  set(FILE_SYSTEM \"/dev/mmcblk1p1\" CACHE STRING "Default filesystem (for Disk info)")
  set(PATH_DEFAULT "" CACHE STRING "Default path for the left pane (default: getenv(\"PWD\")")
  set(PATH_DEFAULT_RIGHT "" CACHE STRING "Default path for the right pane (default: getenv(\"HOME\")")

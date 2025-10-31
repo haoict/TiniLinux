@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-DINGUX_COMMANDER_VERSION = 9aa39d7bcb5d0f6faadaf027a1539d14177a3c7c
-DINGUX_COMMANDER_SITE = https://github.com/od-contrib/commander.git
+DINGUX_COMMANDER_VERSION = 20251101
+DINGUX_COMMANDER_SITE = https://github.com/haoict/dingux-commander.git
 DINGUX_COMMANDER_SITE_METHOD = git
 DINGUX_COMMANDER_DEPENDENCIES = host-pkgconf sdl2 sdl2_ttf sdl2_image
 DINGUX_COMMANDER_INSTALL_TARGET = YES
@@ -20,7 +20,7 @@ define DINGUX_COMMANDER_INSTALL_TARGET_CMDS
     mkdir -p ${TARGET_DIR}/usr/share/commander/res
     $(INSTALL) -D -m 0755 $(@D)/commander  $(TARGET_DIR)/usr/local/bin
     #$(INSTALL) -D -m 0644 $(@D)/res/* $(TARGET_DIR)/usr/share/commander/res
-    $(INSTALL) -D -m 0644 $(TOPDIR)/package/dingux-commander/res/* $(TARGET_DIR)/usr/share/commander/res
+    cp -r $(TOPDIR)/package/dingux-commander/res $(TARGET_DIR)/usr/share/commander/
 endef
 
 $(eval $(cmake-package))
