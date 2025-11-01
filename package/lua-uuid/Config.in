@@ -1,6 +1,0 @@
-config BR2_PACKAGE_LUA_UUID
-	bool "lua-uuid"
-	help
-	  Generates uuids in pure Lua.
-
-	  https://github.com/Tieske/uuid

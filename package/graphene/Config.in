@@ -1,6 +1,0 @@
-config BR2_PACKAGE_GRAPHENE
-	bool "graphene"
-	help
-	  A thin layer of types for graphic libraries.
-
-	  https://ebassi.github.io/graphene/

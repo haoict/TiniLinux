@@ -1,3 +1,0 @@
-This is some context...
-Hello World!
-...and this is some more context.

@@ -1,6 +1,0 @@
-config BR2_PACKAGE_PYTHON_PYPIKA_TORTOISE
-	bool "python-pypika-tortoise"
-	help
-	  Forked from pypika and streamline just for tortoise-orm.
-
-	  https://github.com/tortoise/pypika-tortoise

@@ -1,6 +1,0 @@
-config BR2_PACKAGE_HAS_LIBEGL
-	bool
-
-config BR2_PACKAGE_PROVIDES_LIBEGL
-	string
-	depends on BR2_PACKAGE_HAS_LIBEGL

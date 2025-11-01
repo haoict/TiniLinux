@@ -1,6 +1,0 @@
-config BR2_PACKAGE_PYTHON_TOMLI_W
-	bool "python-tomli-w"
-	help
-	  A lil' TOML writer.
-
-	  https://github.com/hukkin/tomli-w

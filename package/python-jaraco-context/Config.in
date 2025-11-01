@@ -1,6 +1,0 @@
-config BR2_PACKAGE_PYTHON_JARACO_CONTEXT
-	bool "python-jaraco-context"
-	help
-	  Context managers by jaraco.
-
-	  https://github.com/jaraco/jaraco.context

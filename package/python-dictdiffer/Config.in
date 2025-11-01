@@ -1,7 +1,0 @@
-config BR2_PACKAGE_PYTHON_DICTDIFFER
-	bool "python-dictdiffer"
-	help
-	  Dictdiffer is a library that helps you to diff and patch
-	  dictionaries.
-
-	  https://github.com/inveniosoftware/dictdiffer

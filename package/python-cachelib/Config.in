@@ -1,6 +1,0 @@
-config BR2_PACKAGE_PYTHON_CACHELIB
-	bool "python-cachelib"
-	help
-	  A collection of cache libraries in the same API interface.
-
-	  https://github.com/pallets-eco/cachelib/

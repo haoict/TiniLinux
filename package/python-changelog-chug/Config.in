@@ -1,6 +1,0 @@
-config BR2_PACKAGE_PYTHON_CHANGELOG_CHUG
-	bool "python-changelog-chug"
-	help
-	  changelog-chug is a parser for project Change Log documents.
-
-	  https://pypi.org/project/changelog-chug
