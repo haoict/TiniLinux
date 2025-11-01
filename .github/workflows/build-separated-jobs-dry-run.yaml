@@ -29,119 +29,76 @@ jobs:
   build:
     runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
     steps:
-      - name: Select board
-        run: |
-          # if [ "${{ inputs.board }}" = "h700" ] || [ "${{ inputs.board }}" = "rgb30" ]; then
-          #   if [ "$(echo ${{ inputs.runner }} | cut -d'_' -f1)" = "github-hosted" ]; then
-          #     echo "Full build for board with display is not supported on github-hosted runners due to disk limits (14GB, while the full build is 30GB). Please use a self-hosted runner to build for these boards."
-          #     exit 1
-          #   fi
-          # fi
-          # cut _consoleonly from input
-          # echo OUTPUT_DIR=$(echo ${{ inputs.board }} | sed 's/_consoleonly//') >> $GITHUB_ENV
-          echo BOARD=${{ inputs.board }} >> $GITHUB_ENV
-      - name: Install deps
-        if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' }}
-        run: |
-          # disable mandb to save build time
-          sudo mv /usr/bin/mandb /usr/bin/mandb-OFF
-          sudo cp -p /bin/true /usr/bin/mandb 
-          sudo rm -r /var/cache/man
-          # install packages
-          sudo apt update && sudo apt install -y build-essential mtools && sudo apt clean
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-        # run: |
-        #   df -h
-        #   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-        #   sudo docker image prune --all --force
-        #   sudo docker builder prune -a
-        #   df -h
-      - name: Checkout
+      - name: Checkout main repo
         uses: actions/checkout@v4
+        with:
+          path: TiniLinux
+      - name: Checkout buildroot repo
+        uses: actions/checkout@v4
+        with:
+          repository: buildroot/buildroot
+          ref: 2025.08.1
+          path: buildroot
       - name: Build
         run: |
           set -x
-          make O=output.${BOARD} ${BOARD}_defconfig
-          # if [ "${{ inputs.runner }}" = "self-hosted_debian12-sachchat2" ]; then
-          #   time make O=output.${BOARD} -j1
-          # else
-          #   time make O=output.${BOARD} -j$(nproc)
-          # fi
-          mkdir -p output.${BOARD}/images/allwinner
-          mkdir -p output.${BOARD}/images/rockchip
-          mkdir -p output.${BOARD}/images/rk3566-dtbo/
-          touch output.${BOARD}/images/Image
-          touch output.${BOARD}/images/initramfs
-          touch output.${BOARD}/images/allwinner/h700.dtb
-          touch output.${BOARD}/images/u-boot-rockchip.bin
-          touch output.${BOARD}/images/rockchip/rk3566.dtb
-          touch output.${BOARD}/images/rk3566-dtbo/rk3566.dtbo
-          touch output.${BOARD}/images/u-boot-sunxi-with-spl.bin
-          mkdir -p output.${BOARD}/target/root
-          mkdir -p output.${BOARD}/target/etc
-          touch output.${BOARD}/target/root/init.sh
-          echo "BUILD_ID=buildroot" > output.${BOARD}/target/etc/os-release
-          tar -cvf output.${BOARD}/images/rootfs.tar -C output.${BOARD}/target/ .
-          touch output.${BOARD}/images/sdcard.img
+          ls -la . && cd buildroot
+          make O=../TiniLinux/output.${{ inputs.board }} BR2_EXTERNAL=../TiniLinux ${{ inputs.board }}_defconfig
+          cd ../TiniLinux/output.${{ inputs.board }}
+
+          # Simulate build output files
+          mkdir -p images/allwinner
+          mkdir -p images/rockchip
+          mkdir -p images/rk3566-dtbo/
+          touch images/Image
+          touch images/initramfs
+          touch images/allwinner/h700.dtb
+          touch images/u-boot-rockchip.bin
+          touch images/rockchip/rk3566.dtb
+          touch images/rk3566-dtbo/rk3566.dtbo
+          touch images/u-boot-sunxi-with-spl.bin
+          mkdir -p target/root
+          mkdir -p target/etc
+          touch target/root/init.sh
+          echo "BUILD_ID=buildroot" > target/etc/os-release
+          tar -cvf images/rootfs.tar -C target/ .
+          touch images/sdcard.img
+
+          cd ..
       - name: Upload result for next job
         uses: actions/upload-artifact@v4
         with:
           name: images_dir
           path: |
-            output.${{ env.BOARD }}/images/
+            output.${{ inputs.board }}/images/
           retention-days: 2
 
   mkflashableimg:
     needs: build
     runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
     steps:
-      - name: Select board
-        run: |
-          # if [ "${{ inputs.board }}" = "h700" ] || [ "${{ inputs.board }}" = "rgb30" ]; then
-          #   if [ "$(echo ${{ inputs.runner }} | cut -d'_' -f1)" = "github-hosted" ]; then
-          #     echo "Full build for board with display is not supported on github-hosted runners due to disk limits (14GB, while the full build is 30GB). Please use a self-hosted runner to build for these boards."
-          #     exit 1
-          #   fi
-          # fi
-          # cut _consoleonly from input
-          # echo OUTPUT_DIR=$(echo ${{ inputs.board }} | sed 's/_consoleonly//') >> $GITHUB_ENV
-          echo BOARD=${{ inputs.board }} >> $GITHUB_ENV
-      - name: Install deps
-        if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' }}
-        run: |
-          # disable mandb to save build time
-          sudo mv /usr/bin/mandb /usr/bin/mandb-OFF
-          sudo cp -p /bin/true /usr/bin/mandb 
-          sudo rm -r /var/cache/man
-          # install packages
-          sudo apt update && sudo apt install -y build-essential mtools && sudo apt clean
       - name: Checkout
         uses: actions/checkout@v4
       - name: Download images_dir result from build job
         uses: actions/download-artifact@v5
         with:
           name: images_dir
-          path: output.${{ env.BOARD }}/images/
+          path: output.${{ inputs.board }}/images/
       - name: Make flashable image
         run: |
           set -x
           if [ "${{ inputs.board }}" = "raspberrypi3_64" ]; then
-            mv output.${BOARD}/images/sdcard.img output.${BOARD}/images/tinilinux-${BOARD}.img
+            mv output.${{ inputs.board }}/images/sdcard.img output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           elif sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo BOARD=${BOARD} board/common/mk-flashable-img.sh
+            sudo BOARD=${{ inputs.board }} board/common/mk-flashable-img.sh
           else
             echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            BOARD=${BOARD} board/common/mk-flashable-img-rootless.sh
+            BOARD=${{ inputs.board }} board/common/mk-flashable-img-rootless.sh
           fi
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:
-          name: tinilinux-${{ env.BOARD }}.img
-          path: output.${{ env.BOARD }}/images/tinilinux-${{ env.BOARD }}.img
+          name: tinilinux-${{ inputs.board }}.img
+          path: output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2

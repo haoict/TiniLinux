@@ -1,25 +1,39 @@
-[![Build](https://github.com/haoict/tinilinux-buildroot/actions/workflows/build.yaml/badge.svg?branch=master)](https://github.com/haoict/tinilinux-buildroot/actions/workflows/build.yaml)
+[![Build](https://github.com/haoict/TiniLinux/actions/workflows/build.yaml/badge.svg?branch=master)](https://github.com/haoict/TiniLinux/actions/workflows/build.yaml)
 
 # Tinilinux
-## Build
+"Tini" Linux distro for H700, RK3326 & RK3566 SOC devices
+
+# Build
+Clone TiniLinux and buildroot repo and setup environments
+```bash
+git clone https://github.com/haoict/TiniLinux.git
+git clone --depth=1 -b 2025.08.1 https://github.com/buildroot/buildroot.git
+
+# Install required packages
+sudo apt install build-essential libncurses-dev parted dosfstools mtools swig
+
+cd buildroot
+make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig # boardname can be: rgb30, h700, rgb30_defconfig, h700_defconfig. Check configs dir for more...
+cd ..
+```
 
 To build and use the buildroot stuff, do the following:
 ```bash
-# Install required packages
-sudo apt install build-essential libncurses-dev parted dosfstools mtools swig
 # Build
-export BOARD=<boardname> # e.g. rgb30, h700
-make O=output.${BOARD} ${BOARD}_defconfig
-make O=output.${BOARD} menuconfig # you can also cd to output.${BOARD} and run make menuconfig
-make O=output.${BOARD} -j$(nproc) # you can also cd to output.${BOARD} and run make -j$(nproc)
+cd output.<boardname>
+make menuconfig # adjust anything if you want, other wise just exit
+make -j$(nproc)
 # The kernel, bootloader, root filesystem, etc. are in output images directory
-# Make flashable img file
-sudo board/common/mk-flashable-img.sh
-# or rootless version (but slower)
-board/common/mk-flashable-img-rootless.sh
 ```
 
-## Install
+# Make flashable img file
+```bash
+sudo BOARD=<boardname> board/common/mk-flashable-img.sh
+# or rootless version (but slower)
+BOARD=<boardname> board/common/mk-flashable-img-rootless.sh
+```
+
+# Install
 ## Flash to sdcard
 There are many tools to flash img file to SDCard such as Rufus, Balena Etcher.
 But if you prefer command line:
@@ -43,8 +57,8 @@ sudo umount /dev/sdb
 sudo eject /dev/sdb
 ```
 
-## Notes
-### Clean target build without rebuild all binaries and libraries
+# Notes
+## Clean target build without rebuild all binaries and libraries
 Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
 
 ```bash
@@ -59,7 +73,7 @@ make alsa-lib-dirclean alsa-plugins-dirclean alsa-utils-dirclean btop-dirclean d
 rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
 ```
 
-### Unpack/Repack uInitrd
+## Unpack/Repack uInitrd
 Unpack
 ```bash
 mkdir uInitrd-root
@@ -72,7 +86,7 @@ Repack
 find . | cpio -o -H newc | gzip > ../uInitrd-modified
 ```
 
-### Run Docker
+## Run Docker
 ```bash
 wget https://download.docker.com/linux/static/stable/aarch64/docker-26.1.4.tgz
 tar -xzvf docker-26.1.4.tgz
