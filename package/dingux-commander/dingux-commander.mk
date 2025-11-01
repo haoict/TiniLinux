@@ -20,7 +20,7 @@ define DINGUX_COMMANDER_INSTALL_TARGET_CMDS
     mkdir -p ${TARGET_DIR}/usr/share/commander/res
     $(INSTALL) -D -m 0755 $(@D)/commander  $(TARGET_DIR)/usr/local/bin
     #$(INSTALL) -D -m 0644 $(@D)/res/* $(TARGET_DIR)/usr/share/commander/res
-    cp -r $(TOPDIR)/package/dingux-commander/res $(TARGET_DIR)/usr/share/commander/
+    cp -r $(BR2_EXTERNAL_TiniLinux_PATH)/package/dingux-commander/res $(TARGET_DIR)/usr/share/commander/
 endef
 
 $(eval $(cmake-package))

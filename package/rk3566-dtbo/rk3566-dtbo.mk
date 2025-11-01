@@ -3,7 +3,7 @@
 ################################################################################
 
 RK3566_DTBO_VERSION = 1.0
-RK3566_DTBO_SITE = package/rk3566-dtbo
+RK3566_DTBO_SITE = $(BR2_EXTERNAL_TiniLinux_PATH)/package/rk3566-dtbo
 RK3566_DTBO_SITE_METHOD = local
 
 define RK3566_DTBO_BUILD_CMDS

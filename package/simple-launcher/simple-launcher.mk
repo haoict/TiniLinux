@@ -5,7 +5,7 @@
 ################################################################################
 
 SIMPLE_LAUNCHER_VERSION = 1.0
-SIMPLE_LAUNCHER_SITE = package/simple-launcher
+SIMPLE_LAUNCHER_SITE = $(BR2_EXTERNAL_TiniLinux_PATH)/package/simple-launcher
 SIMPLE_LAUNCHER_SITE_METHOD = local
 SIMPLE_LAUNCHER_DEPENDENCIES = sdl2 sdl2_ttf
 

@@ -5,7 +5,7 @@
 ################################################################################
 
 SIMPLE_TERMINAL_VERSION = 1.0
-SIMPLE_TERMINAL_SITE = package/simple-terminal
+SIMPLE_TERMINAL_SITE = $(BR2_EXTERNAL_TiniLinux_PATH)/package/simple-terminal
 SIMPLE_TERMINAL_SITE_METHOD = local
 SIMPLE_TERMINAL_DEPENDENCIES = sdl12-compat
 
