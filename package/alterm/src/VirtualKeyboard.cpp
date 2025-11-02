@@ -485,8 +485,19 @@ bool VirtualKeyboard::handle_event(SDL_Event* event) {
                     // Toggle modifier keys
                     toggled[selected_j][selected_i] = !toggled[selected_j][selected_i];
                 } else {
-                    // Handle regular keys
-                    if (target_key >= 32 && target_key < 127) {
+                    // Check if Ctrl is pressed for control characters
+                    bool ctrl_pressed = toggled[5][0] || toggled[5][6]; // Left or right Ctrl
+                    
+                    if (target_key == SDLK_BACKSPACE) {
+                        // Always send backspace as key event, not text input
+                        simulate_key_event(target_key, true);
+                        simulate_key_event(target_key, false);
+                    } else if (ctrl_pressed && target_key >= SDLK_a && target_key <= SDLK_z) {
+                        // Send control character for Ctrl+letter combinations
+                        char ctrl_char = target_key - SDLK_a + 1; // Convert to control character (Ctrl+A = 1, Ctrl+C = 3, etc.)
+                        char text[2] = {ctrl_char, '\0'};
+                        simulate_text_input(text);
+                    } else if (target_key >= 32 && target_key < 127) {
                         // For printable characters, send as text input
                         char text[2] = {(char)target_key, '\0'};
                         simulate_text_input(text);

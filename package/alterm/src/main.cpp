@@ -117,45 +117,32 @@ int main(int argc, char* argv[]){
 
             else if(event.type == SDL_TEXTINPUT){
                 // Accept text input from virtual keyboard or when keyboard is not active
-                input_buffer += event.text.text;
-                dirty = true;
+                char* text = event.text.text;
+                
+                // Check if this is a control character (ASCII 1-31)
+                if (text[0] >= 1 && text[0] <= 31 && text[1] == '\0') {
+                    // This is a control character from virtual keyboard, send directly to PTY
+                    write(pty_fd, text, 1);
+                    if (text[0] == 3) { // Ctrl+C
+                        input_buffer.clear();  // Clear input buffer for Ctrl+C
+                    }
+                    dirty = true;
+                } else {
+                    // Regular text input
+                    input_buffer += text;
+                    dirty = true;
+                }
                 // Force immediate render to prevent lag
             }
             
-            else if(event.type == SDL_KEYDOWN && !vkb->is_active()){
+            else if(event.type == SDL_KEYDOWN){
+                // Handle backspace from both physical keyboard and virtual keyboard
                 if(event.key.keysym.sym == SDLK_BACKSPACE && !input_buffer.empty()){
                     input_buffer.pop_back();
                     dirty = true;
                 }
-            
-
-                else if(event.key.keysym.sym == SDLK_UP){
-                    if(!CommandHistory.empty()){
-                        if(CommandHistoryIndex == -1)
-                            CommandHistoryIndex = CommandHistory.size() - 1;
-                        else if(CommandHistoryIndex > 0)
-                            CommandHistoryIndex--;
-
-                        input_buffer = CommandHistory[CommandHistoryIndex];
-                        dirty = true;
-                    }
-                }
-
-                else if(event.key.keysym.sym == SDLK_DOWN){
-                    if(!CommandHistory.empty() && CommandHistoryIndex != -1){
-                        if(CommandHistoryIndex < static_cast<int>(CommandHistory.size() -1))
-                            CommandHistoryIndex++;
-                        else 
-                            CommandHistoryIndex = -1;
-
-                        if(CommandHistoryIndex != -1 )
-                            input_buffer = CommandHistory[CommandHistoryIndex];
-                        else 
-                            input_buffer.clear();
-                        dirty = true;
-                    }
-                }
-
+                
+                // Handle Return key (works for both physical and virtual keyboard)
                 else if(event.key.keysym.sym == SDLK_RETURN){
                     std::string command = input_buffer;
                     std::string to_send = command + "\n";
@@ -232,11 +219,54 @@ int main(int argc, char* argv[]){
                 input_buffer.clear();
                 dirty = true;
             }
+            
+                // Handle other keys only when virtual keyboard is not active
+                else if(!vkb->is_active()) {
+                    // Handle Ctrl+C (SIGINT)
+                    if(event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)){
+                        char ctrl_c = '\x03';  // ASCII 3 - ETX (End of Text) - SIGINT
+                        write(pty_fd, &ctrl_c, 1);
+                        input_buffer.clear();  // Clear input buffer
+                        dirty = true;
+                    }
+                    
+                    // Handle Ctrl+D (EOF)
+                    else if(event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)){
+                        char ctrl_d = '\x04';  // ASCII 4 - EOT (End of Transmission) - EOF
+                        write(pty_fd, &ctrl_d, 1);
+                        // Don't clear input buffer for Ctrl+D as it might be used to complete commands
+                    }
 
+                    else if(event.key.keysym.sym == SDLK_UP){
+                        if(!CommandHistory.empty()){
+                            if(CommandHistoryIndex == -1)
+                                CommandHistoryIndex = CommandHistory.size() - 1;
+                            else if(CommandHistoryIndex > 0)
+                                CommandHistoryIndex--;
 
-        }
+                            input_buffer = CommandHistory[CommandHistoryIndex];
+                            dirty = true;
+                        }
+                    }
 
-        else if(event.type == SDL_MOUSEWHEEL){
+                    else if(event.key.keysym.sym == SDLK_DOWN){
+                        if(!CommandHistory.empty() && CommandHistoryIndex != -1){
+                            if(CommandHistoryIndex < static_cast<int>(CommandHistory.size() -1))
+                                CommandHistoryIndex++;
+                            else 
+                                CommandHistoryIndex = -1;
+
+                            if(CommandHistoryIndex != -1 )
+                                input_buffer = CommandHistory[CommandHistoryIndex];
+                            else 
+                                input_buffer.clear();
+                            dirty = true;
+                        }
+                    }
+                }
+            }
+
+            else if(event.type == SDL_MOUSEWHEEL){
                 if(event.wheel.y > 0){
                     //Scroll up
                     term->ScrollOffSet = std::max(0, term->ScrollOffSet + 1);
@@ -249,14 +279,14 @@ int main(int argc, char* argv[]){
                 }
             }
 
-        else if(event.type == SDL_WINDOWEVENT){
-            if(event.window.event == SDL_WINDOWEVENT_RESIZED){
-                // Recreate render textures for new window size
-                term->create_render_textures();
-                dirty = true;
-                keyboard_dirty = true;  // Force keyboard redraw too
+            else if(event.type == SDL_WINDOWEVENT){
+                if(event.window.event == SDL_WINDOWEVENT_RESIZED){
+                    // Recreate render textures for new window size
+                    term->create_render_textures();
+                    dirty = true;
+                    keyboard_dirty = true;  // Force keyboard redraw too
+                }
             }
-        }
 
     } 
         
