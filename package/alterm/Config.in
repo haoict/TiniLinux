@@ -1,0 +1,4 @@
+config BR2_PACKAGE_ALTERM
+  bool "alterm"
+  select BR2_PACKAGE_SDL2
+  select BR2_TOOLCHAIN_BUILDROOT_CXX

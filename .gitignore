@@ -16,3 +16,4 @@
 **/*.cue
 **/*.chd
 **/roms.tar.xz
+**/.vscode

@@ -1,0 +1,11 @@
+auto_scroll=true
+bg_color_b=0
+bg_color_g=0
+bg_color_r=0
+bg_opacity=100
+font_color_b=255
+font_color_g=255
+font_color_r=255
+font_family=assets/Fonts/JetBrainsMono-ExtraLight.ttf
+font_size=20
+max_history=100
