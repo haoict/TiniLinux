@@ -3374,52 +3374,86 @@ void run(void)
 #endif
 
 	SDL_Event ev;
-
-	while (SDL_WaitEvent(&ev))
-	{
-		if (ev.type == SDL_QUIT)
-			break;
-
-		if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)
+	int running = 1;
+	const Uint32 SCROLL_DELAY = 150; // milliseconds between auto-scroll
+	int buttonUpHeld = 0, buttonDownHeld = 0, buttonLeftHeld = 0, buttonRightHeld = 0;
+	Uint32 lastScrollTime = 0;
+	while (running){
+		while (SDL_PollEvent(&ev))
+		// while (SDL_WaitEvent(&ev))
 		{
-			int keyboard_event = handle_keyboard_event(&ev);
-			if (keyboard_event == -1)
-			{
-				// SDL_QUIT
+			if (ev.type == SDL_QUIT) {
+				running = 0;
 				break;
 			}
-			else if (keyboard_event == 1)
+
+			if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)
 			{
-#ifdef R36S_SDL12COMPAT
-				// FIXME: remove these 2 draw(). this is a hack to prevent the keyboard from being stuck
-				xflip();
-				xflip();
-#endif
-				/*SDL_Event expose_event = {
-					.type = SDL_VIDEOEXPOSE
-				};
-				SDL_PushEvent(&expose_event);*/
+				int keyboard_event = handle_keyboard_event(&ev);
+				if (keyboard_event == -1)
+				{
+					// SDL_QUIT
+					running = 0;
+					break;
+				}
+				else if (keyboard_event == 1)
+				{
+					#ifdef R36S_SDL12COMPAT
+					// FIXME: remove these 2 draw(). this is a hack to prevent the keyboard from being stuck
+					xflip();
+					xflip();
+					#endif
+					/*SDL_Event expose_event = {
+						.type = SDL_VIDEOEXPOSE
+					};
+					SDL_PushEvent(&expose_event);*/
+				}
+				else
+				{
+					if (handler[ev.type])
+						(handler[ev.type])(&ev);
+				}
+
+				// handle narrow keys held
+				int held = (ev.type == SDL_KEYDOWN);
+				switch (ev.key.keysym.sym) {
+					case KEY_LEFT:  buttonLeftHeld  = held; break;
+					case KEY_RIGHT: buttonRightHeld = held; break;
+					case KEY_UP:    buttonUpHeld    = held; break;
+					case KEY_DOWN:  buttonDownHeld  = held; break;
+					default: break;
+				}
 			}
 			else
 			{
 				if (handler[ev.type])
 					(handler[ev.type])(&ev);
 			}
-		}
-		else
-		{
-			if (handler[ev.type])
-				(handler[ev.type])(&ev);
+
+			switch (ev.type)
+			{
+			case SDL_VIDEORESIZE:
+			case SDL_VIDEOEXPOSE:
+			case SDL_USEREVENT:
+				draw();
+			}
 		}
 
-		switch (ev.type)
-		{
-		case SDL_VIDEORESIZE:
-		case SDL_VIDEOEXPOSE:
-		case SDL_USEREVENT:
-			draw();
+		Uint32 now = SDL_GetTicks();
+
+		int key = 0;
+		if      (buttonDownHeld)  key = KEY_DOWN;
+		else if (buttonUpHeld)    key = KEY_UP;
+		else if (buttonLeftHeld)  key = KEY_LEFT;
+		else if (buttonRightHeld) key = KEY_RIGHT;
+
+		if (key && now - lastScrollTime > SCROLL_DELAY) {
+			handle_narrow_keys_held(key);
+			lastScrollTime = now;
 		}
-		xflip();
+		
+		xflip(); // redraw the screen
+		SDL_Delay(33); // ~30 FPS
 	}
 
 	sdlshutdown();
