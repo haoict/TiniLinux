@@ -17,15 +17,10 @@
 #    pip install urwid-2.1.2-py3-none-any.whl
 
 
-# chvt 6
-# sudo chmod 666 /dev/tty6
-# printf "\033c" >/dev/tty6
-
 # Check /root/urwid-2.1.2-py3-none-any.whl exists, then install it
 if [ -f /root/urwid-2.1.2-py3-none-any.whl  ]; then
   echo "Installing the python3 urwid module needed for this.  Please wait..." 2>&1 >/dev/tty
   pip install /root/urwid-2.1.2-py3-none-any.whl 2>&1 >/dev/tty
-  # if installation successful, remove the .whl file to save space
   if [ $? -eq 0 ]; then
     mv /root/urwid-2.1.2-py3-none-any.whl /root/urwid-2.1.2-py3-none-any.whl.installed
   else
@@ -36,13 +31,13 @@ fi
 
 export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
-export SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt"
-sudo chmod 666 /dev/uinput
-ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
-/usr/local/bin/gptokeyb2 -c "/root/gptokeyb2.ini" >/dev/null 2>&1 &
+ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
+SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/root/gptokeyb2.ini" >/dev/null 2>&1 &
 
-RESULTS="$(python3 /usr/local/bin/osk.py "$1" 2>&1 >/dev/tty | tail -n 1)"
-ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
+RESULTS="$(python3 /usr/local/bin/osk.py "$1" 2>&1 >/dev/tty)"
+EXIT_CODE=$?
+RESULTS="$(echo $RESULTS | tail -n 1)"
+ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
 
 echo "$RESULTS"
-printf "\033c" > /dev/tty
+exit $EXIT_CODE

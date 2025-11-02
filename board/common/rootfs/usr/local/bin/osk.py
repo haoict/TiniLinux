@@ -56,7 +56,8 @@ from urwid.command_map import ACTIVATE
 from urwid.widget import FLOW
 
 
-ASCII_BLOCK = ' '  # U+2588 Full Block
+# ASCII_BLOCK = '█'  # U+2588 Full Block
+ASCII_BLOCK = ''
 
 # What we consider a small screen
 SMALL_SCREEN_COLS = 43

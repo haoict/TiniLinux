@@ -26,7 +26,6 @@
 
 export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
-export SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt"
 
 dialog --clear
 
@@ -83,17 +82,21 @@ connectExisting() {
 }
 
 makeConnection() {
-  ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9
-  PASS=`/usr/local/bin/osk.sh "Enter Wi-Fi password for ${1:0:15}" | tail -n 1`
-  rm -f /tmp/wifi-password.txt
-  /usr/local/bin/gptokeyb2 -1 "Wifi.sh" -c "/root/gptokeyb2.ini" >/dev/null &
+  ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
+  PASS=$(/usr/local/bin/osk.sh "Enter Wi-Fi password for ${1:0:15}")
+  EXIT_CODE=$?
+  SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/root/gptokeyb2.ini" >/dev/null 2>&1 &
+  if [[ $EXIT_CODE != 0 ]]; then
+    MainMenu
+  fi
 
+  PASS="$(echo $PASS | tail -n 1)"
   dialog --infobox "\nConnecting to: $1 ..." 5 $width 2>&1 >/dev/tty
   clist2=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
   WPA3=$(echo "$clist2" | grep "$1" | grep "WPA3")
 
   # try to connect
-  output=$(nmcli con delete "$1")
+  nmcli con delete "$1" >/dev/null 2>&1 || true
   if [[ "$WPA3" != *"WPA3"* ]]; then
     output=$(nmcli device wifi connect "$1" password "$PASS")
   else
@@ -108,7 +111,7 @@ makeConnection() {
 
   if [ -z "$success" ]; then
     sudo rm -f /etc/NetworkManager/system-connections/"$1".nmconnection
-    dialog --infobox "\nActivation failed: Secrets were required, but not provided!" 6 $width 2>&1 >/dev/tty
+    dialog --infobox "\nActivation failed: The password isn't correct!" 6 $width 2>&1 >/dev/tty
     sleep 3
     MainMenu
   else
@@ -234,7 +237,6 @@ ScanAndConnectMenu() {
   if [ -z "$clist" ]; then
     clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
   fi
-  getCurrentConnectedSSID
 
   # Set colon as the delimiter
   IFS=':'
@@ -247,7 +249,7 @@ ScanAndConnectMenu() {
     SSID="${strarr[1]}"
     CHAN=$(printf '%-5s' "${strarr[2]}")
     SIGNAL=$(printf '%-5s' "${strarr[3]}%")
-    SECURITY="${strarr[4]}"
+    SECURITY="${strarr[4]:-OPEN}"
 
     coptions+=("$SSID" "$INUSE $CHAN $SIGNAL $SECURITY")
   done <<<"$clist"
@@ -361,9 +363,8 @@ ExitMenu() {
 }
 
 ###################################
-# Joystick controls (only one instance)
+# Start MainMenu
 ###################################
-sudo chmod 666 /dev/uinput
 dialog --clear
 trap ExitMenu EXIT
 MainMenu
