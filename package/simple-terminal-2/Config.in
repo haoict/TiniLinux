@@ -1,0 +1,5 @@
+config BR2_PACKAGE_SIMPLE_TERMINAL_2
+  bool "simple-terminal-2"
+  select BR2_PACKAGE_SDL2
+  help
+    Simple Terminal 2
