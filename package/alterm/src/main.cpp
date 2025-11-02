@@ -11,6 +11,7 @@
 #include "../include/Alterm.hpp"
 #include "../include/HistoryManager.hpp"
 #include "../include/SettingsManager.hpp"
+#include "../include/VirtualKeyboard.hpp"
 
 
 std::vector<std::string> CommandHistory;
@@ -64,26 +65,64 @@ int main(int argc, char* argv[]){
 
     term->setup_font(r, g, b, fontPath.c_str(), FontSize, "Alterm");
     
+    // Create render textures for layered rendering
+    if(!term->create_render_textures()) {
+        std::cerr << "Failed to create render textures" << std::endl;
+        return 1;
+    }
+    
+    // Initialize virtual keyboard
+    VirtualKeyboard* vkb = new VirtualKeyboard();
+    
+    if (fontPath == "embedded_font") {
+        // Use bitmap font for keyboard too
+        vkb->initialize_bitmap(term->get_bitmap_font());
+    } else {
+        // Use TTF font for keyboard
+        TTF_Font* keyboard_font = term->get_font();
+        vkb->initialize(keyboard_font);
+    }
+    
+    // Initial render to populate textures
+    std::string empty_input = "";
+    term->render_terminal_to_texture(empty_input, br, bg, bb, ba, ShowCursor);
+    term->render_keyboard_to_texture(vkb);
+    
     SDL_Event event;
     bool quit = false;
     std::string input_buffer;
     bool dirty = true;
+    bool keyboard_dirty = false;  // Start false, only set true when keyboard changes
     bool in_settings_mode = false;
+    
+    // Frame limiting variables
+    Uint32 frame_start = 0;
+    const Uint32 frame_delay = 1000 / 60; // 60 FPS limit
 
 
     SDL_StartTextInput();
 
     while(!quit){
         while(SDL_PollEvent(&event)){
+            // Let virtual keyboard handle events first
+            if(vkb->handle_event(&event)){
+                keyboard_dirty = true;
+                // Don't set dirty=true for keyboard navigation to prevent full terminal redraw
+                // dirty = true;
+                continue;
+            }
+            
             if(event.type == SDL_QUIT)
                 quit = true;
 
             else if(event.type == SDL_TEXTINPUT){
+                // Accept text input from virtual keyboard or when keyboard is not active
                 input_buffer += event.text.text;
                 dirty = true;
+                // Force immediate render to prevent lag
             }
             
-            else if(event.type == SDL_KEYDOWN){
+            else if(event.type == SDL_KEYDOWN && !vkb->is_active()){
                 if(event.key.keysym.sym == SDLK_BACKSPACE && !input_buffer.empty()){
                     input_buffer.pop_back();
                     dirty = true;
@@ -192,7 +231,6 @@ int main(int argc, char* argv[]){
                 write(pty_fd, to_send.c_str(), to_send.size());
                 input_buffer.clear();
                 dirty = true;
-                
             }
 
 
@@ -213,7 +251,10 @@ int main(int argc, char* argv[]){
 
         else if(event.type == SDL_WINDOWEVENT){
             if(event.window.event == SDL_WINDOWEVENT_RESIZED){
+                // Recreate render textures for new window size
+                term->create_render_textures();
                 dirty = true;
+                keyboard_dirty = true;  // Force keyboard redraw too
             }
         }
 
@@ -224,26 +265,36 @@ int main(int argc, char* argv[]){
         }
 
         
-        Uint32 CurrentTime = SDL_GetTicks();
-        if(CurrentTime - LastBlinkTime >= 500){
-            ShowCursor = !ShowCursor;
-            LastBlinkTime = CurrentTime;
-            dirty = true;
-        }
+        // Cursor blinking disabled to prevent flickering with virtual keyboard
+        // Uint32 CurrentTime = SDL_GetTicks();
+        // if(CurrentTime - LastBlinkTime >= 500){
+        //     ShowCursor = !ShowCursor;
+        //     LastBlinkTime = CurrentTime;
+        //     dirty = true;
+        // }
 
-        if(dirty){
-            term->renderer_screen(input_buffer, br, bg, bb, ba,ShowCursor);
+        // Layered texture rendering - update textures only when dirty
+        if(dirty) {
+            term->render_terminal_to_texture(input_buffer, br, bg, bb, ba, ShowCursor);
             dirty = false;
         }
+        
+        if(keyboard_dirty) {
+            term->render_keyboard_to_texture(vkb);
+            keyboard_dirty = false;
+        }
+        
+        // Always composite textures and present (atomic update, no flicker)
+        term->composite_and_present();
 
-
-        SDL_Delay(10);
+        SDL_Delay(33);  // 30 FPS
     }
 
     
     term->shutdown_sdl();
     delete term;
     delete Settings;
+    delete vkb;
     
     SDL_StopTextInput();
 
