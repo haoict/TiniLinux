@@ -1,5 +1,6 @@
 #include "../include/Alterm.hpp"
 #include "../include/VirtualKeyboard.hpp"
+#include "../include/AnsFilter.hpp"
 #include <string>
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_rect.h>
@@ -113,6 +114,41 @@ SDL_Texture* alterm::get_cached_texture(char c){
     return Texture;
 }
 
+SDL_Texture* alterm::get_colored_cached_texture(char c, SDL_Color color) {
+    // Create a color key by packing RGBA into uint32_t
+    uint32_t color_key = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
+    
+    // Create cache key
+    std::pair<char, uint32_t> cache_key = {c, color_key};
+    
+    // Check if we already have this character+color combination
+    if (ColoredCharCache.count(cache_key)) {
+        return ColoredCharCache[cache_key];
+    }
+    
+    SDL_Texture* texture = nullptr;
+    
+    if (use_bitmap_font && bitmap_font) {
+        // Set bitmap font color and create texture
+        bitmap_font->set_color(color.r, color.g, color.b);
+        texture = bitmap_font->create_char_texture(c);
+    } else if (Font && FontManagarInstance) {
+        // Use TTF font with specified color
+        std::string s(1, c);
+        SDL_Surface* Surface = TTF_RenderUTF8_Blended(Font, s.c_str(), color);
+        if(Surface) {
+            texture = SDL_CreateTextureFromSurface(this->pRenderer, Surface);
+            SDL_FreeSurface(Surface);
+        }
+    }
+    
+    if (texture) {
+        ColoredCharCache[cache_key] = texture;
+    }
+    
+    return texture;
+}
+
 void alterm::clear_char_texture_cache() {
     // Destroy all cached textures
     for (auto& pair : CharTextureChache) {
@@ -121,6 +157,14 @@ void alterm::clear_char_texture_cache() {
         }
     }
     CharTextureChache.clear();
+    
+    // Clear colored cache too
+    for (auto& pair : ColoredCharCache) {
+        if (pair.second) {
+            SDL_DestroyTexture(pair.second);
+        }
+    }
+    ColoredCharCache.clear();
 }
 
 
@@ -240,15 +284,19 @@ void alterm::renderer_screen(std::string& InputBuffer, Uint8 r, Uint8 g, Uint8 b
         int MaxLineHeight = 0;
 
 
-        for(char c : FullLine ){       //Using for loop to render every line of the std::vector<std::string> lines + inputBuffer.
-                                        //We iterate through every character of every line of the FullLine.
-                  
-            SDL_Texture* pTexture = get_cached_texture(c);
+        // Parse line with ANSI color codes
+        ColoredLine colored_line = parse_ansi_sequences(FullLine);
+        
+        for(const ColoredChar& colored_char : colored_line) {
+            char c = colored_char.character;
+            
+            // Use colored cache for both bitmap and TTF fonts
+            SDL_Texture* pTexture = get_colored_cached_texture(c, colored_char.fg_color);
+            
             if(!pTexture) continue;
 
             int texW = 0, texH = 0;
             SDL_QueryTexture(pTexture, NULL, NULL, &texW, &texH);
-
 
             if(xPos + texW > WindowWidth){          //If the sum of the x position of the current character and the width of the current character is bigger than the window width, we need to start a new line.
                 xPos = 0;
@@ -256,17 +304,13 @@ void alterm::renderer_screen(std::string& InputBuffer, Uint8 r, Uint8 g, Uint8 b
                 MaxLineHeight = 0;
             }
 
-
-
             SDL_Rect desRect = {xPos, yPos, texW, texH};
             SDL_RenderCopy(this->pRenderer, pTexture, NULL, &desRect);
-            
             
             xPos += texW;                            //Update the x position of the next character.            
             if(texH > MaxLineHeight)                 //If the height of the current character is bigger than the max height, update the max height.    
                 MaxLineHeight = texH;
-            
-    }
+        }
     
     if (i == TotalLines - 1){
         CursorX = xPos;

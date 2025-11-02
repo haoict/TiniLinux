@@ -299,7 +299,7 @@ void VirtualKeyboard::draw(SDL_Renderer* renderer, int screen_width, int screen_
     }
 
     
-    int key_height = char_height + 2;
+    int key_height = char_height - 2;
     
     // Calculate keyboard position
     int total_width = 0;
@@ -308,13 +308,13 @@ void VirtualKeyboard::draw(SDL_Renderer* renderer, int screen_width, int screen_
     }
     
     int start_x = (screen_width - total_width) / 2;
-    int start_y = location == 0 ? screen_height - (NUM_ROWS * key_height) - 20 : 20;
+    int start_y = location == 0 ? screen_height - (NUM_ROWS * key_height) - 30 : 20;
     
     // Set up blending for keyboard overlay
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     
     // Draw keyboard background with better opacity
-    SDL_Rect bg_rect = {start_x - 4, start_y - 3, total_width + 3, NUM_ROWS * (key_height) + 3};
+    SDL_Rect bg_rect = {start_x - 4, start_y - 3, total_width + 3, NUM_ROWS * (key_height + 2) + 4};
     SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, 255);  // More opaque
     SDL_RenderFillRect(renderer, &bg_rect);
     

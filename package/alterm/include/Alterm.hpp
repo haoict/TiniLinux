@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <unordered_map>
+#include <map>
 #ifndef __ALTERM_HPP__
 #define __ALTERM_HPP__
 #include <SDL2/SDL.h>
@@ -35,6 +36,9 @@ class alterm : protected FontManagar{
     std::unordered_map<char, SDL_Texture*> CharTextureChache;
     SDL_Color cached_font_color; // Track the color used for cached textures
     
+    // Color-aware cache for bitmap fonts (char + color -> texture)
+    std::map<std::pair<char, uint32_t>, SDL_Texture*> ColoredCharCache;
+    
     // Separate textures for layered rendering
     SDL_Texture* terminal_texture = nullptr;
     SDL_Texture* keyboard_texture = nullptr;
@@ -58,6 +62,7 @@ class alterm : protected FontManagar{
     void render_background(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
     void shutdown_sdl();
     SDL_Texture* get_cached_texture(char c);
+    SDL_Texture* get_colored_cached_texture(char c, SDL_Color color);
     void clear_char_texture_cache();
     
     // Layered rendering methods
