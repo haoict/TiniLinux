@@ -13,6 +13,7 @@
 
 #include "../include/BitmapFont.hpp"
 #include "../include/FontManagar.hpp"
+#include "../include/SettingsManager.hpp"
 #include "forkpty.hpp"
 
 class alterm : protected FontManagar {
@@ -45,8 +46,8 @@ private:
     int texture_height = 0;
 
 public:
+    SettingsManager* settings_manager = nullptr;
     int ScrollOffSet = 0;
-    int MaxLines = 64;
     std::vector<std::string> lines;
 
     bool initialize_window();
@@ -74,11 +75,11 @@ public:
     BitmapFont* get_bitmap_font() { return bitmap_font; }
 
     // Setters
-    void set_max_lines(int max_lines) { MaxLines = max_lines; }
-
-    void trim_lines(size_t MaxLines, alterm* term) {
-        if (lines.size() > MaxLines) {
-            size_t to_remove = lines.size() - MaxLines;
+    void set_settings_manager(SettingsManager* settings) { settings_manager = settings; }
+    
+    void trim_lines(size_t maxLines, alterm* term) {
+        if (lines.size() > maxLines) {
+            size_t to_remove = lines.size() - maxLines;
             lines.erase(lines.begin(), lines.begin() + to_remove);
             term->ScrollOffSet = 0;
         }

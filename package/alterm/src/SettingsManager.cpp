@@ -18,6 +18,7 @@ SettingsManager::SettingsManager() {
     this->Settings["font_family"] = "/usr/share/fonts/SourceCodePro-Regular.ttf";
     this->Settings["max_history"] = "100";
     this->Settings["auto_scroll"] = "true";
+    this->Settings["max_lines"] = "64";
 }
 
 std::string trim(const std::string& str) {
@@ -38,6 +39,11 @@ const std::string& SettingsManager::get(const std::string& key) const {
     static const std::string empty = "";
     auto it = this->Settings.find(key);
     return it != this->Settings.end() ? it->second : empty;
+}
+
+int SettingsManager::get_max_lines() const {
+    const std::string& value = get("max_lines");
+    return value.empty() ? 64 : std::stoi(value);  // Default to 64 if not set
 }
 
 std::vector<std::string> SettingsManager::render_all_settings() const {

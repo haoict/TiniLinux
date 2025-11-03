@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
     SettingsManager* Settings = new SettingsManager();
     Settings->load_from_file(".alterm_settings");
     alterm* term = new alterm();
+    term->set_settings_manager(Settings);
 
     int pty_fd;
     int child_pid = start_shell_with_pty(pty_fd);
@@ -270,11 +271,11 @@ int main(int argc, char* argv[]) {
             else if (event.type == SDL_MOUSEWHEEL) {
                 if (event.wheel.y > 0) {
                     // Scroll up
-                    term->ScrollOffSet = std::max(0, term->ScrollOffSet + 1);
+                    term->ScrollOffSet = std::max(0, term->ScrollOffSet + 3);
                     dirty = true;
                 } else if (event.wheel.y < 0) {
                     // Scroll down
-                    term->ScrollOffSet = std::max(0, term->ScrollOffSet - 1);
+                    term->ScrollOffSet = std::max(0, term->ScrollOffSet - 3);
                     dirty = true;
                 }
             }

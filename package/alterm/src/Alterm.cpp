@@ -95,7 +95,7 @@ SDL_Texture *alterm::get_cached_texture(char c) {
     } else if (Font && FontManagarInstance) {
         // Use TTF font
         std::string s(1, c);
-        SDL_Surface *Surface = TTF_RenderUTF8_Blended(Font, s.c_str(), current_color);
+        SDL_Surface *Surface = TTF_RenderUTF8_Solid(Font, s.c_str(), current_color);
         if (Surface) {
             Texture = SDL_CreateTextureFromSurface(this->pRenderer, Surface);
             SDL_FreeSurface(Surface);
@@ -130,7 +130,7 @@ SDL_Texture *alterm::get_colored_cached_texture(char c, SDL_Color color) {
     } else if (Font && FontManagarInstance) {
         // Use TTF font with specified color
         std::string s(1, c);
-        SDL_Surface *Surface = TTF_RenderUTF8_Blended(Font, s.c_str(), color);
+        SDL_Surface *Surface = TTF_RenderUTF8_Solid(Font, s.c_str(), color);
         if (Surface) {
             texture = SDL_CreateTextureFromSurface(this->pRenderer, Surface);
             SDL_FreeSurface(Surface);
@@ -273,9 +273,10 @@ void alterm::renderer_screen(std::string &InputBuffer, Uint8 r, Uint8 g, Uint8 b
     int totalVisualLines = visualLines.size();
 
     // Limit visual lines to prevent memory issues (logical lines are already managed in forkpty.cpp)
-    if (totalVisualLines > MaxLines) {
+    int max_lines = settings_manager ? settings_manager->get_max_lines() : 64;  // Default fallback
+    if (totalVisualLines > max_lines) {
         // Calculate how many visual lines to remove from the beginning
-        int removeCount = totalVisualLines - MaxLines;
+        int removeCount = totalVisualLines - max_lines;
         visualLines.erase(visualLines.begin(), visualLines.begin() + removeCount);
         totalVisualLines = visualLines.size();
     }
@@ -350,9 +351,9 @@ void alterm::renderer_screen(std::string &InputBuffer, Uint8 r, Uint8 g, Uint8 b
         CurrentRenderY += lineHeight;
     }
 
-    printf("Debug: Lines=%zu, VisualLines=%d, StartIndex=%d, VisibleLines=%d\n", lines.size(), totalVisualLines, startVisualIndex, visibleVisualLines);
+    // printf("Debug: Lines=%zu, VisualLines=%d, StartIndex=%d, VisibleLines=%d\n", lines.size(), totalVisualLines, startVisualIndex, visibleVisualLines);
 
-    if (ShowCursor) {
+    if (ShowCursor && !ScrollOffSet) {
         SDL_Rect cursor_Rect = {CursorX, this->y, 10, CursorH};
         SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, 255);
         SDL_RenderFillRect(pRenderer, &cursor_Rect);

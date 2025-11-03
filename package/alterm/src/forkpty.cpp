@@ -101,7 +101,8 @@ bool read_pty(int pty_fd, alterm* term_ptr, std::vector<std::string>& lines) {
             }
         }
 
-        term_ptr->trim_lines(term_ptr->MaxLines, term_ptr);
+        int max_lines = term_ptr->settings_manager ? term_ptr->settings_manager->get_max_lines() : 64;
+        term_ptr->trim_lines(max_lines, term_ptr);
 
         return true;
     }
