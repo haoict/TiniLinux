@@ -9,10 +9,14 @@
 #include "../include/Alterm.hpp"
 #include "../include/AnsFilter.hpp"
 
+#define DEFAULT(a, b) (a) = (a) ? (a) : (b)
+
 std::vector<std::string> lines;
 
 // start shell with subprocess (child process) and connect to it via pty
 // (master_fd)
+
+static char shell[] = "/bin/bash";
 
 int start_shell_with_pty(int& master_fd) {
     pid_t pid = forkpty(&master_fd, nullptr, nullptr,
@@ -35,14 +39,19 @@ int start_shell_with_pty(int& master_fd) {
         // attributes to the same as the parent process.
 
         // Set up terminal environment for full color support
-        setenv("TERM", "xterm-256color", 1);  // Full color terminal support
-        setenv("COLORTERM", "truecolor", 1);  // Enable true color support
-        setenv("CLICOLOR", "1", 1);           // Force color output for some programs
-        setenv("CLICOLOR_FORCE", "1", 1);     // Force color even if not a tty
+        // setenv("TERM", "xterm-256color", 1);  // Full color terminal support
+        // setenv("COLORTERM", "truecolor", 1);  // Enable true color support
+        // setenv("CLICOLOR", "1", 1);           // Force color output for some programs
+        // setenv("CLICOLOR_FORCE", "1", 1);     // Force color even if not a tty
 
         // Start bash as a login shell to load .bash_profile, .bashrc, etc.
-        execlp("bash", "bash", "-l", NULL);
-        // execlp("bash", "bash", "--norc", "--noprofile", NULL);
+        // execlp("bash", "bash", "-l", NULL);
+
+        char** args;
+        char* envshell = getenv("SHELL");
+        DEFAULT(envshell, shell);
+        args = (char*[]){envshell, "-i", NULL};
+        execlp(envshell, args[0], args[1], NULL);
 
         perror("execlp failed");
         exit(1);
@@ -52,12 +61,8 @@ int start_shell_with_pty(int& master_fd) {
 }
 
 bool read_pty(int pty_fd, alterm* term_ptr, std::vector<std::string>& lines) {
-    char buffer[BUFSIZ];  // buffer to store the read data, and it char[256]
-                          // because the function read() deal with only char
-                          // array.
-    int n = read(pty_fd, buffer,
-                 sizeof(buffer) - 1);  // we subtract 1 because we want to add the
-                                       // null terminator at the end of the buffer.
+    char buffer[BUFSIZ];                               // buffer to store the read data, and it char[256] because the function read() deal with only char arrays.
+    int n = read(pty_fd, buffer, sizeof(buffer) - 1);  // we subtract 1 because we want to add the null terminator at the end of the buffer.
     if (n > 0) {
         buffer[n] = '\0';  // \0 represents the null terminator.
         std::string raw = buffer;
