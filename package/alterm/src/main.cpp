@@ -3,25 +3,24 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
-#include <clocale>
 #include <fcntl.h>
+
+#include <clocale>
 #include <iostream>
 #include <string>
 #include <vector>
+
 #include "../include/Alterm.hpp"
 #include "../include/HistoryManager.hpp"
 #include "../include/SettingsManager.hpp"
 #include "../include/VirtualKeyboard.hpp"
-
 
 std::vector<std::string> CommandHistory;
 const size_t MaxHistorySize = 100;
 int CommandHistoryIndex = -1;
 const std::string HisotryFile = ".alterm_history";
 
-
-int main(int argc, char* argv[]){
-
+int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "");
 
     load_history(CommandHistory, HisotryFile);
@@ -29,25 +28,22 @@ int main(int argc, char* argv[]){
     Settings->load_from_file(".alterm_settings");
     alterm* term = new alterm();
 
-
     int pty_fd;
     int child_pid = start_shell_with_pty(pty_fd);
-    fcntl(pty_fd, F_SETFL,O_NONBLOCK);
+    fcntl(pty_fd, F_SETFL, O_NONBLOCK);
 
-    if(child_pid < 0){  
-        std::cerr << "Failed to start shell."<<std::endl;
-        return(1);
+    if (child_pid < 0) {
+        std::cerr << "Failed to start shell." << std::endl;
+        return (1);
     }
 
-
-    if(term->initialize_window() == false){
-        std::cout << "Init_error" <<std::endl;
-        return(1);
+    if (term->initialize_window() == false) {
+        std::cout << "Init_error" << std::endl;
+        return (1);
     }
 
     Uint32 LastBlinkTime = SDL_GetTicks();
     bool ShowCursor = true;
-
 
     std::string fontSize = Settings->get("font_size");
     std::string fontPath = Settings->get("font_family");
@@ -62,72 +58,73 @@ int main(int argc, char* argv[]){
     Uint8 bb = std::stoi(Settings->get("bg_color_b"));
     Uint8 ba = std::stoi(Settings->get("bg_opacity"));
 
-
     term->setup_font(r, g, b, fontPath.c_str(), FontSize, "Alterm");
-    
+
     // Create render textures for layered rendering
-    if(!term->create_render_textures()) {
+    if (!term->create_render_textures()) {
         std::cerr << "Failed to create render textures" << std::endl;
         return 1;
     }
-    
+
     // Initialize virtual keyboard
     VirtualKeyboard* vkb = new VirtualKeyboard();
-    
+
     if (fontPath == "embedded_font") {
         // Use bitmap font for keyboard too
         vkb->initialize_bitmap(term->get_bitmap_font());
         // Pre-cache common characters for bitmap font
-        vkb->pre_cache_common_chars({0, 0, 0, 255}); // Black text
+        vkb->pre_cache_common_chars({0, 0, 0, 255});  // Black text
     } else {
         // Use TTF font for keyboard
         TTF_Font* keyboard_font = term->get_font();
         vkb->initialize(keyboard_font);
         // Pre-cache common characters for TTF font (need renderer)
-        vkb->pre_cache_common_chars({0, 0, 0, 255}, term->get_renderer()); // Black text
+        vkb->pre_cache_common_chars({0, 0, 0, 255},
+                                    term->get_renderer());  // Black text
     }
-    
+
     // Initial render to populate textures
     std::string empty_input = "";
     term->render_terminal_to_texture(empty_input, br, bg, bb, ba, ShowCursor);
     term->render_keyboard_to_texture(vkb);
-    
+
     SDL_Event event;
     bool quit = false;
     std::string input_buffer;
     bool dirty = true;
     bool keyboard_dirty = false;  // Start false, only set true when keyboard changes
     bool in_settings_mode = false;
-    
+
     // Frame limiting variables
     Uint32 frame_start = 0;
-    const Uint32 frame_delay = 1000 / 60; // 60 FPS limit
-
+    const Uint32 frame_delay = 1000 / 60;  // 60 FPS limit
 
     SDL_StartTextInput();
 
-    while(!quit){
-        while(SDL_PollEvent(&event)){
+    while (!quit) {
+        while (SDL_PollEvent(&event)) {
             // Let virtual keyboard handle events first
-            if(vkb->handle_event(&event)){
+            if (vkb->handle_event(&event)) {
                 keyboard_dirty = true;
                 continue;
             }
-            
-            if(event.type == SDL_QUIT) {
+
+            if (event.type == SDL_QUIT) {
                 quit = true;
                 break;
             }
 
-            else if(event.type == SDL_TEXTINPUT){
-                // Accept text input from virtual keyboard or when keyboard is not active
+            else if (event.type == SDL_TEXTINPUT) {
+                // Accept text input from virtual keyboard or when keyboard is
+                // not active
                 char* text = event.text.text;
-                
+
                 // Check if this is a control character (ASCII 1-31)
                 if (text[0] >= 1 && text[0] <= 31 && text[1] == '\0') {
-                    // This is a control character from virtual keyboard, send directly to PTY
+                    // This is a control character from virtual keyboard, send
+                    // directly to PTY
                     write(pty_fd, text, 1);
-                    if (text[0] == 3) { // Ctrl+C
+                    if (text[0] == 3) {        // Ctrl+C
                         input_buffer.clear();  // Clear input buffer for Ctrl+C
                     }
                     dirty = true;
@@ -138,56 +135,57 @@ int main(int argc, char* argv[]){
                 }
                 // Force immediate render to prevent lag
             }
-            
-            else if(event.type == SDL_KEYDOWN){
-                // Handle backspace from both physical keyboard and virtual keyboard
-                if(event.key.keysym.sym == SDLK_BACKSPACE && !input_buffer.empty()){
+
+            else if (event.type == SDL_KEYDOWN) {
+                // Handle backspace from both physical keyboard and virtual
+                // keyboard
+                if (event.key.keysym.sym == SDLK_BACKSPACE && !input_buffer.empty()) {
                     input_buffer.pop_back();
                     dirty = true;
                 }
-                
-                // Handle Return key (works for both physical and virtual keyboard)
-                else if(event.key.keysym.sym == SDLK_RETURN){
+
+                // Handle Return key (works for both physical and virtual
+                // keyboard)
+                else if (event.key.keysym.sym == SDLK_RETURN) {
                     std::string command = input_buffer;
                     std::string to_send = command + "\n";
                     term->enter_cursor_reset_x();
                     term->ScrollOffSet = 0;
 
-
-                    if(in_settings_mode){
+                    if (in_settings_mode) {
                         term->lines.push_back("[settings] " + input_buffer);
-                        
+
                         std::vector<std::string> OutputLine = Settings->apply_command(input_buffer);
-                        //render the ruselt to the terminal
-                        for(const auto& line : OutputLine){
+                        // render the ruselt to the terminal
+                        for (const auto& line : OutputLine) {
                             term->lines.push_back(line);
                         }
 
-                        if(input_buffer == "exit"){
+                        if (input_buffer == "exit") {
                             in_settings_mode = false;
-                            term->lines.push_back("Exiting Settings... (restart the terminal to see the changes)");
+                            term->lines.push_back(
+                                "Exiting Settings... (restart the terminal to "
+                                "see the changes)");
                         }
-                        
+
                         term->lines.push_back("[settings]:");
                         input_buffer.clear();
                         dirty = true;
                         continue;
                     }
 
-                    if(!command.empty()){
-                        if(CommandHistory.empty() || command != CommandHistory.back()){
+                    if (!command.empty()) {
+                        if (CommandHistory.empty() || command != CommandHistory.back()) {
                             CommandHistory.push_back(input_buffer);
                             append_history(input_buffer, HisotryFile);
 
-                            if(CommandHistory.size() > MaxHistorySize)
-                                CommandHistory.erase(CommandHistory.begin());
+                            if (CommandHistory.size() > MaxHistorySize) CommandHistory.erase(CommandHistory.begin());
                         }
 
                         CommandHistoryIndex = -1;
-
                     }
-                
-                    if(input_buffer == "clear") {
+
+                    if (input_buffer == "clear") {
                         input_buffer.clear();
                         term->reset_display();
                         term->lines.clear();
@@ -197,55 +195,56 @@ int main(int argc, char* argv[]){
                         continue;
                     }
 
-                    if(input_buffer == "exit") {
-                            quit = true;
-                            input_buffer.clear();
-                            break;
+                    if (input_buffer == "exit") {
+                        quit = true;
+                        input_buffer.clear();
+                        break;
                     }
 
-
-                    if(input_buffer == "settings"){
+                    if (input_buffer == "settings") {
                         in_settings_mode = true;
                         input_buffer.clear();
                         term->lines.push_back("======= Settings Mode ========");
                         term->lines.push_back("\nType help for more information");
                         term->lines.push_back("\n");
 
-                        //render all the settings.
+                        // render all the settings.
                         std::vector<std::string> SettingsLines = Settings->render_all_settings();
                         SettingsLines.push_back("[settings]:");
-                        term-> lines.insert(term->lines.end(), SettingsLines.begin(), SettingsLines.end());
+                        term->lines.insert(term->lines.end(), SettingsLines.begin(), SettingsLines.end());
                         dirty = true;
                         continue;
+                    }
+
+                    write(pty_fd, to_send.c_str(), to_send.size());
+                    input_buffer.clear();
+                    dirty = true;
                 }
 
-                write(pty_fd, to_send.c_str(), to_send.size());
-                input_buffer.clear();
-                dirty = true;
-            }
-            
                 // Handle other keys only when virtual keyboard is not active
-                else if(!vkb->is_active()) {
+                else if (!vkb->is_active()) {
                     // Handle Ctrl+C (SIGINT)
-                    if(event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)){
+                    if (event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)) {
                         char ctrl_c = '\x03';  // ASCII 3 - ETX (End of Text) - SIGINT
                         write(pty_fd, &ctrl_c, 1);
                         input_buffer.clear();  // Clear input buffer
                         dirty = true;
                     }
-                    
+
                     // Handle Ctrl+D (EOF)
-                    else if(event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)){
-                        char ctrl_d = '\x04';  // ASCII 4 - EOT (End of Transmission) - EOF
+                    else if (event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)) {
+                        char ctrl_d = '\x04';  // ASCII 4 - EOT (End of
+                                               // Transmission) - EOF
                         write(pty_fd, &ctrl_d, 1);
-                        // Don't clear input buffer for Ctrl+D as it might be used to complete commands
+                        // Don't clear input buffer for Ctrl+D as it might be
+                        // used to complete commands
                     }
 
-                    else if(event.key.keysym.sym == SDLK_UP){
-                        if(!CommandHistory.empty()){
-                            if(CommandHistoryIndex == -1)
+                    else if (event.key.keysym.sym == SDLK_UP) {
+                        if (!CommandHistory.empty()) {
+                            if (CommandHistoryIndex == -1)
                                 CommandHistoryIndex = CommandHistory.size() - 1;
-                            else if(CommandHistoryIndex > 0)
+                            else if (CommandHistoryIndex > 0)
                                 CommandHistoryIndex--;
 
                             input_buffer = CommandHistory[CommandHistoryIndex];
@@ -253,16 +252,16 @@ int main(int argc, char* argv[]){
                         }
                     }
 
-                    else if(event.key.keysym.sym == SDLK_DOWN){
-                        if(!CommandHistory.empty() && CommandHistoryIndex != -1){
-                            if(CommandHistoryIndex < static_cast<int>(CommandHistory.size() -1))
+                    else if (event.key.keysym.sym == SDLK_DOWN) {
+                        if (!CommandHistory.empty() && CommandHistoryIndex != -1) {
+                            if (CommandHistoryIndex < static_cast<int>(CommandHistory.size() - 1))
                                 CommandHistoryIndex++;
-                            else 
+                            else
                                 CommandHistoryIndex = -1;
 
-                            if(CommandHistoryIndex != -1 )
+                            if (CommandHistoryIndex != -1)
                                 input_buffer = CommandHistory[CommandHistoryIndex];
-                            else 
+                            else
                                 input_buffer.clear();
                             dirty = true;
                         }
@@ -270,35 +269,32 @@ int main(int argc, char* argv[]){
                 }
             }
 
-            else if(event.type == SDL_MOUSEWHEEL){
-                if(event.wheel.y > 0){
-                    //Scroll up
+            else if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) {
+                    // Scroll up
                     term->ScrollOffSet = std::max(0, term->ScrollOffSet + 1);
                     dirty = true;
-                }
-                else if(event.wheel.y < 0){
-                    //Scroll down
+                } else if (event.wheel.y < 0) {
+                    // Scroll down
                     term->ScrollOffSet = std::max(0, term->ScrollOffSet - 1);
                     dirty = true;
                 }
             }
 
-            else if(event.type == SDL_WINDOWEVENT){
-                if(event.window.event == SDL_WINDOWEVENT_RESIZED){
+            else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     // Recreate render textures for new window size
                     term->create_render_textures();
                     dirty = true;
                     keyboard_dirty = true;  // Force keyboard redraw too
                 }
             }
+        }
 
-    } 
-        
-        if(read_pty(pty_fd, term, term->lines)){
+        if (read_pty(pty_fd, term, term->lines)) {
             dirty = true;
         }
 
-        
         // Cursor blinking disabled to prevent flickering with virtual keyboard
         // Uint32 CurrentTime = SDL_GetTicks();
         // if(CurrentTime - LastBlinkTime >= 500){
@@ -309,43 +305,40 @@ int main(int argc, char* argv[]){
 
         // Layered texture rendering - update textures only when dirty
         bool need_present = false;
-        
-        if(dirty) {
+
+        if (dirty) {
             term->render_terminal_to_texture(input_buffer, br, bg, bb, ba, ShowCursor);
             dirty = false;
             need_present = true;
         }
-        
-        if(keyboard_dirty) {
+
+        if (keyboard_dirty) {
             term->render_keyboard_to_texture(vkb);
             keyboard_dirty = false;
             need_present = true;
         }
-        
+
         // Only composite and present if something changed
-        if(need_present) {
+        if (need_present) {
             term->composite_and_present();
         }
 
-        // Use event-driven rendering with a small delay to prevent 100% CPU usage
+        // Use event-driven rendering with a small delay to prevent 100% CPU
+        // usage
         if (!need_present) {
             SDL_Delay(10);  // Only delay when nothing to render
         } else {
-            SDL_Delay(1);   // Minimal delay when actively rendering
+            SDL_Delay(1);  // Minimal delay when actively rendering
         }
     }
 
-    
     term->shutdown_sdl();
     delete term;
     delete Settings;
     delete vkb;
-    
+
     SDL_StopTextInput();
 
-   
     save_trimmed_history(CommandHistory, HisotryFile, MaxHistorySize);
-    return(0);
+    return (0);
 }
-
-

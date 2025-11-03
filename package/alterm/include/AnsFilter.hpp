@@ -1,7 +1,8 @@
 #pragma once
+#include <SDL2/SDL.h>
+
 #include <string>
 #include <vector>
-#include <SDL2/SDL.h>
 
 // Structure to represent a colored character
 struct ColoredChar {
@@ -11,11 +12,14 @@ struct ColoredChar {
     bool bold;
     bool italic;
     bool underline;
-    
-    ColoredChar(char c = ' ') : character(c), 
-                               fg_color({255, 255, 255, 255}),  // default white
-                               bg_color({0, 0, 0, 0}),          // default transparent
-                               bold(false), italic(false), underline(false) {}
+
+    ColoredChar(char c = ' ')
+        : character(c),
+          fg_color({255, 255, 255, 255}),  // default white
+          bg_color({0, 0, 0, 0}),          // default transparent
+          bold(false),
+          italic(false),
+          underline(false) {}
 };
 
 // Structure to represent a line of colored text

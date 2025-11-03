@@ -1,15 +1,14 @@
 #ifndef SETTINGS_HPP
 #define SETTINGS_HPP
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
-class SettingsManager{
-
-    private:
+class SettingsManager {
+private:
     std::map<std::string, std::string> Settings;
 
-    public:
+public:
     SettingsManager();
 
     std::vector<std::string> apply_command(const std::string& Cmd);
@@ -18,6 +17,5 @@ class SettingsManager{
     const std::string& get(const std::string& Key) const;
     void set(const std::string& Key, const std::string& Value);
     std::vector<std::string> render_all_settings() const;
-
 };
-#endif 
+#endif

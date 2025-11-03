@@ -1,13 +1,14 @@
-#include <pty.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <pty.h>
 #include <sys/wait.h>
-#include <vector>
+#include <unistd.h>
+
 #include <string>
+#include <vector>
+
 #include "AnsFilter.hpp"
 
 class alterm;
-
 
 int start_shell_with_pty(int& master_fd);
 

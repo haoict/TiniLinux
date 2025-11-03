@@ -1,4 +1,5 @@
 #include "../include/BitmapFont.hpp"
+
 #include <cstring>
 
 // Embedded font data from simple-terminal
@@ -148,56 +149,50 @@ const unsigned char BitmapFont::embedded_font[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // 127: DEL
 };
 
-BitmapFont::BitmapFont() : renderer(nullptr), color({255, 255, 255, 255}), scale(1) {
-}
+BitmapFont::BitmapFont() : renderer(nullptr), color({255, 255, 255, 255}), scale(1) {}
 
-BitmapFont::~BitmapFont() {
-}
+BitmapFont::~BitmapFont() {}
 
 void BitmapFont::initialize(SDL_Renderer* renderer, int scale_factor) {
     this->renderer = renderer;
     this->scale = (scale_factor > 0) ? scale_factor : 1;
 }
 
-void BitmapFont::set_color(Uint8 r, Uint8 g, Uint8 b) {
-    color = {r, g, b, 255};
-}
+void BitmapFont::set_color(Uint8 r, Uint8 g, Uint8 b) { color = {r, g, b, 255}; }
 
-void BitmapFont::set_scale(int scale_factor) {
-    this->scale = (scale_factor > 0) ? scale_factor : 1;
-}
+void BitmapFont::set_scale(int scale_factor) { this->scale = (scale_factor > 0) ? scale_factor : 1; }
 
 SDL_Texture* BitmapFont::create_char_texture(char c) {
     if (!renderer) return nullptr;
-    
+
     unsigned char symbol = (unsigned char)c;
-    
+
     // Handle flipped characters (same as original)
     int flip = 0;
     if (symbol > 127) {
         flip = 1;
         symbol -= 128;
     }
-    
-    // Calculate scaled dimensions (6x8 like original, with character in top 6 pixels)
+
+    // Calculate scaled dimensions (6x8 like original, with character in top 6
+    // pixels)
     int scaled_width = 6 * scale;
     int scaled_height = 8 * scale;  // Use 8-pixel height like original
-    
+
     // Create a surface for the character (scaled size)
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, scaled_width, scaled_height, 32, 
-                                               0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, scaled_width, scaled_height, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     if (!surface) return nullptr;
-    
+
     // Fill with transparent background
     SDL_FillRect(surface, nullptr, SDL_MapRGBA(surface->format, 0, 0, 0, 0));
-    
+
     // Get font data for this character (each character is 8 bytes)
     const unsigned char* ptr = embedded_font + symbol * 8;
-    
+
     // Draw the character pixel by pixel (matching original exactly)
     for (int row = 0; row < 6; row++, ptr++) {
         unsigned char byte = *ptr;
-        
+
         // Check bits 2-7 (the 6 character pixels), but map them correctly
         for (int col = 2; col < 8; col++) {
             if (byte & (1 << col)) {
@@ -205,22 +200,21 @@ SDL_Texture* BitmapFont::create_char_texture(char c) {
                 // So pixel_x = 7 - col = 5 - (col - 2)
                 int pixel_x = 5 - (col - 2);
                 int pixel_y = row;
-                
-                // Apply flip logic exactly as original: flip * 4 + (1 - 2 * flip) * ys
+
+                // Apply flip logic exactly as original: flip * 4 + (1 - 2 *
+                // flip) * ys
                 if (flip) {
-                    pixel_y = 4 + (1 - 2) * row; // = 4 - row
+                    pixel_y = 4 + (1 - 2) * row;  // = 4 - row
                 }
-                
+
                 // Draw scaled pixel
                 for (int sy = 0; sy < scale; sy++) {
                     for (int sx = 0; sx < scale; sx++) {
                         int final_x = pixel_x * scale + sx;
                         int final_y = pixel_y * scale + sy;
-                        
-                        if (final_x >= 0 && final_x < scaled_width && 
-                            final_y >= 0 && final_y < scaled_height) {
-                            Uint32 pixel_color = SDL_MapRGBA(surface->format, 
-                                                            color.r, color.g, color.b, 255);
+
+                        if (final_x >= 0 && final_x < scaled_width && final_y >= 0 && final_y < scaled_height) {
+                            Uint32 pixel_color = SDL_MapRGBA(surface->format, color.r, color.g, color.b, 255);
                             Uint32* pixels = (Uint32*)surface->pixels;
                             pixels[final_y * surface->w + final_x] = pixel_color;
                         }
@@ -229,10 +223,10 @@ SDL_Texture* BitmapFont::create_char_texture(char c) {
             }
         }
     }
-    
+
     // Create texture from surface
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
-    
+
     return texture;
 }
