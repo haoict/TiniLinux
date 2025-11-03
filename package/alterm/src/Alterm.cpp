@@ -115,9 +115,10 @@ SDL_Texture *alterm::get_colored_cached_texture(char c, SDL_Color color) {
     // Create cache key
     std::pair<char, uint32_t> cache_key = {c, color_key};
 
-    // Check if we already have this character+color combination
-    if (ColoredCharCache.count(cache_key)) {
-        return ColoredCharCache[cache_key];
+    // Fast lookup using find instead of count (more efficient)
+    auto it = ColoredCharCache.find(cache_key);
+    if (it != ColoredCharCache.end()) {
+        return it->second;
     }
 
     SDL_Texture *texture = nullptr;
@@ -141,6 +142,14 @@ SDL_Texture *alterm::get_colored_cached_texture(char c, SDL_Color color) {
     }
 
     return texture;
+}
+
+void alterm::update_window_size() {
+    SDL_GetWindowSize(this->pWindow, &window_width, &window_height);
+    printf("Window size: %d x %d\n", window_width, window_height);
+    SDL_Texture *pTexture = get_colored_cached_texture('A', SDL_Color{255, 255, 255, 255});
+    SDL_QueryTexture(pTexture, NULL, NULL, &texture_width, &texture_height);
+    printf("Texture width: %d Texture height: %d\n", texture_width, texture_height);
 }
 
 void alterm::clear_char_texture_cache() {
@@ -195,120 +204,153 @@ void alterm::setup_font(const Uint8 r, const Uint8 g, const Uint8 b, const char 
 // vector of strings. It takes 1 parameter: InputBuffer - the user input string.
 // This function marge the tow response in one string and print every character
 // individualy. And also make sure that the render don't exceed the screen size.
-
 void alterm::renderer_screen(std::string &InputBuffer, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool ShowCursor, bool should_present) {
     render_background(r, g, b, a);
 
-    int WindowWidth = 0;
-    int WindowHeight = 0;
-    SDL_GetWindowSize(this->pWindow, &WindowWidth, &WindowHeight);
-
-    std::vector<int> LineHeights;  // This is the height of the font.
-    int TotalHeight = 0;
-
-    for (const std::string &line : lines) {  // Here we calculate for each line, by seperating every lines
-                                             // to characters and calculate the height.
-        int x = 0;
-        int LineHeight = 0;
-        int MaxCharHeight = 0;
-
-        for (char c : line) {
-            SDL_Texture *ppTexture = get_cached_texture(c);
-            if (!ppTexture) continue;
-
-            int texWW = 0, texHH = 0;
-            SDL_QueryTexture(ppTexture, NULL, NULL, &texWW, &texHH);
-
-            if (x + texWW > WindowWidth) {  // If the character exceed the screen
-                                            // width, we need to start a new line.
-                x = 0;
-                LineHeight += MaxCharHeight + 2;
-                MaxCharHeight = 0;
-            }
-
-            x += texWW;  // else start from the same line.
-
-            if (texHH > MaxCharHeight) MaxCharHeight = texHH;
-        }
-
-        LineHeight += MaxCharHeight + 2;
-        LineHeights.push_back(LineHeight);
-        TotalHeight += LineHeight;  // Sum of the total height
+    // Ensure texture dimensions are cached (only if not already set)
+    if (texture_width == 0 || texture_height == 0) {
+        update_window_size();
     }
 
-    int TotalLines = lines.size();
-    int accumulated = 0;
-    int startIndex = 0;
+    // Create visual lines by breaking long logical lines at screen width
+    struct VisualLine {
+        ColoredLine content;  // Store colored characters
+        int logicalLineIndex;
+        int height;
+    };
 
-    for (int i = TotalLines - 1; i >= 0; --i) {  // We start from the last line and go up,
-        accumulated += LineHeights[i];           // and calculate the their accumulated
-                                                 // height.
-        if (accumulated > WindowHeight) {        // If the accumulated height is
-                                                 // bigger than the window height
-            startIndex = i + 1;                  // we set the the line after [i] line is the
-                                                 // first line to render.
+    std::vector<VisualLine> visualLines;
+    int totalVisualHeight = 0;
+
+    // Process each logical line and break into visual lines
+    for (int logicalIndex = 0; logicalIndex < lines.size(); ++logicalIndex) {
+        std::string fullLine = lines[logicalIndex];
+
+        // Add input buffer to the last line
+        if (logicalIndex == lines.size() - 1 && !InputBuffer.empty()) {
+            fullLine += InputBuffer;
+        }
+
+        // Break this logical line into visual lines based on screen width
+        ColoredLine currentVisualLine;
+        int x = 0;
+
+        ColoredLine colored_line = parse_ansi_sequences(fullLine);
+
+        for (const ColoredChar &colored_char : colored_line) {
+            // Skip texture creation, just calculate positions using cached dimensions
+            if (x + texture_width > window_width && !currentVisualLine.empty()) {
+                // This character would exceed screen width, finish current visual line
+                VisualLine vLine;
+                vLine.content = currentVisualLine;
+                vLine.logicalLineIndex = logicalIndex;
+                vLine.height = texture_height + 2;
+                visualLines.push_back(vLine);
+                totalVisualHeight += vLine.height;
+
+                // Start new visual line with this character
+                currentVisualLine.clear();
+                currentVisualLine.push_back(colored_char);
+                x = texture_width;
+            } else {
+                // Add character to current visual line
+                currentVisualLine.push_back(colored_char);
+                x += texture_width;
+            }
+        }
+
+        // Add the remaining content as a visual line
+        if (!currentVisualLine.empty() || fullLine.empty()) {
+            VisualLine vLine;
+            vLine.content = currentVisualLine;
+            vLine.logicalLineIndex = logicalIndex;
+            vLine.height = texture_height + 2;
+            visualLines.push_back(vLine);
+            totalVisualHeight += vLine.height;
+        }
+    }
+
+    int totalVisualLines = visualLines.size();
+
+    // Limit visual lines to prevent memory issues (logical lines are already managed in forkpty.cpp)
+    if (totalVisualLines > MaxLines) {
+        // Calculate how many visual lines to remove from the beginning
+        int removeCount = totalVisualLines - MaxLines;
+        visualLines.erase(visualLines.begin(), visualLines.begin() + removeCount);
+        totalVisualLines = visualLines.size();
+    }
+
+    // Calculate which visual lines fit in the window
+    int accumulated = 0;
+    int startVisualIndex = 0;
+
+    for (int i = totalVisualLines - 1; i >= 0; --i) {
+        accumulated += visualLines[i].height;
+        if (accumulated > window_height) {
+            startVisualIndex = i + 1;
             break;
         }
     }
-    int VisableLines = TotalLines - startIndex;  // The number of lines that are visable to the user.
-    startIndex = std::max(0,
-                          startIndex - ScrollOffSet);  // The line that we start to render from.
 
-    int MaxScroll = std::max(0, TotalLines - VisableLines);  // The max number of lines that can be rendered.
-    ScrollOffSet = std::min(ScrollOffSet,
-                            MaxScroll);  // We set the ScrollOffSet to the max
-                                         // number of lines that can be rendered.
+    int visibleVisualLines = totalVisualLines - startVisualIndex;
 
+    // Auto-scroll: if we have input buffer and cursor would be off-screen, adjust scroll
+    if (!InputBuffer.empty() && startVisualIndex > 0) {
+        ScrollOffSet = 0;
+    }
+
+    // Apply scroll offset (now working on visual lines)
+    startVisualIndex = std::max(0, startVisualIndex - ScrollOffSet);
+
+    int maxScroll = std::max(0, totalVisualLines - visibleVisualLines);
+    ScrollOffSet = std::min(ScrollOffSet, maxScroll);
+
+    // Render visual lines with optimizations
     int CurrentRenderY = 0;
-    std::string FullLine;
-    for (int i = startIndex; i < TotalLines; ++i) {
-        FullLine = (i == TotalLines - 1 && !InputBuffer.empty()) ? lines[i] + InputBuffer : lines[i];
+    const int lastLogicalLineIndex = lines.empty() ? -1 : lines.size() - 1;
+    const SDL_Rect srcRect = {0, 0, texture_width, texture_height};  // Reuse same source rect
+    const int lineHeight = texture_height + 2;
+
+    for (int i = startVisualIndex; i < totalVisualLines; ++i) {
+        // Early exit if we've rendered beyond the visible area
+        if (CurrentRenderY >= window_height) break;
+
+        const VisualLine &vLine = visualLines[i];
+        const ColoredLine &coloredChars = vLine.content;
 
         int xPos = 0;
-        int yPos = CurrentRenderY;
-        int MaxLineHeight = 0;
+        const int yPos = CurrentRenderY;
 
-        // Parse line with ANSI color codes
-        ColoredLine colored_line = parse_ansi_sequences(FullLine);
+        // Skip empty lines quickly
+        if (!coloredChars.empty()) {
+            // Render characters with optimized loop
+            for (const ColoredChar &colored_char : coloredChars) {
+                // Early exit if character is beyond visible width
+                if (xPos >= window_width) break;
 
-        for (const ColoredChar &colored_char : colored_line) {
-            char c = colored_char.character;
-
-            // Use colored cache for both bitmap and TTF fonts
-            SDL_Texture *pTexture = get_colored_cached_texture(c, colored_char.fg_color);
-
-            if (!pTexture) continue;
-
-            int texW = 0, texH = 0;
-            SDL_QueryTexture(pTexture, NULL, NULL, &texW, &texH);
-
-            if (xPos + texW > WindowWidth) {  // If the sum of the x position of the current
-                                              // character and the width of the current
-                                              // character is bigger than the window width, we
-                                              // need to start a new line.
-                xPos = 0;
-                yPos += MaxLineHeight;  // Update the y position of the next line.
-                MaxLineHeight = 0;
+                // Only render if character is visible (not space and within bounds)
+                if (colored_char.character != ' ') {
+                    SDL_Texture *pTexture = get_colored_cached_texture(colored_char.character, colored_char.fg_color);
+                    if (pTexture) {
+                        const SDL_Rect dstRect = {xPos, yPos, texture_width, texture_height};
+                        SDL_RenderCopy(this->pRenderer, pTexture, &srcRect, &dstRect);
+                    }
+                }
+                xPos += texture_width;
             }
-
-            SDL_Rect desRect = {xPos, yPos, texW, texH};
-            SDL_RenderCopy(this->pRenderer, pTexture, NULL, &desRect);
-
-            xPos += texW;              // Update the x position of the next character.
-            if (texH > MaxLineHeight)  // If the height of the current character
-                                       // is bigger than the max height, update
-                                       // the max height.
-                MaxLineHeight = texH;
         }
 
-        if (i == TotalLines - 1) {
+        // Update cursor position if this is the last visual line of the last logical line
+        if (vLine.logicalLineIndex == lastLogicalLineIndex && i == totalVisualLines - 1) {
             CursorX = xPos;
-            CursorH = MaxLineHeight;
+            CursorH = texture_height;
             this->y = yPos;
         }
 
-        CurrentRenderY = yPos + MaxLineHeight + 2;
+        CurrentRenderY += lineHeight;
     }
+
+    printf("Debug: Lines=%zu, VisualLines=%d, StartIndex=%d, VisibleLines=%d\n", lines.size(), totalVisualLines, startVisualIndex, visibleVisualLines);
 
     if (ShowCursor) {
         SDL_Rect cursor_Rect = {CursorX, this->y, 10, CursorH};
@@ -385,9 +427,6 @@ void alterm::render_terminal_to_texture(std::string &input_buffer, Uint8 r, Uint
 
     // Set render target to terminal texture
     SDL_SetRenderTarget(pRenderer, terminal_texture);
-
-    // Render terminal content (use existing renderer_screen logic, but don't
-    // present)
     renderer_screen(input_buffer, r, g, b, a, ShowCursor, false);
 
     // Reset render target
@@ -398,8 +437,6 @@ void alterm::render_keyboard_to_texture(void *keyboard_ptr) {
     if (!keyboard_texture || !keyboard_ptr) return;
 
     VirtualKeyboard *keyboard = static_cast<VirtualKeyboard *>(keyboard_ptr);
-
-    // Set render target to keyboard texture
     SDL_SetRenderTarget(pRenderer, keyboard_texture);
 
     // Clear with transparent background

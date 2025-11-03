@@ -41,12 +41,16 @@ private:
     SDL_Texture* keyboard_texture = nullptr;
     int window_width = 0;
     int window_height = 0;
+    int texture_width = 0;
+    int texture_height = 0;
 
 public:
     int ScrollOffSet = 0;
+    int MaxLines = 64;
     std::vector<std::string> lines;
 
     bool initialize_window();
+    void update_window_size();
     void reset_y() { this->y = 0; }
     void enter_cursor_reset_x() { this->CursorX = 0; }
     void renderer_screen(std::string& input_buffer, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool ShowCursor, bool should_present = true);
@@ -68,6 +72,9 @@ public:
     SDL_Renderer* get_renderer() { return pRenderer; }
     TTF_Font* get_font() { return Font; }
     BitmapFont* get_bitmap_font() { return bitmap_font; }
+
+    // Setters
+    void set_max_lines(int max_lines) { MaxLines = max_lines; }
 
     void trim_lines(size_t MaxLines, alterm* term) {
         if (lines.size() > MaxLines) {

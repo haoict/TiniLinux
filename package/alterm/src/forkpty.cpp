@@ -9,15 +9,14 @@
 #include "../include/Alterm.hpp"
 #include "../include/AnsFilter.hpp"
 
-#define DEFAULT(a, b) (a) = (a) ? (a) : (b)
+#define BUFSIZE 2048
+
+static char shell[] = "/bin/sh";
 
 std::vector<std::string> lines;
 
 // start shell with subprocess (child process) and connect to it via pty
 // (master_fd)
-
-static char shell[] = "/bin/bash";
-
 int start_shell_with_pty(int& master_fd) {
     pid_t pid = forkpty(&master_fd, nullptr, nullptr,
                         nullptr);  // master_fd is the file descriptor of the
@@ -49,7 +48,7 @@ int start_shell_with_pty(int& master_fd) {
 
         char** args;
         char* envshell = getenv("SHELL");
-        DEFAULT(envshell, shell);
+        envshell = envshell ? envshell : shell;
         args = (char*[]){envshell, "-i", NULL};
         execlp(envshell, args[0], args[1], NULL);
 
@@ -61,7 +60,7 @@ int start_shell_with_pty(int& master_fd) {
 }
 
 bool read_pty(int pty_fd, alterm* term_ptr, std::vector<std::string>& lines) {
-    char buffer[BUFSIZ];                               // buffer to store the read data, and it char[256] because the function read() deal with only char arrays.
+    char buffer[BUFSIZE];                              // buffer to store the read data, and it char[256] because the function read() deal with only char arrays.
     int n = read(pty_fd, buffer, sizeof(buffer) - 1);  // we subtract 1 because we want to add the null terminator at the end of the buffer.
     if (n > 0) {
         buffer[n] = '\0';  // \0 represents the null terminator.
@@ -94,12 +93,15 @@ bool read_pty(int pty_fd, alterm* term_ptr, std::vector<std::string>& lines) {
                 if (lines.empty()) {
                     lines.push_back("");
                 }
+                if (lines.back().size() >= BUFSIZE) {  // Prevent excessively long lines
+                    lines.push_back("");
+                }
                 lines.back() += cleaned[i];
                 i++;
             }
         }
 
-        term_ptr->trim_lines(1000, term_ptr);
+        term_ptr->trim_lines(term_ptr->MaxLines, term_ptr);
 
         return true;
     }

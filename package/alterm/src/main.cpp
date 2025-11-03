@@ -79,12 +79,12 @@ int main(int argc, char* argv[]) {
         TTF_Font* keyboard_font = term->get_font();
         vkb->initialize(keyboard_font);
         // Pre-cache common characters for TTF font (need renderer)
-        vkb->pre_cache_common_chars({0, 0, 0, 255},
-                                    term->get_renderer());  // Black text
+        vkb->pre_cache_common_chars({0, 0, 0, 255}, term->get_renderer());  // Black text
     }
 
     // Initial render to populate textures
     std::string empty_input = "";
+    term->update_window_size();
     term->render_terminal_to_texture(empty_input, br, bg, bb, ba, ShowCursor);
     term->render_keyboard_to_texture(vkb);
 
@@ -163,9 +163,7 @@ int main(int argc, char* argv[]) {
 
                         if (input_buffer == "exit") {
                             in_settings_mode = false;
-                            term->lines.push_back(
-                                "Exiting Settings... (restart the terminal to "
-                                "see the changes)");
+                            term->lines.push_back("Exiting Settings... (restart the terminal to see the changes)");
                         }
 
                         term->lines.push_back("[settings]:");
