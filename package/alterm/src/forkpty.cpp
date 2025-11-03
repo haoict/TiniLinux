@@ -38,10 +38,10 @@ int start_shell_with_pty(int& master_fd) {
         // attributes to the same as the parent process.
 
         // Set up terminal environment for full color support
-        // setenv("TERM", "xterm-256color", 1);  // Full color terminal support
-        // setenv("COLORTERM", "truecolor", 1);  // Enable true color support
-        // setenv("CLICOLOR", "1", 1);           // Force color output for some programs
-        // setenv("CLICOLOR_FORCE", "1", 1);     // Force color even if not a tty
+        setenv("TERM", "xterm-256color", 1);  // Full color terminal support
+        setenv("COLORTERM", "truecolor", 1);  // Enable true color support
+        setenv("CLICOLOR", "1", 1);           // Force color output for some programs
+        setenv("CLICOLOR_FORCE", "1", 1);     // Force color even if not a tty
 
         // Start bash as a login shell to load .bash_profile, .bashrc, etc.
         // execlp("bash", "bash", "-l", NULL);
@@ -60,51 +60,92 @@ int start_shell_with_pty(int& master_fd) {
 }
 
 bool read_pty(int pty_fd, alterm* term_ptr, std::vector<std::string>& lines) {
-    char buffer[BUFSIZE];                              // buffer to store the read data, and it char[256] because the function read() deal with only char arrays.
-    int n = read(pty_fd, buffer, sizeof(buffer) - 1);  // we subtract 1 because we want to add the null terminator at the end of the buffer.
+    char buffer[BUFSIZE];
+    int n = read(pty_fd, buffer, sizeof(buffer) - 1);
     if (n > 0) {
-        buffer[n] = '\0';  // \0 represents the null terminator.
+        buffer[n] = '\0';
         std::string raw = buffer;
 
-        std::string cleaned = strip_osc_sequences(raw);  // Keep ANSI for rendering
-
-        // Handle carriage returns and line feeds properly
-        size_t i = 0;
-        while (i < cleaned.size()) {
-            if (cleaned[i] == '\r') {
-                // Carriage return - go to beginning of current line
-                if (i + 1 < cleaned.size() && cleaned[i + 1] == '\n') {
-                    // \r\n - move to next line (normal line ending)
-                    i += 2;
-                    lines.push_back("");  // Add new empty line
-                } else {
-                    // Just \r - overwrite current line
-                    i++;
-                    if (!lines.empty()) {
-                        lines.back().clear();  // Clear the current line for overwriting
-                    }
-                }
-            } else if (cleaned[i] == '\n') {
-                // Line feed without carriage return
-                i++;
-                lines.push_back("");  // Add new empty line
-            } else {
-                // Regular character - add to current line
-                if (lines.empty()) {
-                    lines.push_back("");
-                }
-                if (lines.back().size() >= BUFSIZE) {  // Prevent excessively long lines
-                    lines.push_back("");
-                }
-                lines.back() += cleaned[i];
-                i++;
-            }
+        // Process each character individually like the reference implementation
+        for (int i = 0; i < n; i++) {
+            char c = buffer[i];
+            term_ptr->process_char(c);
         }
 
-        int max_lines = term_ptr->settings_manager ? term_ptr->settings_manager->get_max_lines() : 64;
-        term_ptr->trim_lines(max_lines, term_ptr);
+        // Only process for normal line mode if we're NOT in alternate screen
+        if (!term_ptr->alternate_screen) {
+            // Normal line-based mode for shell
+            std::string cleaned = strip_osc_sequences(raw);
+
+            // Handle carriage returns and line feeds properly
+            size_t i = 0;
+            while (i < cleaned.size()) {
+                if (cleaned[i] == '\r') {
+                    // Carriage return - go to beginning of current line
+                    if (i + 1 < cleaned.size() && cleaned[i + 1] == '\n') {
+                        // \r\n - move to next line (normal line ending)
+                        i += 2;
+                        lines.push_back("");
+                    } else {
+                        // Just \r - overwrite current line
+                        i++;
+                        if (!lines.empty()) {
+                            lines.back().clear();
+                        }
+                    }
+                } else if (cleaned[i] == '\n') {
+                    // Line feed without carriage return
+                    i++;
+                    lines.push_back("");
+                } else if (cleaned[i] == '\x08' || cleaned[i] == '\x7F') {
+                    // Backspace character - remove last character from current line
+                    i++;
+                    if (!lines.empty() && !lines.back().empty()) {
+                        lines.back().pop_back();
+                    }
+                } else if (cleaned[i] >= 32) {
+                    // Printable character - add to current line
+                    if (lines.empty()) {
+                        lines.push_back("");
+                    }
+                    if (lines.back().size() >= BUFSIZE) {
+                        lines.push_back("");
+                    }
+                    lines.back() += cleaned[i];
+                    i++;
+                } else {
+                    // Skip other control characters
+                    i++;
+                }
+            }
+
+            int max_lines = term_ptr->settings_manager ? term_ptr->settings_manager->get_max_lines() : 64;
+            term_ptr->trim_lines(max_lines, term_ptr);
+        }
 
         return true;
+    }
+
+    return false;
+}
+
+// Function to detect if output contains a shell prompt (indicating command completion)
+bool looks_like_shell_prompt(const std::string& line) {
+    if (line.empty()) return false;
+
+    // Common shell prompt patterns
+    // Look for patterns like: user@host:path$ or user@host:path# or just $ or #
+    if (line.find('$') != std::string::npos && line.back() == ' ') return true;
+    if (line.find('#') != std::string::npos && line.back() == ' ') return true;
+
+    // Look for patterns ending with typical prompt characters
+    if (line.size() > 2) {
+        char last_char = line[line.size() - 1];
+        char second_last = line[line.size() - 2];
+
+        if (last_char == ' ' && (second_last == '$' || second_last == '#' || second_last == '>')) {
+            return true;
+        }
     }
 
     return false;

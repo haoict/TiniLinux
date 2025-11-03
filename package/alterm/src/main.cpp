@@ -4,9 +4,12 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 
 #include <clocale>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -15,10 +18,43 @@
 #include "../include/SettingsManager.hpp"
 #include "../include/VirtualKeyboard.hpp"
 
+// Function to check if we should enter raw mode (pass all input to shell)
+bool should_use_raw_mode(const std::string& command) {
+    // List of commands that require raw terminal input
+    static const std::vector<std::string> raw_mode_commands = {"nano", "vi", "vim", "emacs", "less", "more", "man", "top", "htop", "tmux", "screen", "mc", "lynx", "w3m", "ssh", "telnet", "ftp"};
+
+    // Extract first word (command name)
+    std::istringstream iss(command);
+    std::string cmd;
+    iss >> cmd;
+
+    // Check if command needs raw mode
+    for (const auto& raw_cmd : raw_mode_commands) {
+        if (cmd == raw_cmd) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 std::vector<std::string> CommandHistory;
 const size_t MaxHistorySize = 100;
 int CommandHistoryIndex = -1;
 const std::string HisotryFile = ".alterm_history";
+
+// Function to set terminal window size
+void set_terminal_size(int pty_fd, int cols, int rows) {
+    struct winsize ws;
+    ws.ws_col = cols;
+    ws.ws_row = rows;
+    ws.ws_xpixel = 0;
+    ws.ws_ypixel = 0;
+
+    if (ioctl(pty_fd, TIOCSWINSZ, &ws) == -1) {
+        perror("ioctl TIOCSWINSZ failed");
+    }
+}
 
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "");
@@ -37,6 +73,9 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to start shell." << std::endl;
         return (1);
     }
+
+    // Set initial terminal size (80x25 is a standard default)
+    set_terminal_size(pty_fd, 80, 25);
 
     if (term->initialize_window() == false) {
         std::cout << "Init_error" << std::endl;
@@ -86,6 +125,7 @@ int main(int argc, char* argv[]) {
     // Initial render to populate textures
     std::string empty_input = "";
     term->update_window_size();
+    term->update_screen_dimensions();
     term->render_terminal_to_texture(empty_input, br, bg, bb, ba, ShowCursor);
     term->render_keyboard_to_texture(vkb);
 
@@ -116,156 +156,180 @@ int main(int argc, char* argv[]) {
             }
 
             else if (event.type == SDL_TEXTINPUT) {
-                // Accept text input from virtual keyboard or when keyboard is
-                // not active
                 char* text = event.text.text;
 
                 // Check if this is a control character (ASCII 1-31)
                 if (text[0] >= 1 && text[0] <= 31 && text[1] == '\0') {
-                    // This is a control character from virtual keyboard, send
-                    // directly to PTY
+                    // Control character - send directly to shell
                     write(pty_fd, text, 1);
-                    if (text[0] == 3) {        // Ctrl+C
-                        input_buffer.clear();  // Clear input buffer for Ctrl+C
+                    if (text[0] == 3) {  // Ctrl+C
+                        input_buffer.clear();
                     }
-                    dirty = true;
                 } else {
-                    // Regular text input
-                    input_buffer += text;
-                    dirty = true;
+                    // Regular text - send directly to PTY (like a proper terminal)
+                    write(pty_fd, text, strlen(text));
                 }
-                // Force immediate render to prevent lag
+                dirty = true;
             }
 
             else if (event.type == SDL_KEYDOWN) {
-                // Handle backspace from both physical keyboard and virtual
-                // keyboard
-                if (event.key.keysym.sym == SDLK_BACKSPACE && !input_buffer.empty()) {
-                    input_buffer.pop_back();
+                // Handle ALL keys directly like a proper terminal
+                bool key_handled = false;
+
+                // Handle Ctrl combinations first
+                if (event.key.keysym.mod & KMOD_CTRL) {
+                    char ctrl_char = 0;
+                    switch (event.key.keysym.sym) {
+                        case SDLK_a:
+                            ctrl_char = '\x01';
+                            break;  // Ctrl+A
+                        case SDLK_b:
+                            ctrl_char = '\x02';
+                            break;  // Ctrl+B
+                        case SDLK_c:
+                            ctrl_char = '\x03';
+                            break;  // Ctrl+C
+                        case SDLK_d:
+                            ctrl_char = '\x04';
+                            break;  // Ctrl+D
+                        case SDLK_e:
+                            ctrl_char = '\x05';
+                            break;  // Ctrl+E
+                        case SDLK_f:
+                            ctrl_char = '\x06';
+                            break;  // Ctrl+F
+                        case SDLK_g:
+                            ctrl_char = '\x07';
+                            break;  // Ctrl+G
+                        case SDLK_h:
+                            ctrl_char = '\x08';
+                            break;  // Ctrl+H (backspace)
+                        case SDLK_i:
+                            ctrl_char = '\x09';
+                            break;  // Ctrl+I (tab)
+                        case SDLK_j:
+                            ctrl_char = '\x0A';
+                            break;  // Ctrl+J
+                        case SDLK_k:
+                            ctrl_char = '\x0B';
+                            break;  // Ctrl+K
+                        case SDLK_l:
+                            ctrl_char = '\x0C';
+                            break;  // Ctrl+L
+                        case SDLK_m:
+                            ctrl_char = '\x0D';
+                            break;  // Ctrl+M (return)
+                        case SDLK_n:
+                            ctrl_char = '\x0E';
+                            break;  // Ctrl+N
+                        case SDLK_o:
+                            ctrl_char = '\x0F';
+                            break;  // Ctrl+O
+                        case SDLK_p:
+                            ctrl_char = '\x10';
+                            break;  // Ctrl+P
+                        case SDLK_q:
+                            ctrl_char = '\x11';
+                            break;  // Ctrl+Q
+                        case SDLK_r:
+                            ctrl_char = '\x12';
+                            break;  // Ctrl+R
+                        case SDLK_s:
+                            ctrl_char = '\x13';
+                            break;  // Ctrl+S
+                        case SDLK_t:
+                            ctrl_char = '\x14';
+                            break;  // Ctrl+T
+                        case SDLK_u:
+                            ctrl_char = '\x15';
+                            break;  // Ctrl+U
+                        case SDLK_v:
+                            ctrl_char = '\x16';
+                            break;  // Ctrl+V
+                        case SDLK_w:
+                            ctrl_char = '\x17';
+                            break;  // Ctrl+W
+                        case SDLK_x:
+                            ctrl_char = '\x18';
+                            break;  // Ctrl+X
+                        case SDLK_y:
+                            ctrl_char = '\x19';
+                            break;  // Ctrl+Y
+                        case SDLK_z:
+                            ctrl_char = '\x1A';
+                            break;  // Ctrl+Z
+                    }
+                    if (ctrl_char) {
+                        write(pty_fd, &ctrl_char, 1);
+                        if (ctrl_char == '\x03') {  // Ctrl+C clears local buffer
+                            input_buffer.clear();
+                        }
+                        key_handled = true;
+                    }
+                }
+
+                // Handle special keys
+                if (!key_handled) {
+                    switch (event.key.keysym.sym) {
+                        case SDLK_BACKSPACE: {
+                            char backspace = '\x7F';  // DEL character (127) - standard for backspace
+                            write(pty_fd, &backspace, 1);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_RETURN: {
+                            char enter = '\r';
+                            write(pty_fd, &enter, 1);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_TAB: {
+                            char tab = '\t';
+                            write(pty_fd, &tab, 1);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_ESCAPE: {
+                            char escape = '\x1B';
+                            write(pty_fd, &escape, 1);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_UP: {
+                            const char up[] = "\x1B[A";
+                            write(pty_fd, up, 3);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_DOWN: {
+                            const char down[] = "\x1B[B";
+                            write(pty_fd, down, 3);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_LEFT: {
+                            const char left[] = "\x1B[D";
+                            write(pty_fd, left, 3);
+                            key_handled = true;
+                            break;
+                        }
+                        case SDLK_RIGHT: {
+                            const char right[] = "\x1B[C";
+                            write(pty_fd, right, 3);
+                            key_handled = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (key_handled) {
+                    input_buffer.clear();  // Clear local buffer since we sent to PTY
                     dirty = true;
+                    continue;
                 }
 
-                // Handle Return key (works for both physical and virtual
-                // keyboard)
-                else if (event.key.keysym.sym == SDLK_RETURN) {
-                    std::string command = input_buffer;
-                    std::string to_send = command + "\n";
-                    term->enter_cursor_reset_x();
-                    term->ScrollOffSet = 0;
-
-                    if (in_settings_mode) {
-                        term->lines.push_back("[settings] " + input_buffer);
-
-                        std::vector<std::string> OutputLine = Settings->apply_command(input_buffer);
-                        // render the ruselt to the terminal
-                        for (const auto& line : OutputLine) {
-                            term->lines.push_back(line);
-                        }
-
-                        if (input_buffer == "exit") {
-                            in_settings_mode = false;
-                            term->lines.push_back("Exiting Settings... (restart the terminal to see the changes)");
-                        }
-
-                        term->lines.push_back("[settings]:");
-                        input_buffer.clear();
-                        dirty = true;
-                        continue;
-                    }
-
-                    if (!command.empty()) {
-                        if (CommandHistory.empty() || command != CommandHistory.back()) {
-                            CommandHistory.push_back(input_buffer);
-                            append_history(input_buffer, HisotryFile);
-
-                            if (CommandHistory.size() > MaxHistorySize) CommandHistory.erase(CommandHistory.begin());
-                        }
-
-                        CommandHistoryIndex = -1;
-                    }
-
-                    if (input_buffer == "clear") {
-                        input_buffer.clear();
-                        term->reset_display();
-                        term->lines.clear();
-                        std::string newline = "\n";
-                        write(pty_fd, newline.c_str(), newline.size());
-                        dirty = true;
-                        continue;
-                    }
-
-                    if (input_buffer == "exit") {
-                        quit = true;
-                        input_buffer.clear();
-                        break;
-                    }
-
-                    if (input_buffer == "settings") {
-                        in_settings_mode = true;
-                        input_buffer.clear();
-                        term->lines.push_back("======= Settings Mode ========");
-                        term->lines.push_back("\nType help for more information");
-                        term->lines.push_back("\n");
-
-                        // render all the settings.
-                        std::vector<std::string> SettingsLines = Settings->render_all_settings();
-                        SettingsLines.push_back("[settings]:");
-                        term->lines.insert(term->lines.end(), SettingsLines.begin(), SettingsLines.end());
-                        dirty = true;
-                        continue;
-                    }
-
-                    write(pty_fd, to_send.c_str(), to_send.size());
-                    input_buffer.clear();
-                    dirty = true;
-                }
-
-                // Handle other keys only when virtual keyboard is not active
-                else if (!vkb->is_active()) {
-                    // Handle Ctrl+C (SIGINT)
-                    if (event.key.keysym.sym == SDLK_c && (event.key.keysym.mod & KMOD_CTRL)) {
-                        char ctrl_c = '\x03';  // ASCII 3 - ETX (End of Text) - SIGINT
-                        write(pty_fd, &ctrl_c, 1);
-                        input_buffer.clear();  // Clear input buffer
-                        dirty = true;
-                    }
-
-                    // Handle Ctrl+D (EOF)
-                    else if (event.key.keysym.sym == SDLK_d && (event.key.keysym.mod & KMOD_CTRL)) {
-                        char ctrl_d = '\x04';  // ASCII 4 - EOT (End of
-                                               // Transmission) - EOF
-                        write(pty_fd, &ctrl_d, 1);
-                        // Don't clear input buffer for Ctrl+D as it might be
-                        // used to complete commands
-                    }
-
-                    else if (event.key.keysym.sym == SDLK_UP) {
-                        if (!CommandHistory.empty()) {
-                            if (CommandHistoryIndex == -1)
-                                CommandHistoryIndex = CommandHistory.size() - 1;
-                            else if (CommandHistoryIndex > 0)
-                                CommandHistoryIndex--;
-
-                            input_buffer = CommandHistory[CommandHistoryIndex];
-                            dirty = true;
-                        }
-                    }
-
-                    else if (event.key.keysym.sym == SDLK_DOWN) {
-                        if (!CommandHistory.empty() && CommandHistoryIndex != -1) {
-                            if (CommandHistoryIndex < static_cast<int>(CommandHistory.size() - 1))
-                                CommandHistoryIndex++;
-                            else
-                                CommandHistoryIndex = -1;
-
-                            if (CommandHistoryIndex != -1)
-                                input_buffer = CommandHistory[CommandHistoryIndex];
-                            else
-                                input_buffer.clear();
-                            dirty = true;
-                        }
-                    }
-                }
+                // All key handling is now done above - keys are sent directly to PTY
+                dirty = true;
             }
 
             else if (event.type == SDL_MOUSEWHEEL) {
@@ -284,6 +348,15 @@ int main(int argc, char* argv[]) {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     // Recreate render textures for new window size
                     term->create_render_textures();
+
+                    // Update terminal size in PTY
+                    term->update_window_size();
+                    if (term->get_texture_width() > 0 && term->get_texture_height() > 0) {
+                        int cols = term->get_window_width() / term->get_texture_width();
+                        int rows = term->get_window_height() / (term->get_texture_height() + 2);
+                        set_terminal_size(pty_fd, cols, rows);
+                    }
+
                     dirty = true;
                     keyboard_dirty = true;  // Force keyboard redraw too
                 }
@@ -292,6 +365,12 @@ int main(int argc, char* argv[]) {
 
         if (read_pty(pty_fd, term, term->lines)) {
             dirty = true;
+        }
+
+        // Check if screen buffer operations (like scrolling) require re-render
+        if (term->is_screen_buffer_dirty()) {
+            dirty = true;
+            term->clear_screen_buffer_dirty();
         }
 
         // Cursor blinking disabled to prevent flickering with virtual keyboard

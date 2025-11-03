@@ -13,15 +13,50 @@ std::string strip_osc_sequences(const std::string& input) {
     std::string output;
     size_t i = 0;
     while (i < input.size()) {
-        if (input[i] == '\033' && i + 1 < input.size() && input[i + 1] == ']') {
-            i += 2;
-            while (i < input.size() && input[i] != '\a' && !(input[i] == '\033' && input[i + 1] == '\\')) {
-                ++i;
-            }
-            if (i < input.size() && input[i] == '\a')
-                ++i;
-            else if (i + 1 < input.size() && input[i] == '\033' && input[i + 1] == '\\')
+        if (input[i] == '\033' && i + 1 < input.size()) {
+            if (input[i + 1] == ']') {
+                // OSC sequence \033]...
                 i += 2;
+                while (i < input.size() && input[i] != '\a' && !(input[i] == '\033' && input[i + 1] == '\\')) {
+                    ++i;
+                }
+                if (i < input.size() && input[i] == '\a')
+                    ++i;
+                else if (i + 1 < input.size() && input[i] == '\033' && input[i + 1] == '\\')
+                    i += 2;
+            } else if (input[i + 1] == '(') {
+                // Charset selection sequence \033(B, \033(0, etc.
+                i += 2;
+                if (i < input.size()) {
+                    i++;  // Skip the charset character
+                }
+            } else if (input[i + 1] == '[') {
+                // CSI sequence \033[...
+                i += 2;
+                std::string sequence;
+                // Collect the sequence parameters
+                while (i < input.size() && ((input[i] >= '0' && input[i] <= '9') || input[i] == ';' || input[i] == '?' || input[i] == '!' || input[i] == '=' || input[i] == '>' || input[i] == '<' || input[i] == ' ')) {
+                    sequence += input[i];
+                    ++i;
+                }
+                // Get the command character
+                if (i < input.size() && ((input[i] >= 'A' && input[i] <= 'Z') || (input[i] >= 'a' && input[i] <= 'z'))) {
+                    char command = input[i];
+                    i++;
+
+                    // Convert some positioning commands to newlines to preserve structure
+                    if (command == 'd' || command == 'H') {
+                        // Cursor positioning - add newline to simulate line break
+                        if (!output.empty() && output.back() != '\n') {
+                            output += '\n';
+                        }
+                    }
+                    // For other commands (colors, etc.), just strip them
+                }
+            } else {
+                // Not a sequence we handle, keep the character
+                output += input[i++];
+            }
         } else {
             output += input[i++];
         }
@@ -74,7 +109,8 @@ ColoredLine parse_ansi_sequences(const std::string& input) {
             std::string sequence;
 
             // Read until we hit the command character
-            while (i < input.size() && (std::isdigit(input[i]) || input[i] == ';')) {
+            // Allow more characters in sequences: digits, semicolons, question marks, etc.
+            while (i < input.size() && (std::isdigit(input[i]) || input[i] == ';' || input[i] == '?' || input[i] == '=' || input[i] == '>' || input[i] == '<')) {
                 sequence += input[i++];
             }
 
@@ -124,8 +160,14 @@ ColoredLine parse_ansi_sequences(const std::string& input) {
                             pos = next_pos + 1;
                         }
                     }
+                } else {
+                    // Handle other terminal control sequences by consuming them
+                    // (don't add them as visible text)
+                    // Common sequences:
+                    // A,B,C,D (cursor movement), H,f (cursor position),
+                    // J,K (erase), h,l (mode setting), etc.
+                    // Just consume the sequence without processing it for display
                 }
-                // Ignore other escape sequences for now (cursor movement, etc.)
             }
         } else {
             // Regular character - add with current formatting

@@ -17,7 +17,7 @@ public:
     const std::string& get(const std::string& Key) const;
     void set(const std::string& Key, const std::string& Value);
     std::vector<std::string> render_all_settings() const;
-    
+
     // Convenience methods for specific settings
     int get_max_lines() const;
 };

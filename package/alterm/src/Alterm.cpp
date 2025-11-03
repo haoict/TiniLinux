@@ -8,6 +8,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_video.h>
 
+#include <algorithm>
 #include <string>
 
 #include "../include/AnsFilter.hpp"
@@ -42,6 +43,9 @@ bool alterm::initialize_window() {
         SDL_Quit();
         InitializeVar = false;
     }
+
+    // Initialize screen buffer
+    init_screen_buffer();
 
     return InitializeVar;
 }
@@ -206,6 +210,53 @@ void alterm::setup_font(const Uint8 r, const Uint8 g, const Uint8 b, const char 
 // individualy. And also make sure that the render don't exceed the screen size.
 void alterm::renderer_screen(std::string &InputBuffer, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool ShowCursor, bool should_present) {
     render_background(r, g, b, a);
+
+    // If in alternate screen mode, render screen buffer instead of lines
+    if (alternate_screen) {
+        // Ensure texture dimensions are cached and screen buffer is sized correctly
+        if (texture_width == 0 || texture_height == 0) {
+            update_window_size();
+        }
+        update_screen_dimensions();
+
+        // Render screen buffer
+        const SDL_Rect srcRect = {0, 0, texture_width, texture_height};
+        const int lineHeight = texture_height + 2;
+
+        for (int row = 0; row < screen_rows && row * lineHeight < window_height && row < screen_buffer.size(); ++row) {
+            for (int col = 0; col < screen_cols && col * texture_width < window_width && col < screen_buffer[row].size(); ++col) {
+                const ColoredChar &cell = screen_buffer[row][col];
+
+                const SDL_Rect cellRect = {col * texture_width, row * lineHeight, texture_width, texture_height};
+
+                // Render background color if not transparent
+                if (cell.bg_color.a > 0) {
+                    SDL_SetRenderDrawColor(this->pRenderer, cell.bg_color.r, cell.bg_color.g, cell.bg_color.b, cell.bg_color.a);
+                    SDL_RenderFillRect(this->pRenderer, &cellRect);
+                }
+
+                // Render character if not space or if it has a background
+                if (cell.character != ' ' || cell.bg_color.a > 0) {
+                    SDL_Texture *pTexture = get_colored_cached_texture(cell.character, cell.fg_color);
+                    if (pTexture) {
+                        SDL_RenderCopy(this->pRenderer, pTexture, &srcRect, &cellRect);
+                    }
+                }
+            }
+        }
+
+        // Draw cursor in screen buffer mode
+        if (ShowCursor && cursor_row >= 0 && cursor_row < screen_rows && cursor_col >= 0 && cursor_col < screen_cols) {
+            SDL_SetRenderDrawColor(this->pRenderer, 255, 255, 255, 255);
+            SDL_Rect cursor_rect = {cursor_col * texture_width, cursor_row * lineHeight, 2, texture_height};
+            SDL_RenderFillRect(this->pRenderer, &cursor_rect);
+        }
+
+        if (should_present) {
+            SDL_RenderPresent(this->pRenderer);
+        }
+        return;
+    }
 
     // Ensure texture dimensions are cached (only if not already set)
     if (texture_width == 0 || texture_height == 0) {
@@ -470,4 +521,581 @@ void alterm::composite_and_present() {
 
     // Present final result
     SDL_RenderPresent(pRenderer);
+}
+
+// Screen buffer methods
+void alterm::init_screen_buffer() {
+    // Ensure we have proper dimensions before initializing
+    if (texture_width == 0 || texture_height == 0) {
+        update_window_size();
+    }
+    update_screen_dimensions();
+
+    screen_buffer.resize(screen_rows);
+    for (auto &row : screen_buffer) {
+        row.resize(screen_cols);
+        for (auto &cell : row) {
+            cell.character = ' ';
+            cell.fg_color = {255, 255, 255, 255};  // White text by default
+            cell.bg_color = {0, 0, 0, 0};          // Transparent background by default
+        }
+    }
+    cursor_row = 0;
+    cursor_col = 0;
+
+    // Initialize scroll region to full screen
+    scroll_top = 0;
+    scroll_bottom = screen_rows - 1;
+}
+
+void alterm::clear_screen_buffer() {
+    for (auto &row : screen_buffer) {
+        for (auto &cell : row) {
+            cell.character = ' ';
+            cell.fg_color = {255, 255, 255, 255};
+            cell.bg_color = {0, 0, 0, 0};  // Reset to transparent
+        }
+    }
+    cursor_row = 0;
+    cursor_col = 0;
+
+    // Reset text attributes to defaults
+    current_fg_color = {255, 255, 255, 255};  // White
+    current_bg_color = {0, 0, 0, 0};          // Transparent
+    reverse_video = false;
+}
+
+void alterm::set_cursor_position(int row, int col) {
+    cursor_row = std::max(0, std::min(row, screen_rows - 1));
+    cursor_col = std::max(0, std::min(col, screen_cols - 1));
+}
+
+void alterm::write_to_screen_buffer(const std::string &text) {
+    for (char c : text) {
+        if (c >= 32 && c <= 126) {  // Only printable ASCII characters
+            if (cursor_row >= 0 && cursor_row < screen_rows && cursor_col >= 0 && cursor_col < screen_cols) {
+                screen_buffer[cursor_row][cursor_col].character = c;
+
+                // Apply current text attributes
+                if (reverse_video) {
+                    screen_buffer[cursor_row][cursor_col].fg_color = current_bg_color.a > 0 ? current_bg_color : SDL_Color{0, 0, 0, 255};
+                    screen_buffer[cursor_row][cursor_col].bg_color = current_fg_color;
+                } else {
+                    screen_buffer[cursor_row][cursor_col].fg_color = current_fg_color;
+                    screen_buffer[cursor_row][cursor_col].bg_color = current_bg_color;
+                }
+
+                cursor_col++;
+                // Don't auto-wrap - let escape sequences handle positioning
+                if (cursor_col >= screen_cols) {
+                    cursor_col = screen_cols - 1;  // Stay at edge
+                }
+            }
+        }
+        // Note: Don't handle \n, \r here - let control character processing in process_char handle them
+    }
+}
+
+void alterm::handle_escape_sequence(const std::string &sequence) {
+    if (sequence.length() < 2) {
+        return;
+    }
+
+    // Handle different types of escape sequences
+    if (sequence.find("\033[?") == 0) {
+        // Private mode sequences
+        if (sequence.find("1049h") != std::string::npos) {
+            alternate_screen = true;
+            clear_screen_buffer();
+        } else if (sequence.find("1049l") != std::string::npos) {
+            alternate_screen = false;
+            // Reset text attributes when exiting alternate screen
+            current_fg_color = {255, 255, 255, 255};  // White
+            current_bg_color = {0, 0, 0, 0};          // Transparent
+            reverse_video = false;
+        } else if (sequence.find("25l") != std::string::npos) {
+            // Hide cursor
+        } else if (sequence.find("25h") != std::string::npos) {
+            // Show cursor
+        }
+        return;
+    }
+
+    if (sequence.find("\033]") == 0) {
+        // OSC sequences (window title, etc.) - ignore for now
+        return;
+    }
+
+    if (sequence.find("\033(") == 0 || sequence.find("\033=") == 0) {
+        // Character set or keypad mode - ignore for now
+        return;
+    }
+
+    if (sequence.find("\033[") != 0) {
+        return;  // Not a CSI sequence we handle
+    }
+
+    // CSI sequence
+    std::string params = sequence.substr(2, sequence.length() - 3);
+    char command = sequence.back();
+
+    switch (command) {
+        case 'H':  // Cursor position
+        case 'f': {
+            int row = 1, col = 1;
+            size_t semicolon = params.find(';');
+            try {
+                if (semicolon != std::string::npos) {
+                    if (semicolon > 0) {
+                        std::string row_str = params.substr(0, semicolon);
+                        if (!row_str.empty()) row = std::stoi(row_str);
+                    }
+                    if (semicolon + 1 < params.length()) {
+                        std::string col_str = params.substr(semicolon + 1);
+                        if (!col_str.empty()) col = std::stoi(col_str);
+                    }
+                } else if (!params.empty()) {
+                    row = std::stoi(params);
+                }
+            } catch (const std::exception &) {
+                // Invalid number, use defaults
+            }
+
+            // Convert to 0-based positioning
+            int new_row = row - 1;
+
+            set_cursor_position(new_row, col - 1);
+            break;
+        }
+        case 'J':  // Erase display
+            if (params.empty() || params == "0") {
+                // Clear from cursor to end of screen
+                for (int r = cursor_row; r < screen_rows; r++) {
+                    int start_col = (r == cursor_row) ? cursor_col : 0;
+                    for (int c = start_col; c < screen_cols; c++) {
+                        if (r < screen_buffer.size() && c < screen_buffer[r].size()) {
+                            screen_buffer[r][c].character = ' ';
+                            screen_buffer[r][c].bg_color = {0, 0, 0, 0};  // Reset background
+                        }
+                    }
+                }
+            } else if (params == "1") {
+                // Clear from start of screen to cursor
+                for (int r = 0; r <= cursor_row && r < screen_rows; r++) {
+                    int end_col = (r == cursor_row) ? cursor_col : screen_cols - 1;
+                    for (int c = 0; c <= end_col && c < screen_cols; c++) {
+                        if (r < screen_buffer.size() && c < screen_buffer[r].size()) {
+                            screen_buffer[r][c].character = ' ';
+                            screen_buffer[r][c].bg_color = {0, 0, 0, 0};  // Reset background
+                        }
+                    }
+                }
+            } else if (params == "2") {
+                clear_screen_buffer();
+            }
+            break;
+        case 'K':  // Erase line
+            if (cursor_row < screen_buffer.size()) {
+                if (params.empty() || params == "0") {
+                    // Clear from cursor to end of line
+                    for (int c = cursor_col; c < screen_cols && c < screen_buffer[cursor_row].size(); c++) {
+                        screen_buffer[cursor_row][c].character = ' ';
+                        screen_buffer[cursor_row][c].bg_color = {0, 0, 0, 0};  // Reset background
+                    }
+                } else if (params == "1") {
+                    // Clear from start of line to cursor
+                    for (int c = 0; c <= cursor_col && c < screen_buffer[cursor_row].size(); c++) {
+                        screen_buffer[cursor_row][c].character = ' ';
+                        screen_buffer[cursor_row][c].bg_color = {0, 0, 0, 0};  // Reset background
+                    }
+                } else if (params == "2") {
+                    // Clear entire line
+                    for (int c = 0; c < screen_cols && c < screen_buffer[cursor_row].size(); c++) {
+                        screen_buffer[cursor_row][c].character = ' ';
+                        screen_buffer[cursor_row][c].bg_color = {0, 0, 0, 0};  // Reset background
+                    }
+                }
+            }
+            break;
+        case 'A':  // Cursor up
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                cursor_row = std::max(0, cursor_row - n);
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'B':  // Cursor down
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                cursor_row = std::min(screen_rows - 1, cursor_row + n);
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'C':  // Cursor forward
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                cursor_col = std::min(screen_cols - 1, cursor_col + n);
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'D':  // Cursor backward
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                cursor_col = std::max(0, cursor_col - n);
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'G':  // Cursor horizontal absolute
+            try {
+                int col = params.empty() ? 1 : std::stoi(params);
+                cursor_col = std::max(0, std::min(col - 1, screen_cols - 1));
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'd':  // Line position absolute
+            try {
+                int row = params.empty() ? 1 : std::stoi(params);
+                cursor_row = std::max(0, std::min(row - 1, screen_rows - 1));
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'X':  // Erase characters
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                for (int i = 0; i < n && cursor_col + i < screen_cols; i++) {
+                    if (cursor_row < screen_buffer.size() && cursor_col + i < screen_buffer[cursor_row].size()) {
+                        screen_buffer[cursor_row][cursor_col + i].character = ' ';
+                        screen_buffer[cursor_row][cursor_col + i].bg_color = {0, 0, 0, 0};  // Reset background
+                    }
+                }
+            } catch (const std::exception &) {
+            }
+            break;
+        case 'm':  // SGR - Select Graphic Rendition (colors/attributes)
+        {
+            if (params.empty()) {
+                // Reset all attributes
+                current_fg_color = {255, 255, 255, 255};  // White
+                current_bg_color = {0, 0, 0, 0};          // Transparent
+                reverse_video = false;
+            } else {
+                // Parse multiple parameters separated by semicolons
+                std::string param_str = params + ";";  // Add trailing semicolon for easier parsing
+                size_t pos = 0;
+                while (pos < param_str.length()) {
+                    size_t next_pos = param_str.find(';', pos);
+                    if (next_pos == std::string::npos) break;
+
+                    std::string param = param_str.substr(pos, next_pos - pos);
+                    if (!param.empty()) {
+                        try {
+                            int code = std::stoi(param);
+                            switch (code) {
+                                case 0:  // Reset
+                                    current_fg_color = {255, 255, 255, 255};
+                                    current_bg_color = {0, 0, 0, 0};
+                                    reverse_video = false;
+                                    break;
+                                case 7:  // Reverse video
+                                    reverse_video = true;
+                                    break;
+                                case 27:  // Not reverse video
+                                    reverse_video = false;
+                                    break;
+                                case 30:
+                                    current_fg_color = {0, 0, 0, 255};
+                                    break;  // Black
+                                case 31:
+                                    current_fg_color = {255, 0, 0, 255};
+                                    break;  // Red
+                                case 32:
+                                    current_fg_color = {0, 255, 0, 255};
+                                    break;  // Green
+                                case 33:
+                                    current_fg_color = {255, 255, 0, 255};
+                                    break;  // Yellow
+                                case 34:
+                                    current_fg_color = {0, 0, 255, 255};
+                                    break;  // Blue
+                                case 35:
+                                    current_fg_color = {255, 0, 255, 255};
+                                    break;  // Magenta
+                                case 36:
+                                    current_fg_color = {0, 255, 255, 255};
+                                    break;  // Cyan
+                                case 37:
+                                    current_fg_color = {255, 255, 255, 255};
+                                    break;  // White
+                                case 40:
+                                    current_bg_color = {0, 0, 0, 255};
+                                    break;  // Black background
+                                case 41:
+                                    current_bg_color = {255, 0, 0, 255};
+                                    break;  // Red background
+                                case 42:
+                                    current_bg_color = {0, 255, 0, 255};
+                                    break;  // Green background
+                                case 43:
+                                    current_bg_color = {255, 255, 0, 255};
+                                    break;  // Yellow background
+                                case 44:
+                                    current_bg_color = {0, 0, 255, 255};
+                                    break;  // Blue background
+                                case 45:
+                                    current_bg_color = {255, 0, 255, 255};
+                                    break;  // Magenta background
+                                case 46:
+                                    current_bg_color = {0, 255, 255, 255};
+                                    break;  // Cyan background
+                                case 47:
+                                    current_bg_color = {255, 255, 255, 255};
+                                    break;  // White background
+                            }
+                        } catch (const std::exception &) {
+                            // Invalid number, skip
+                        }
+                    }
+                    pos = next_pos + 1;
+                }
+            }
+        } break;
+        case 'r':  // Set scrolling region
+        {
+            int top = 1, bottom = screen_rows;
+            size_t semicolon = params.find(';');
+            try {
+                if (semicolon != std::string::npos) {
+                    if (semicolon > 0) {
+                        std::string top_str = params.substr(0, semicolon);
+                        if (!top_str.empty()) top = std::stoi(top_str);
+                    }
+                    if (semicolon + 1 < params.length()) {
+                        std::string bottom_str = params.substr(semicolon + 1);
+                        if (!bottom_str.empty()) bottom = std::stoi(bottom_str);
+                    }
+                } else if (!params.empty()) {
+                    top = std::stoi(params);
+                }
+
+                // Convert to 0-based and validate
+                scroll_top = std::max(0, std::min(top - 1, screen_rows - 1));
+                scroll_bottom = std::max(scroll_top, std::min(bottom - 1, screen_rows - 1));
+
+                // Move cursor to home position in scroll region
+                cursor_row = scroll_top;
+                cursor_col = 0;
+            } catch (const std::exception &) {
+            }
+        } break;
+        case 'S':  // Scroll up
+        {
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                scroll_up_region(scroll_top, n);
+            } catch (const std::exception &) {
+            }
+        } break;
+        case 'T':  // Scroll down
+        {
+            try {
+                int n = params.empty() ? 1 : std::stoi(params);
+                printf("DEBUG: Scroll DOWN region called, lines=%d, origin=%d, region_bottom=%d\n", n, scroll_top, scroll_bottom);
+                scroll_down_region(scroll_top, n);
+                printf("DEBUG: Scroll DOWN region completed, lines=%d, origin=%d, region_bottom=%d\n", n, scroll_top, scroll_bottom);
+            } catch (const std::exception &) {
+            }
+        } break;
+        case 't':  // Window operations
+            // Ignore for now
+            break;
+        case 'l':  // Reset mode
+        case 'h':  // Set mode
+            // Various mode settings - ignore for now
+            break;
+    }
+}
+
+void alterm::update_screen_dimensions() {
+    if (texture_width > 0 && texture_height > 0) {
+        screen_cols = window_width / texture_width;
+        screen_rows = window_height / (texture_height + 2);
+
+        // Resize screen buffer if dimensions changed
+        if (screen_buffer.size() != screen_rows) {
+            screen_buffer.resize(screen_rows);
+            for (auto &row : screen_buffer) {
+                row.resize(screen_cols);
+            }
+        } else {
+            for (auto &row : screen_buffer) {
+                if (row.size() != screen_cols) {
+                    row.resize(screen_cols);
+                }
+            }
+        }
+    }
+}
+
+void alterm::scroll_up(int lines) { scroll_up_region(0, lines); }
+
+void alterm::scroll_down(int lines) { scroll_down_region(0, lines); }
+
+void alterm::scroll_up_region(int origin, int lines) {
+    if (lines <= 0 || origin < 0 || origin >= screen_buffer.size()) return;
+
+    int region_bottom = std::min(scroll_bottom, (int)screen_buffer.size() - 1);
+
+    // Limit lines to scroll within the region bounds
+    lines = std::min(lines, region_bottom - origin + 1);
+    if (lines <= 0) return;
+
+    // Clear the region at top where new content will appear (like reference tclearregion)
+    for (int row = origin; row < origin + lines; row++) {
+        if (row >= 0 && row <= region_bottom && row < screen_buffer.size()) {
+            for (auto &cell : screen_buffer[row]) {
+                cell.character = ' ';
+                cell.fg_color = {255, 255, 255, 255};
+                cell.bg_color = {0, 0, 0, 0};
+            }
+        }
+    }
+
+    // Move lines up: iterate from top to avoid overwriting (like reference loop)
+    for (int current_row = origin; current_row <= region_bottom - lines; current_row++) {
+        int source_row = current_row + lines;
+        if (source_row <= region_bottom && source_row < screen_buffer.size() && current_row >= 0) {
+            std::swap(screen_buffer[current_row], screen_buffer[source_row]);
+        }
+    }
+
+    printf("DEBUG: Scroll UP region completed, lines=%d, origin=%d, region_bottom=%d\n", lines, origin, region_bottom);
+    // Mark screen buffer as dirty to trigger re-render
+    screen_buffer_dirty = true;
+}
+
+void alterm::scroll_down_region(int origin, int lines) {
+    if (lines <= 0 || origin < 0 || origin >= screen_buffer.size()) return;
+
+    int region_bottom = std::min(scroll_bottom, (int)screen_buffer.size() - 1);
+
+    // Limit lines to scroll within the region bounds
+    lines = std::min(lines, region_bottom - origin + 1);
+    if (lines <= 0) return;
+
+    // Clear the region at bottom where new content will appear (like reference tclearregion)
+    for (int row = region_bottom - lines + 1; row <= region_bottom; row++) {
+        if (row >= 0 && row < screen_buffer.size()) {
+            for (auto &cell : screen_buffer[row]) {
+                cell.character = ' ';
+                cell.fg_color = {255, 255, 255, 255};
+                cell.bg_color = {0, 0, 0, 0};
+            }
+        }
+    }
+
+    // Move lines down: iterate from bottom to avoid overwriting (like reference loop)
+    for (int current_row = region_bottom; current_row >= origin + lines; current_row--) {
+        int source_row = current_row - lines;
+        if (source_row >= origin && source_row >= 0 && current_row < screen_buffer.size() && source_row < screen_buffer.size()) {
+            std::swap(screen_buffer[current_row], screen_buffer[source_row]);
+        }
+    }
+
+    // Mark screen buffer as dirty to trigger re-render
+    screen_buffer_dirty = true;
+}
+
+void alterm::process_char(char c) {
+    // Handle escape sequence detection globally
+    if (c == '\033') {
+        // Start collecting escape sequence
+        esc_buffer = "\033";
+        esc_state = ESC_START;
+        return;
+    }
+
+    if (esc_state != ESC_NORMAL) {
+        // We're in an escape sequence
+        esc_buffer += c;
+
+        // Check for alternate screen sequences
+        if (esc_buffer.find("\033[?1049h") != std::string::npos) {
+            alternate_screen = true;
+            clear_screen_buffer();
+            esc_state = ESC_NORMAL;
+            esc_buffer.clear();
+            return;
+        } else if (esc_buffer.find("\033[?1049l") != std::string::npos) {
+            alternate_screen = false;
+            // Reset text attributes when exiting alternate screen
+            current_fg_color = {255, 255, 255, 255};  // White
+            current_bg_color = {0, 0, 0, 0};          // Transparent
+            reverse_video = false;
+            esc_state = ESC_NORMAL;
+            esc_buffer.clear();
+            return;
+        }
+
+        // Simple check for end of CSI sequence
+        if (esc_buffer.length() > 2 && esc_buffer[1] == '[' && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '@' && c <= '~'))) {
+            // Debug: Log ALL escape sequences to see what nano is actually sending (escaped)
+            std::string escaped_seq;
+            for (char ch : esc_buffer) {
+                if (ch == '\033') {
+                    escaped_seq += "\\033";
+                } else if (ch >= 32 && ch <= 126) {
+                    escaped_seq += ch;
+                } else {
+                    escaped_seq += "\\x" + std::to_string((unsigned char)ch);
+                }
+            }
+            printf("DEBUG: All escape sequences: %s (alternate_screen=%s)\n", escaped_seq.c_str(), alternate_screen ? "true" : "false");
+
+            // Always handle escape sequences (not just in alternate screen mode)
+            // The reference implementation processes all escape sequences
+            handle_escape_sequence(esc_buffer);
+            esc_state = ESC_NORMAL;
+            esc_buffer.clear();
+        } else if (esc_buffer.length() > 20) {
+            // Prevent buffer overflow - reset on very long sequences
+            esc_state = ESC_NORMAL;
+            esc_buffer.clear();
+        }
+        return;
+    }
+
+    // Character processing based on current mode
+    if (alternate_screen) {
+        // Screen buffer mode - handle all characters
+        if (c >= 32) {
+            // Printable character - write directly to current cursor position
+            write_to_screen_buffer(std::string(1, c));
+        } else {
+            // Control characters in screen buffer mode - minimal handling
+            switch (c) {
+                case '\r':
+                    cursor_col = 0;  // Carriage return
+                    break;
+                case '\b':
+                    if (cursor_col > 0) cursor_col--;  // Backspace
+                    break;
+                case '\n':
+                    // Line feed - move down one line, keep column
+                    cursor_row++;
+                    if (cursor_row > scroll_bottom) {
+                        // Auto-scroll when cursor goes beyond scroll region bottom
+                        scroll_up_region(scroll_top, 1);
+                        cursor_row = scroll_bottom;
+                    }
+                    break;
+                case '\t':
+                    // Tab - move to next tab stop
+                    cursor_col = ((cursor_col / 8) + 1) * 8;
+                    if (cursor_col >= screen_cols) cursor_col = screen_cols - 1;
+                    break;
+                    // Ignore other control characters - let escape sequences handle positioning
+            }
+        }
+    }
+    // Note: Normal shell mode is handled separately in the existing line processing code
 }
