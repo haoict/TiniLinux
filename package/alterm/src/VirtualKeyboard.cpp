@@ -254,6 +254,45 @@ void VirtualKeyboard::clear_ttf_texture_cache() {
     ttf_texture_cache.clear();
 }
 
+void VirtualKeyboard::pre_cache_common_chars(SDL_Color color, SDL_Renderer* renderer) {
+    // Pre-cache all characters that appear on the keyboard
+    const char* common_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~\\";
+    
+    if (bitmap_font) {
+        // Pre-cache for bitmap font
+        for (const char* c = common_chars; *c; c++) {
+            get_cached_bitmap_texture(*c, color);
+        }
+        
+        // Also cache common key labels
+        const char* key_labels[] = {"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+                                   "Tab", "Caps", "Shift", "Ctrl", "Alt", "Space", "Enter", "Bsp", "Ins", "Del",
+                                   "Home", "End", "PrS", "Exit", "Pg Up", "Pg Dn", nullptr};
+        
+        for (int i = 0; key_labels[i]; i++) {
+            for (const char* c = key_labels[i]; *c; c++) {
+                get_cached_bitmap_texture(*c, color);
+            }
+        }
+    } else if (font && renderer) {
+        // Pre-cache for TTF font
+        for (const char* c = common_chars; *c; c++) {
+            get_cached_ttf_texture(*c, color, renderer);
+        }
+        
+        // Also cache common key labels
+        const char* key_labels[] = {"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+                                   "Tab", "Caps", "Shift", "Ctrl", "Alt", "Space", "Enter", "Bsp", "Ins", "Del",
+                                   "Home", "End", "PrS", "Exit", "Pg Up", "Pg Dn", nullptr};
+        
+        for (int i = 0; key_labels[i]; i++) {
+            for (const char* c = key_labels[i]; *c; c++) {
+                get_cached_ttf_texture(*c, color, renderer);
+            }
+        }
+    }
+}
+
 void VirtualKeyboard::draw(SDL_Renderer* renderer, int screen_width, int screen_height) {
     if (!active && !show_help) return;
     

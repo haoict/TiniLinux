@@ -71,7 +71,8 @@ public:
     bool initialize(TTF_Font* font_ptr);
     bool initialize_bitmap(class BitmapFont* bitmap_font_ptr);
     void cleanup();
-    
+    void pre_cache_common_chars(SDL_Color color, SDL_Renderer* renderer = nullptr);
+
     // Main functions
     void draw(SDL_Renderer* renderer, int screen_width, int screen_height);
     bool handle_event(SDL_Event* event);

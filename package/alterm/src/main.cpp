@@ -77,10 +77,14 @@ int main(int argc, char* argv[]){
     if (fontPath == "embedded_font") {
         // Use bitmap font for keyboard too
         vkb->initialize_bitmap(term->get_bitmap_font());
+        // Pre-cache common characters for bitmap font
+        vkb->pre_cache_common_chars({0, 0, 0, 255}); // Black text
     } else {
         // Use TTF font for keyboard
         TTF_Font* keyboard_font = term->get_font();
         vkb->initialize(keyboard_font);
+        // Pre-cache common characters for TTF font (need renderer)
+        vkb->pre_cache_common_chars({0, 0, 0, 255}, term->get_renderer()); // Black text
     }
     
     // Initial render to populate textures
@@ -107,8 +111,6 @@ int main(int argc, char* argv[]){
             // Let virtual keyboard handle events first
             if(vkb->handle_event(&event)){
                 keyboard_dirty = true;
-                // Don't set dirty=true for keyboard navigation to prevent full terminal redraw
-                // dirty = true;
                 continue;
             }
             
@@ -306,20 +308,31 @@ int main(int argc, char* argv[]){
         // }
 
         // Layered texture rendering - update textures only when dirty
+        bool need_present = false;
+        
         if(dirty) {
             term->render_terminal_to_texture(input_buffer, br, bg, bb, ba, ShowCursor);
             dirty = false;
+            need_present = true;
         }
         
         if(keyboard_dirty) {
             term->render_keyboard_to_texture(vkb);
             keyboard_dirty = false;
+            need_present = true;
         }
         
-        // Always composite textures and present (atomic update, no flicker)
-        term->composite_and_present();
+        // Only composite and present if something changed
+        if(need_present) {
+            term->composite_and_present();
+        }
 
-        SDL_Delay(33);  // 30 FPS
+        // Use event-driven rendering with a small delay to prevent 100% CPU usage
+        if (!need_present) {
+            SDL_Delay(10);  // Only delay when nothing to render
+        } else {
+            SDL_Delay(1);   // Minimal delay when actively rendering
+        }
     }
 
     
