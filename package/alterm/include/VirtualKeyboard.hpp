@@ -30,6 +30,7 @@ private:
     int location; // 0 = bottom, 1 = top
     bool toggled[NUM_ROWS][NUM_KEYS];
     int char_width, char_height;
+    bool ignore_next_key; // Flag to prevent recursive key handling
     
     // Font and rendering
     TTF_Font* font;

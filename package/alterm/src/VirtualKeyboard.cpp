@@ -12,13 +12,13 @@ SDL_Keycode VirtualKeyboard::keys[2][NUM_ROWS][NUM_KEYS] = {
      {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, SDLK_LEFTBRACKET, SDLK_RIGHTBRACKET, SDLK_BACKSLASH, SDLK_HOME, SDLK_END, SDLK_DOWN},
      {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_SEMICOLON, SDLK_QUOTE, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
      {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_COMMA, SDLK_PERIOD, SDLK_SLASH, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, KEY_QUIT}},
+     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, SDL_QUIT}},
     {{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F7, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
      {'~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', SDLK_BACKSPACE, SDLK_INSERT, SDLK_DELETE, SDLK_UP},
      {SDLK_TAB, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '|', SDLK_HOME, SDLK_END, SDLK_DOWN},
      {SDLK_CAPSLOCK, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
      {SDLK_LSHIFT, 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, KEY_QUIT}}};
+     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDL_QUIT}}};
 
 const char* VirtualKeyboard::syms[2][NUM_ROWS][NUM_KEYS] = {
     {{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", nullptr},
@@ -74,6 +74,7 @@ void VirtualKeyboard::init_keyboard() {
     visual_offset = 0;
     active = false;
     show_help = false; // Show help initially
+    ignore_next_key = false; // Initialize recursive prevention flag
 }
 
 bool VirtualKeyboard::initialize(TTF_Font* font_ptr) {
@@ -397,6 +398,12 @@ bool VirtualKeyboard::handle_event(SDL_Event* event) {
     if (event->type == SDL_KEYDOWN) {
         SDL_Keycode key = event->key.keysym.sym;
         
+        // Check if we should ignore this key event to prevent recursive handling
+        if (ignore_next_key && (key == SDLK_RETURN || key == SDLK_BACKSPACE)) {
+            ignore_next_key = false;
+            return false; // Let main event loop handle it
+        }
+        
         // Global toggle key (Escape)
         if (key == SDLK_ESCAPE) {
             if (show_help) {
@@ -464,16 +471,17 @@ bool VirtualKeyboard::handle_event(SDL_Event* event) {
                 }
                 return true;
                 
-            case SDLK_RETURN:
-            case SDLK_SPACE: {
+            case SDLK_RETURN: {
                 // Press the selected key
                 SDL_Keycode target_key = keys[shifted][selected_j][selected_i];
-                
-                if (target_key == KEY_QUIT) {
+
+                if (strncmp(syms[shifted][selected_j][selected_i], "Exit", 4) == 0) {
                     // Send quit event
                     SDL_Event quit_event;
                     quit_event.type = SDL_QUIT;
                     SDL_PushEvent(&quit_event);
+                    printf("Virtual keyboard requested quit.\n");
+                    return false;
                 } else if (target_key == SDLK_LSHIFT || target_key == SDLK_RSHIFT) {
                     // Toggle shift
                     toggled[selected_j][selected_i] = !toggled[selected_j][selected_i];
@@ -488,8 +496,9 @@ bool VirtualKeyboard::handle_event(SDL_Event* event) {
                     // Check if Ctrl is pressed for control characters
                     bool ctrl_pressed = toggled[5][0] || toggled[5][6]; // Left or right Ctrl
                     
-                    if (target_key == SDLK_BACKSPACE) {
-                        // Always send backspace as key event, not text input
+                    if (target_key == SDLK_BACKSPACE || target_key == SDLK_RETURN) {
+                        // Always send backspace and return as key events, not text input
+                        ignore_next_key = true; // Prevent recursive handling
                         simulate_key_event(target_key, true);
                         simulate_key_event(target_key, false);
                     } else if (ctrl_pressed && target_key >= SDLK_a && target_key <= SDLK_z) {

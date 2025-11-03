@@ -112,8 +112,10 @@ int main(int argc, char* argv[]){
                 continue;
             }
             
-            if(event.type == SDL_QUIT)
+            if(event.type == SDL_QUIT) {
                 quit = true;
+                break;
+            }
 
             else if(event.type == SDL_TEXTINPUT){
                 // Accept text input from virtual keyboard or when keyboard is not active
