@@ -80,7 +80,7 @@ char *help =
     "  mv <f> <d>      move files (dest can be dir)\n"
     "  rm <f>          remove files (use -rf for dir)\n\n";
 
-#define CREDIT "Update by @haoict (c) 2024. Version: " VERSION
+#define CREDIT "Update by @haoict (c) 2025"
 
 void draw_keyboard(SDL_Surface *surface) {
     unsigned short bg_color = SDL_MapRGB(surface->format, 64, 64, 64);
@@ -148,11 +148,12 @@ void update_modstate(int key, int state) {
             mod_state |= KMOD_LALT;
         else if (key == SDLK_RALT)
             mod_state |= KMOD_RALT;
-        // else if (key == SDLK_LMETA)
-        // 	mod_state |= KMOD_LMETA;
-        // else if (key == SDLK_RMETA)
-        // 	mod_state |= KMOD_RMETA;
-        // else if(key == SDLK_NUM) mod_state |= KMOD_NUM;
+        else if (key == SDLK_LGUI)
+            mod_state |= KMOD_LGUI;
+        else if (key == SDLK_RGUI)
+            mod_state |= KMOD_RGUI;
+        else if (key == SDLK_NUMLOCKCLEAR)
+            mod_state |= KMOD_NUM;
         else if (key == SDLK_CAPSLOCK)
             mod_state |= KMOD_CAPS;
         else if (key == SDLK_MODE)
@@ -170,11 +171,12 @@ void update_modstate(int key, int state) {
             mod_state &= ~KMOD_LALT;
         else if (key == SDLK_RALT)
             mod_state &= ~KMOD_RALT;
-        // else if (key == SDLK_LMETA)
-        // 	mod_state &= ~KMOD_LMETA;
-        // else if (key == SDLK_RMETA)
-        // 	mod_state &= ~KMOD_RMETA;
-        // else if(key == SDLK_NUM) mod_state &= ~KMOD_NUM;
+        else if (key == SDLK_LGUI)
+            mod_state &= ~KMOD_LGUI;
+        else if (key == SDLK_RGUI)
+            mod_state &= ~KMOD_RGUI;
+        else if (key == SDLK_NUMLOCKCLEAR)
+            mod_state &= ~KMOD_NUM;
         else if (key == SDLK_CAPSLOCK)
             mod_state &= ~KMOD_CAPS;
         else if (key == SDLK_MODE)
@@ -185,11 +187,7 @@ void update_modstate(int key, int state) {
 
 void simulate_key(int key, int state) {
     update_modstate(key, state);
-    SDL_Event event = {.key = {.type = SDL_KEYDOWN,
-                               .state = SDL_PRESSED,
-                               .keysym = {
-                                   .scancode = 0, .sym = key, .mod = KMOD_SYNTHETIC
-                               }}};
+    SDL_Event event = {.key = {.type = SDL_KEYDOWN, .state = SDL_PRESSED, .keysym = {.scancode = 0, .sym = key, .mod = KMOD_SYNTHETIC}}};
     if (state == STATE_TYPED) {
         SDL_PushEvent(&event);
         event.key.type = SDL_KEYUP;
@@ -278,15 +276,6 @@ int handle_keyboard_event(SDL_Event *event) {
     }
 
     if (!active) {
-#if defined(BR2)
-        if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
-            if (event->key.keysym.sym == KEY_QUIT) {
-                return -1;
-            } else if (event->key.keysym.sym == KEY_RETURN) {
-                simulate_key(SDLK_RETURN, STATE_TYPED);
-            }
-        }
-#endif
         return 0;
     }
 
@@ -295,7 +284,7 @@ int handle_keyboard_event(SDL_Event *event) {
         if (show_help) {
             // do nothing
         } else if (event->key.keysym.sym == KEY_QUIT) {
-            return -1;
+            return -999;
         } else if (event->key.keysym.sym == KEY_SHIFT) {
             shifted = 1;
             toggled[4][0] = 1;
@@ -340,10 +329,7 @@ int handle_keyboard_event(SDL_Event *event) {
         }
     } else if (event->key.type == SDL_KEYUP || event->key.state == SDL_RELEASED) {
         if (show_help) {
-            // if (event->key.keysym.sym != SDLK_PRINT && event->key.keysym.sym != KEY_ENTER && event->key.keysym.scancode != 0)
-            // {
             show_help = 0;
-            // }
         } else if (event->key.keysym.sym == KEY_SHIFT) {
             shifted = 0;
             toggled[4][0] = 0;

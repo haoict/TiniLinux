@@ -1,5 +1,3 @@
-/* See LICENSE for licence details. */
-#define _XOPEN_SOURCE 600
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_thread.h>
 #include <ctype.h>
@@ -8,6 +6,7 @@
 #include <libgen.h>
 #include <limits.h>
 #include <locale.h>
+#include <pty.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -31,21 +30,7 @@
 #define Glyph Glyph_
 #define Font Font_
 
-#if defined(__linux)
-#include <pty.h>
-#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
-#include <util.h>
-#elif defined(__FreeBSD__) || defined(__DragonFly__)
-#include <libutil.h>
-#elif defined(__QNXNTO__)
-#include <unix.h>
-#endif
-
-#define USAGE                                                     \
-    "st " VERSION                                                 \
-    " (c) 2010-2012 st engineers\n"                               \
-    "usage: st [-v] [-c class] [-f font] [-g geometry] [-o file]" \
-    " [-t title] [-e command ...]\n"
+#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-f font] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
 
 /* Arbitrary sizes */
 #define ESC_BUF_SIZ 256
@@ -201,7 +186,6 @@ typedef union {
 
 SDL_Surface *screen;
 SDL_Surface *screen2;
-char preload_libname[PATH_MAX + 17];
 
 /* Drawing Context */
 typedef struct {
@@ -222,9 +206,6 @@ static void csidump(void);
 static void csihandle(void);
 static void csiparse(void);
 static void csireset(void);
-static void strdump(void);
-static void strhandle(void);
-static void strparse(void);
 static void strreset(void);
 
 static void tclearregion(int, int, int, int);
@@ -260,7 +241,6 @@ static void xclear(int, int, int, int);
 static void xdrawcursor(void);
 static void sdlinit(void);
 static void initcolormap(void);
-static void sdlresettitle(void);
 static void sdltermclear(int, int, int, int);
 static void xresize(int, int);
 
@@ -427,8 +407,6 @@ void sdlinit(void) {
         fprintf(stderr,"Unable to register TTF_Quit atexit\n");
     }*/
 
-    // vi = SDL_GetVideoInfo();
-
     /* font */
     usedfont = (opt_font == NULL) ? font : opt_font;
     sdlloadfonts(usedfont, fontsize);
@@ -436,23 +414,6 @@ void sdlinit(void) {
     fprintf(stderr, "SDL font: %s\n", usedfont);
     /* colors */
     initcolormap();
-
-    //	/* adjust fixed window geometry */
-    //	if(xw.isfixed) {
-    //		if(xw.fx < 0)
-    //			xw.fx = vi->current_w + xw.fx - xw.fw - 1;
-    //		if(xw.fy < 0)
-    //			xw.fy = vi->current_h + xw.fy - xw.fh - 1;
-    //
-    //		xw.h = xw.fh;
-    //		xw.w = xw.fw;
-    //	} else {
-    //		/* window - default size */
-    //		xw.h = 2*borderpx + term.row * xw.ch;
-    //		xw.w = 2*borderpx + term.col * xw.cw;
-    //		xw.fx = 0;
-    //		xw.fy = 0;
-    //	}
 
     int displayIndex = 0;  // usually 0 unless you have multiple screens
     SDL_DisplayMode mode;
@@ -464,6 +425,12 @@ void sdlinit(void) {
         printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
         xw.w = mode.w / 2;
         xw.h = mode.h / 2;
+
+        #ifndef BR2
+        xw.w = 320;
+        xw.h = 240;
+        printf("Generic build, using 320x240\n");
+        #endif
     }
 
     xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, xw.w, xw.h, SDL_WINDOW_SHOWN);
@@ -482,7 +449,7 @@ void sdlinit(void) {
     }
 
     // if rgb30
-    // SDL_RenderSetLogicalSize(xw.renderer, window_w, window_h);
+    // SDL_RenderSetLogicalSize(xw.renderer, xw.w, xw.h);
 
     xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
     if (!xw.texture) {
@@ -495,8 +462,6 @@ void sdlinit(void) {
     // Create a temporary surface for the screen to maintain compatibility
     screen = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 
-    sdlresettitle();
-    //
     // TODO: might need to use system threads
     if (!(thread = SDL_CreateThread(ttythread, "ttythread", NULL))) {
         fprintf(stderr, "Unable to create thread: %s\n", SDL_GetError());
@@ -504,10 +469,6 @@ void sdlinit(void) {
     }
 
     expose(NULL);
-    // vi = SDL_GetVideoInfo();
-
-    // Note: SDL2 doesn't have SDL_EnableKeyRepeat - it's handled differently
-    // Key repeat is now automatic in SDL2
 
     joystick = SDL_JoystickOpen(0);
 
@@ -675,7 +636,6 @@ void execsh(void) {
     setenv("HOME", home, 1);
     free(home);
 
-    setenv("LD_PRELOAD", preload_libname, 1);
     setenv("PS1", "\\[\\033[32m\\]\\W\\[\\033[00m\\]\\$ ", 1);
     setenv("LANG", "", 1);
 
@@ -1401,84 +1361,6 @@ void csidump(void) {
 
 void csireset(void) { memset(&csiescseq, 0, sizeof(csiescseq)); }
 
-void strhandle(void) {
-    char *p;
-
-    /*
-     * TODO: make this being useful in case of color palette change.
-     */
-    strparse();
-
-    p = strescseq.buf;
-
-    switch (strescseq.type) {
-        case ']': /* OSC -- Operating System Command */
-            switch (p[0]) {
-                case '0':
-                case '1':
-                case '2':
-                    /*
-                     * TODO: Handle special chars in string, like umlauts.
-                     */
-                    if (p[1] == ';') {
-                        // SDL_WM_SetCaption(strescseq.buf + 2, NULL);
-                    }
-                    break;
-                case ';':
-                    // SDL_WM_SetCaption(strescseq.buf + 1, NULL);
-                    break;
-                case '4': /* TODO: Set color (arg0) to "rgb:%hexr/$hexg/$hexb" (arg1) */
-                    break;
-                default:
-                    fprintf(stderr, "erresc: unknown str ");
-                    strdump();
-                    break;
-            }
-            break;
-        case 'k': /* old title set compatibility */
-            // SDL_WM_SetCaption(strescseq.buf, NULL);
-            break;
-        case 'P': /* DSC -- Device Control String */
-        case '_': /* APC -- Application Program Command */
-        case '^': /* PM -- Privacy Message */
-        default:
-            fprintf(stderr, "erresc: unknown str ");
-            strdump();
-            /* die(""); */
-            break;
-    }
-}
-
-void strparse(void) {
-    /*
-     * TODO: Implement parsing like for CSI when required.
-     * Format: ESC type cmd ';' arg0 [';' argn] ESC \
-     */
-    return;
-}
-
-void strdump(void) {
-    int i;
-    uint c;
-
-    printf("ESC%c", strescseq.type);
-    for (i = 0; i < strescseq.len; i++) {
-        c = strescseq.buf[i] & 0xff;
-        if (isprint(c)) {
-            putchar(c);
-        } else if (c == '\n') {
-            printf("(\\n)");
-        } else if (c == '\r') {
-            printf("(\\r)");
-        } else if (c == 0x1b) {
-            printf("(\\e)");
-        } else {
-            printf("(%02x)", c);
-        }
-    }
-    printf("ESC\\\n");
-}
-
 void strreset(void) { memset(&strescseq, 0, sizeof(strescseq)); }
 
 void tputtab(bool forward) {
@@ -1518,13 +1400,11 @@ void tputc(char *c, int len) {
                 break;
             case '\a': /* backwards compatibility to xterm */
                 term.esc = 0;
-                strhandle();
                 break;
             default:
                 strescseq.buf[strescseq.len++] = ascii;
                 if (strescseq.len + 1 >= STR_BUF_SIZ) {
                     term.esc = 0;
-                    strhandle();
                 }
         }
         return;
@@ -1583,7 +1463,6 @@ void tputc(char *c, int len) {
             }
         } else if (term.esc & ESC_STR_END) {
             term.esc = 0;
-            if (ascii == '\\') strhandle();
         } else if (term.esc & ESC_ALTCHARSET) {
             switch (ascii) {
                 case '0': /* Line drawing set */
@@ -1668,7 +1547,6 @@ void tputc(char *c, int len) {
                 case 'c': /* RIS -- Reset to inital state */
                     treset();
                     term.esc = 0;
-                    sdlresettitle();
                     break;
                 case '=': /* DECPAM -- Application keypad */
                     term.mode |= MODE_APPKEYPAD;
@@ -1961,10 +1839,6 @@ void xdrawcursor(void) {
         xdraws(g.c, g, term.c.x, term.c.y, 1, sl);
         oldx = term.c.x, oldy = term.c.y;
     }
-}
-
-void sdlresettitle(void) {
-    // SDL_WM_SetCaption(opt_title ? opt_title : "st", NULL);
 }
 
 void redraw(void) {
@@ -2273,7 +2147,7 @@ void run(void) {
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
                 // printf("Keyboard event received - key: %s, state: %s\n", SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
                 int keyboard_event = handle_keyboard_event(&ev);
-                if (keyboard_event == -1) {
+                if (keyboard_event == -999) {
                     // SDL_QUIT
                     running = 0;
                     break;
