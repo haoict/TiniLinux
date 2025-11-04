@@ -19,8 +19,8 @@ CC = ${CROSS_COMPILE}gcc
 SYSROOT = $(shell ${CC} --print-sysroot)
 
 # includes and libs
-INCS = -I. -I${SYSROOT}/usr/include/SDL
-LIBS = -lc -L${SYSROOT}/usr/lib -lSDL -lpthread -Wl,-Bstatic,-lutil,-Bdynamic
+INCS = -I. -I${SYSROOT}/usr/include/SDL2
+LIBS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lpthread -Wl,-Bstatic,-lutil,-Bdynamic
 
 # flags
 CPPFLAGS = -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT 

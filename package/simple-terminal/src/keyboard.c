@@ -1,4 +1,4 @@
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <time.h>
 #include "font.h"
 #include "keyboard.h"
@@ -11,19 +11,19 @@
 
 static int row_length[NUM_ROWS] = {13, 17, 17, 15, 14, 10};
 
-static SDLKey keys[2][NUM_ROWS][NUM_KEYS] = {
+static SDL_Keycode keys[2][NUM_ROWS][NUM_KEYS] = {
 	{{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F7, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
 	 {SDLK_BACKQUOTE, SDLK_1, SDLK_2, SDLK_3, SDLK_4, SDLK_5, SDLK_6, SDLK_7, SDLK_8, SDLK_9, SDLK_0, SDLK_MINUS, SDLK_EQUALS, SDLK_BACKSPACE, SDLK_INSERT, SDLK_DELETE, SDLK_UP},
 	 {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, SDLK_LEFTBRACKET, SDLK_RIGHTBRACKET, SDLK_BACKSLASH, SDLK_HOME, SDLK_END, SDLK_DOWN},
 	 {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_SEMICOLON, SDLK_QUOTE, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
 	 {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_COMMA, SDLK_PERIOD, SDLK_SLASH, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_RCTRL, SDLK_PRINT, SDLK_BREAK, KEY_QUIT}},
+	 {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, KEY_QUIT}},
 	{{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F7, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
 	 {'~', SDLK_EXCLAIM, SDLK_AT, SDLK_HASH, SDLK_DOLLAR, '%', SDLK_CARET, SDLK_AMPERSAND, SDLK_ASTERISK, SDLK_LEFTPAREN, SDLK_RIGHTPAREN, SDLK_UNDERSCORE, SDLK_PLUS, SDLK_BACKSPACE, SDLK_INSERT, SDLK_DELETE, SDLK_UP},
 	 {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, '{', '}', '|', SDLK_HOME, SDLK_END, SDLK_DOWN},
 	 {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_COLON, SDLK_QUOTEDBL, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
 	 {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_LESS, SDLK_GREATER, SDLK_QUESTION, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_RCTRL, SDLK_PRINT, SDLK_BREAK, KEY_QUIT}}};
+	 {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, KEY_QUIT}}};
 
 static char *syms[2][NUM_ROWS][NUM_KEYS] = {
 	{{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
@@ -47,8 +47,8 @@ static int shifted = 0;
 static int location = 0;
 static int mod_state = 0;
 
-int active = 1;
-int show_help = 1;
+int active = 0;
+int show_help = 0;
 
 void init_keyboard()
 {
@@ -181,10 +181,10 @@ void update_modstate(int key, int state)
 			mod_state |= KMOD_LALT;
 		else if (key == SDLK_RALT)
 			mod_state |= KMOD_RALT;
-		else if (key == SDLK_LMETA)
-			mod_state |= KMOD_LMETA;
-		else if (key == SDLK_RMETA)
-			mod_state |= KMOD_RMETA;
+		// else if (key == SDLK_LMETA)
+		// 	mod_state |= KMOD_LMETA;
+		// else if (key == SDLK_RMETA)
+		// 	mod_state |= KMOD_RMETA;
 		// else if(key == SDLK_NUM) mod_state |= KMOD_NUM;
 		else if (key == SDLK_CAPSLOCK)
 			mod_state |= KMOD_CAPS;
@@ -205,10 +205,10 @@ void update_modstate(int key, int state)
 			mod_state &= ~KMOD_LALT;
 		else if (key == SDLK_RALT)
 			mod_state &= ~KMOD_RALT;
-		else if (key == SDLK_LMETA)
-			mod_state &= ~KMOD_LMETA;
-		else if (key == SDLK_RMETA)
-			mod_state &= ~KMOD_RMETA;
+		// else if (key == SDLK_LMETA)
+		// 	mod_state &= ~KMOD_LMETA;
+		// else if (key == SDLK_RMETA)
+		// 	mod_state &= ~KMOD_RMETA;
 		// else if(key == SDLK_NUM) mod_state &= ~KMOD_NUM;
 		else if (key == SDLK_CAPSLOCK)
 			mod_state &= ~KMOD_CAPS;
@@ -234,7 +234,7 @@ void simulate_key(int key, int state)
 				.scancode = 0,
 				.sym = key,
 				.mod = KMOD_SYNTHETIC,
-				.unicode = unicode,
+				// .unicode = unicode,
 			}}};
 	if (state == STATE_TYPED)
 	{

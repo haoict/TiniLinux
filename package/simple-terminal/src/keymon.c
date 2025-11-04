@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -171,7 +171,7 @@ void process_events(int ev_code, int ev_value, int ev_type)
 				.scancode = scancode,
 				.sym = sym,
 				.mod = 0,
-				.unicode = 0,
+				// .unicode = 0,
 			}}};
 
 	SDL_PushEvent(&sdl_event);

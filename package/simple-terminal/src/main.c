@@ -22,9 +22,9 @@
 #include <unistd.h>
 #include <libgen.h>
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_thread.h>
-// #include <SDL/SDL_ttf.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_thread.h>
+// #include <SDL2/SDL_ttf.h>
 
 #include "font.h"
 #include "keyboard.h"
@@ -64,7 +64,7 @@
 #define REDRAW_TIMEOUT (80 * 1000) /* 80 ms */
 
 /* macros */
-#define CLEANMASK(mask) (mask & (KMOD_SHIFT | KMOD_CTRL | KMOD_ALT | KMOD_META))
+#define CLEANMASK(mask) (mask & (KMOD_SHIFT | KMOD_CTRL | KMOD_ALT))
 #define SERRNO strerror(errno)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
@@ -225,6 +225,9 @@ typedef struct
 typedef struct
 {
 	// Colormap cmap;
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+	SDL_Texture *texture;
 	SDL_Surface *win;
 	int scr;
 	bool isfixed;		/* is fixed geometry? */
@@ -239,8 +242,8 @@ typedef struct
 
 typedef struct
 {
-	SDLKey k;
-	SDLMod mask;
+	SDL_Keycode k;
+	Uint16 mask;
 	char s[ESC_BUF_SIZ];
 } Key;
 
@@ -270,8 +273,8 @@ typedef union
 
 typedef struct
 {
-	SDLMod mod;
-	SDLKey keysym;
+	Uint16 mod;
+	SDL_Keycode keysym;
 	void (*func)(const Arg *);
 	const Arg arg;
 } Shortcut;
@@ -355,8 +358,9 @@ static void xresize(int, int);
 static void expose(SDL_Event *);
 static void visibility(SDL_Event *);
 static void unmap(SDL_Event *);
-static char *kmap(SDLKey, SDLMod);
+static char *kmap(SDL_Keycode, Uint16);
 static void kpress(SDL_Event *);
+static void textinput(SDL_Event *);
 static void cresize(int width, int height);
 static void resize(SDL_Event *);
 static void focus(SDL_Event *);
@@ -387,11 +391,10 @@ static void *xrealloc(void *, size_t);
 static void *xcalloc(size_t nmemb, size_t size);
 static void xflip(void);
 
-static void (*handler[SDL_NUMEVENTS])(SDL_Event *) = {
+static void (*handler[SDL_LASTEVENT])(SDL_Event *) = {
 	[SDL_KEYDOWN] = kpress,
-	[SDL_VIDEORESIZE] = resize,
-	[SDL_VIDEOEXPOSE] = expose,
-	[SDL_ACTIVEEVENT] = activeEvent,
+	[SDL_TEXTINPUT] = textinput,
+	[SDL_WINDOWEVENT] = resize,
 	[SDL_MOUSEMOTION] = bmotion,
 	[SDL_MOUSEBUTTONDOWN] = bpress,
 	[SDL_MOUSEBUTTONUP] = brelease,
@@ -546,14 +549,14 @@ void sdlinit(void)
 
 	// dc.font = dc.ifont = dc.bfont = dc.ibfont = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO) == -1)
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		fprintf(stderr, "Unable to initialize SDL: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
 
-	SDL_EnableUNICODE(1);
 	SDL_ShowCursor(0);
+	SDL_StartTextInput();
 
 	/*if(TTF_Init() == -1) {
 		printf("TTF_Init: %s\n", TTF_GetError());
@@ -594,37 +597,61 @@ void sdlinit(void)
 	xw.w = initial_width;
 	xw.h = initial_height;
 
+	int window_w, window_h;
 #if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(UPSCALE)
-	if (!(screen = SDL_SetVideoMode(640, 480, 16, SDL_HWSURFACE)))
-	{
+	window_w = 640; window_h = 480;
 #elif defined(TRIMUISP)
-	if (!(screen = SDL_SetVideoMode(1280, 720, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
+	window_w = 1280; window_h = 720;
 #elif defined(MIYOOMINI)
-	if (!(screen = SDL_SetVideoMode(640, 480, 32, SDL_HWSURFACE)))
-	{
+	window_w = 640; window_h = 480;
 #elif defined(TRIMUISMART)
 	setenv("SDL_USE_PAN", "true", 1); // allow DOUBLEBUF
-	if (!(screen = SDL_SetVideoMode(240, 320, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
+	window_w = 240; window_h = 320;
 #else
-	if (!(screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
+	window_w = 320; window_h = 240;
 #endif
-		fprintf(stderr, "Unable to set video mode: %s\n", SDL_GetError());
+
+	xw.window = SDL_CreateWindow("Simple Terminal",
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		window_w, window_h, SDL_WINDOW_SHOWN);
+	if (!xw.window)
+	{
+		fprintf(stderr, "Unable to create window: %s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
+
+	xw.renderer = SDL_CreateRenderer(xw.window, -1, SDL_RENDERER_ACCELERATED);
+	if (!xw.renderer)
+	{
+		xw.renderer = SDL_CreateRenderer(xw.window, -1, SDL_RENDERER_SOFTWARE);
+		if (!xw.renderer)
+		{
+			fprintf(stderr, "Unable to create renderer: %s\n", SDL_GetError());
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565,
+		SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
+	if (!xw.texture)
+	{
+		fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
 #if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
-	xw.win = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
-	screen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
+	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+	screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
 #else
-	xw.win = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 #endif
+
+	// Create a temporary surface for the screen to maintain compatibility
+	screen = SDL_CreateRGBSurface(0, window_w, window_h, 16, 0xF800, 0x7E0, 0x1F, 0);
 
 	sdlresettitle();
 	//
 	// TODO: might need to use system threads
-	if (!(thread = SDL_CreateThread(ttythread, NULL)))
+	if (!(thread = SDL_CreateThread(ttythread, "ttythread", NULL)))
 	{
 		fprintf(stderr, "Unable to create thread: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -634,10 +661,11 @@ void sdlinit(void)
 	// vi = SDL_GetVideoInfo();
 	// cresize(vi->current_w, vi->current_h);
 
-	// SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableKeyRepeat(200, 20);
+	// Note: SDL2 doesn't have SDL_EnableKeyRepeat - it's handled differently
+	// Key repeat is now automatic in SDL2
 
-	SDL_Event event = {.type = SDL_VIDEOEXPOSE};
+	SDL_Event event = {.type = SDL_WINDOWEVENT};
+	event.window.event = SDL_WINDOWEVENT_EXPOSED;
 	SDL_PushEvent(&event);
 }
 
@@ -850,15 +878,28 @@ void xflip(void)
 #else
 	rotate320x240_rw32(screen2->pixels, screen->pixels);
 #endif
-	SDL_Flip(screen);
+	// Update texture with screen pixels and render
+	SDL_UpdateTexture(xw.texture, NULL, screen->pixels, screen->pitch);
+	SDL_RenderClear(xw.renderer);
+	SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
+	SDL_RenderPresent(xw.renderer);
 #else
-	SDL_BlitSurface(xw.win, NULL, screen, NULL);
-	draw_keyboard(screen);
-	if (SDL_Flip(screen))
-	{
-		// fputs("FLIP ERROR\n", stderr);
-		// exit(EXIT_FAILURE);
-	}
+	// Copy surface to texture for rendering
+	void *pixels;
+	int pitch;
+	SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
+	memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
+	SDL_UnlockTexture(xw.texture);
+	
+	// Draw keyboard overlay
+	draw_keyboard(xw.win);
+	SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
+	memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
+	SDL_UnlockTexture(xw.texture);
+	
+	SDL_RenderClear(xw.renderer);
+	SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
+	SDL_RenderPresent(xw.renderer);
 #endif
 }
 
@@ -2361,11 +2402,11 @@ void strhandle(void)
 			 */
 			if (p[1] == ';')
 			{
-				SDL_WM_SetCaption(strescseq.buf + 2, NULL);
+				// SDL_WM_SetCaption(strescseq.buf + 2, NULL);
 			}
 			break;
 		case ';':
-			SDL_WM_SetCaption(strescseq.buf + 1, NULL);
+			// SDL_WM_SetCaption(strescseq.buf + 1, NULL);
 			break;
 		case '4': /* TODO: Set color (arg0) to "rgb:%hexr/$hexg/$hexb" (arg1) */
 			break;
@@ -2376,7 +2417,7 @@ void strhandle(void)
 		}
 		break;
 	case 'k': /* old title set compatibility */
-		SDL_WM_SetCaption(strescseq.buf, NULL);
+		// SDL_WM_SetCaption(strescseq.buf, NULL);
 		break;
 	case 'P': /* DSC -- Device Control String */
 	case '_': /* APC -- Application Program Command */
@@ -3034,7 +3075,7 @@ void xdrawcursor(void)
 
 void sdlresettitle(void)
 {
-	SDL_WM_SetCaption(opt_title ? opt_title : "st", NULL);
+	// SDL_WM_SetCaption(opt_title ? opt_title : "st", NULL);
 }
 
 void redraw(void)
@@ -3104,18 +3145,18 @@ void drawregion(int x1, int y1, int x2, int y2)
 
 void activeEvent(SDL_Event *ev)
 {
-	switch (ev->active.type)
-	{
-	case SDL_APPACTIVE:
-		visibility(ev);
-		if (!ev->active.gain)
-			unmap(ev);
-		break;
-	case SDL_APPMOUSEFOCUS:
-	case SDL_APPINPUTFOCUS:
-		focus(ev);
-		break;
-	}
+	// switch (ev->active.type)
+	// {
+	// case SDL_APPACTIVE:
+	// 	visibility(ev);
+	// 	if (!ev->active.gain)
+	// 		unmap(ev);
+	// 	break;
+	// case SDL_APPMOUSEFOCUS:
+	// case SDL_APPINPUTFOCUS:
+	// 	focus(ev);
+	// 	break;
+	// }
 }
 
 void expose(SDL_Event *ev)
@@ -3126,17 +3167,17 @@ void expose(SDL_Event *ev)
 
 void visibility(SDL_Event *ev)
 {
-	SDL_ActiveEvent *e = &ev->active;
+	// SDL_ActiveEvent *e = &ev->active;
 
-	if (!e->gain)
-	{
-		xw.state &= ~WIN_VISIBLE;
-	}
-	else if (!(xw.state & WIN_VISIBLE))
-	{
-		/* need a full redraw for next Expose, not just a buf copy */
-		xw.state |= WIN_VISIBLE | WIN_REDRAW;
-	}
+	// if (!e->gain)
+	// {
+	// 	xw.state &= ~WIN_VISIBLE;
+	// }
+	// else if (!(xw.state & WIN_VISIBLE))
+	// {
+	// 	/* need a full redraw for next Expose, not just a buf copy */
+	// 	xw.state |= WIN_VISIBLE | WIN_REDRAW;
+	// }
 }
 
 void unmap(SDL_Event *ev)
@@ -3147,33 +3188,33 @@ void unmap(SDL_Event *ev)
 
 void focus(SDL_Event *ev)
 {
-	if (ev->active.gain)
-	{
-		xw.state |= WIN_FOCUSED;
-#if 0
-		xseturgency(0);
-#endif
-	}
-	else
-	{
-		xw.state &= ~WIN_FOCUSED;
-	}
+// 	if (ev->active.gain)
+// 	{
+// 		xw.state |= WIN_FOCUSED;
+// #if 0
+// 		xseturgency(0);
+// #endif
+// 	}
+// 	else
+// 	{
+// 		xw.state &= ~WIN_FOCUSED;
+// 	}
 }
 
-char *kmap(SDLKey k, SDLMod state)
+char *kmap(SDL_Keycode k, Uint16 state)
 {
-	int i;
-	SDLMod mask;
+	// int i;
+	// SDLMod mask;
 
-	for (i = 0; i < LEN(key); i++)
-	{
-		mask = key[i].mask;
+	// for (i = 0; i < LEN(key); i++)
+	// {
+	// 	mask = key[i].mask;
 
-		if (key[i].k == k && ((state & mask) == mask || (mask == 0 && !state)))
-		{
-			return (char *)key[i].s;
-		}
-	}
+	// 	if (key[i].k == k && ((state & mask) == mask || (mask == 0 && !state)))
+	// 	{
+	// 		return (char *)key[i].s;
+	// 	}
+	// }
 	return NULL;
 }
 
@@ -3182,7 +3223,7 @@ void kpress(SDL_Event *ev)
 	SDL_KeyboardEvent *e = &ev->key;
 	char buf[32], *customkey;
 	int meta, shift, i;
-	SDLKey ksym = e->keysym.sym;
+	SDL_Keycode ksym = e->keysym.sym;
 
 	if (IS_SET(MODE_KBDLOCK))
 		return;
@@ -3236,19 +3277,18 @@ void kpress(SDL_Event *ev)
 				ttywrite("\r", 1);
 			}
 			break;
-			/* 3. X lookup  */
+			/* 3. For printable characters, we'll rely on SDL_TEXTINPUT events */
 		default:
-			if (e->keysym.unicode)
-			{
-				long u = e->keysym.unicode;
-				int len = utf8encode(&u, buf);
-				if (meta && len == 1)
-					ttywrite("\033", 1);
-				ttywrite(buf, len);
-			}
+			/* For SDL2, we handle text input separately with SDL_TEXTINPUT events */
 			break;
 		}
 	}
+}
+
+void textinput(SDL_Event *ev)
+{
+	SDL_TextInputEvent *e = &ev->text;
+	ttywrite(e->text, strlen(e->text));
 }
 
 void cresize(int width, int height)
@@ -3265,35 +3305,45 @@ void cresize(int width, int height)
 	row = (xw.h - 2 * borderpx) / xw.ch;
 
 	printf("set videomode %dx%d\n", xw.w, xw.h);
-#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(UPSCALE)
-	if (!(screen = SDL_SetVideoMode(640, 480, 16, SDL_HWSURFACE)))
-	{
-#elif defined(TRIMUISP)
-	if (!(screen = SDL_SetVideoMode(1280, 720, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
-#elif defined(MIYOOMINI)
-	if (!(screen = SDL_SetVideoMode(640, 480, 32, SDL_HWSURFACE)))
-	{
-#elif defined(TRIMUISMART)
-	if (!(screen = SDL_SetVideoMode(240, 320, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
-#else
-	if (!(screen = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE | SDL_DOUBLEBUF)))
-	{
-#endif
-		fprintf(stderr, "Unable to set video mode: %s\n", SDL_GetError());
+	
+	// Recreate texture for new size
+	if (xw.texture) {
+		SDL_DestroyTexture(xw.texture);
+	}
+	xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565,
+		SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
+	if (!xw.texture) {
+		fprintf(stderr, "Unable to recreate texture: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
+	
+	// Recreate surfaces
 	if (xw.win)
 		SDL_FreeSurface(xw.win);
 #if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
-	xw.win = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // console screen
+	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // console screen
 	if (screen2)
 		SDL_FreeSurface(screen2);
-	screen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
+	screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
 #else
-	xw.win = SDL_CreateRGBSurface(SDL_SWSURFACE, xw.w, xw.h, 16, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 #endif
+	
+	// Recreate screen surface for compatibility
+	if (screen)
+		SDL_FreeSurface(screen);
+#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(UPSCALE)
+	screen = SDL_CreateRGBSurface(0, 640, 480, 16, 0xF800, 0x7E0, 0x1F, 0);
+#elif defined(TRIMUISP)
+	screen = SDL_CreateRGBSurface(0, 1280, 720, 16, 0xF800, 0x7E0, 0x1F, 0);
+#elif defined(MIYOOMINI)
+	screen = SDL_CreateRGBSurface(0, 640, 480, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+#elif defined(TRIMUISMART)
+	screen = SDL_CreateRGBSurface(0, 240, 320, 16, 0xF800, 0x7E0, 0x1F, 0);
+#else
+	screen = SDL_CreateRGBSurface(0, 320, 240, 16, 0xF800, 0x7E0, 0x1F, 0);
+#endif
+
 	tresize(col, row);
 	xresize(col, row);
 	ttyresize();
@@ -3301,10 +3351,13 @@ void cresize(int width, int height)
 
 void resize(SDL_Event *e)
 {
-	if (e->resize.w == xw.w && e->resize.h == xw.h)
-		return;
+	if (e->type == SDL_WINDOWEVENT && e->window.event == SDL_WINDOWEVENT_RESIZED)
+	{
+		if (e->window.data1 == xw.w && e->window.data2 == xw.h)
+			return;
 
-	cresize(e->resize.w, e->resize.h);
+		cresize(e->window.data1, e->window.data2);
+	}
 }
 
 
@@ -3432,8 +3485,8 @@ void run(void)
 
 			switch (ev.type)
 			{
-			case SDL_VIDEORESIZE:
-			case SDL_VIDEOEXPOSE:
+			// case SDL_VIDEORESIZE:
+			// case SDL_VIDEOEXPOSE:
 			case SDL_USEREVENT:
 				draw();
 			}

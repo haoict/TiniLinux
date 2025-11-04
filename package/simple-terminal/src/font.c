@@ -1,4 +1,4 @@
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include "font.h"
 
 // font from https://github.com/nesbox/TIC-80

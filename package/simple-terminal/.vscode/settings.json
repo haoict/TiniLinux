@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "numbers": "c",
+        "cstdint": "c"
+    }
+}
