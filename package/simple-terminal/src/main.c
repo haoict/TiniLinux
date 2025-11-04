@@ -210,16 +210,6 @@ typedef union {
     const void *v;
 } Arg;
 
-typedef struct {
-    Uint16 mod;
-    SDL_Keycode keysym;
-    void (*func)(const Arg *);
-    const Arg arg;
-} Shortcut;
-
-/* function definitions used in config.h */
-static void xzoom(const Arg *);
-
 /* Config.h for applying patches and the configuration. */
 #include "config.h"
 
@@ -296,8 +286,6 @@ static void unmap(SDL_Event *);
 static char *kmap(SDL_Keycode, Uint16);
 static void kpress(SDL_Event *);
 static void textinput(SDL_Event *);
-static void cresize(int width, int height);
-static void resize(SDL_Event *);
 static void focus(SDL_Event *);
 static void activeEvent(SDL_Event *);
 static void brelease(SDL_Event *);
@@ -327,7 +315,7 @@ static void *xcalloc(size_t nmemb, size_t size);
 static void xflip(void);
 
 static void (*handler[SDL_LASTEVENT])(SDL_Event *) = {
-    [SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput, [SDL_WINDOWEVENT] = resize, [SDL_MOUSEMOTION] = bmotion, [SDL_MOUSEBUTTONDOWN] = bpress, [SDL_MOUSEBUTTONUP] = brelease,
+    [SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput, [SDL_MOUSEMOTION] = bmotion, [SDL_MOUSEBUTTONDOWN] = bpress, [SDL_MOUSEBUTTONUP] = brelease,
 #if 0
 	[SelectionClear] = selclear,
 	[SelectionNotify] = selnotify,
@@ -508,14 +496,19 @@ void sdlinit(void) {
     //		xw.fy = 0;
     //	}
 
-    xw.w = initial_width;
-    xw.h = initial_height;
+    int displayIndex = 0;  // usually 0 unless you have multiple screens
+    SDL_DisplayMode mode;
+    if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
+        printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
+        xw.w = initial_width;
+        xw.h = initial_height;
+    } else {
+        printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
+        xw.w = mode.w / 2;
+        xw.h = mode.h / 2;
+    }
 
-    int window_w, window_h;
-    window_w = 640;
-    window_h = 480;
-
-    xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_w, window_h, SDL_WINDOW_SHOWN);
+    xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, xw.w, xw.h, SDL_WINDOW_SHOWN);
     if (!xw.window) {
         fprintf(stderr, "Unable to create window: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
@@ -542,7 +535,7 @@ void sdlinit(void) {
     screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
 
     // Create a temporary surface for the screen to maintain compatibility
-    screen = SDL_CreateRGBSurface(0, window_w, window_h, 16, 0xF800, 0x7E0, 0x1F, 0);
+    screen = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 
     sdlresettitle();
     //
@@ -554,7 +547,6 @@ void sdlinit(void) {
 
     expose(NULL);
     // vi = SDL_GetVideoInfo();
-    // cresize(vi->current_w, vi->current_h);
 
     // Note: SDL2 doesn't have SDL_EnableKeyRepeat - it's handled differently
     // Key repeat is now automatic in SDL2
@@ -564,31 +556,25 @@ void sdlinit(void) {
     SDL_Event event = {.type = SDL_WINDOWEVENT};
     event.window.event = SDL_WINDOWEVENT_EXPOSED;
     SDL_PushEvent(&event);
+
+    // resize terminal to fit window
+    int col = (xw.w - 2 * borderpx) / xw.cw;
+    int row = (xw.h - 2 * borderpx) / xw.ch;
+    tresize(col, row);
+    xresize(col, row);
+    ttyresize();
 }
-
-// void high_res(uint32_t *restrict src, uint32_t *restrict dst)
-// {
-// 	uint32_t x, y, pix, dpix1, dpix2;
-// 	for (y = 480; y > 0; y--)
-// 	{
-// 		for (x = 640 / 2; x > 0; x--)
-// 		{
-// 			pix = *src++;
-// 			*dst++ = (pix & 0xFFFFFFFF) | ((unsigned long long)pix << 32);
-// 		}
-// 	}
-
-// }
 
 void xflip(void) {
     if (xw.win == NULL) return;
-    memcpy(screen2->pixels, xw.win->pixels, 640 * 480 * 2);
+    memcpy(screen2->pixels, xw.win->pixels, xw.w * xw.h * 2);
     draw_keyboard(screen2);  // screen2(SW) = console + keyboard
     // Update texture with screen pixels and render
     SDL_UpdateTexture(xw.texture, NULL, screen2->pixels, screen2->pitch);
     SDL_RenderClear(xw.renderer);
     SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
     SDL_RenderPresent(xw.renderer);
+    // printf("xflip done\n");
 
     // // Copy surface to texture for rendering
     // void *pixels;
@@ -2253,12 +2239,6 @@ void xclear(int x1, int y1, int x2, int y2) {
     SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, c.r, c.g, c.b));
 }
 
-void xzoom(const Arg *arg) {
-    sdlloadfonts(usedfont, usedfontsize + arg->i);
-    cresize(0, 0);
-    draw();
-}
-
 void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
     int winx = borderpx + x * xw.cw, winy = borderpx + y * xw.ch, width = charlen * xw.cw;
     // TTF_Font *font = dc.font;
@@ -2530,14 +2510,6 @@ void kpress(SDL_Event *ev) {
     synth = e->keysym.mod & KMOD_SYNTHETIC;
 
     // printf("kpress: keysym=%d scancode=%d mod=%d\n", ksym, e->keysym.scancode, e->keysym.mod);
-
-    /* 1. shortcuts */
-    for (i = 0; i < LEN(shortcuts); i++) {
-        if ((ksym == shortcuts[i].keysym) && ((CLEANMASK(shortcuts[i].mod) & CLEANMASK(e->keysym.mod)) == CLEANMASK(e->keysym.mod)) && shortcuts[i].func) {
-            shortcuts[i].func(&(shortcuts[i].arg));
-        }
-    }
-
     /* 2. custom keys from config.h */
     if ((customkey = kmap(ksym, e->keysym.mod))) {
         printf("Custom key mapped: %s\n", customkey);
@@ -2700,54 +2672,6 @@ void textinput(SDL_Event *ev) {
     ttywrite(e->text, strlen(e->text));
 }
 
-void cresize(int width, int height) {
-    width = MAX(360, 0);
-    height = MAX(360, 0);
-    int col, row;
-
-    if (width != 0) xw.w = width;
-    if (height != 0) xw.h = height;
-
-    col = (xw.w - 2 * borderpx) / xw.cw;
-    row = (xw.h - 2 * borderpx) / xw.ch;
-
-    printf("set videomode %dx%d\n", xw.w, xw.h);
-
-    // Recreate texture for new size
-    if (xw.texture) {
-        SDL_DestroyTexture(xw.texture);
-    }
-    xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
-    if (!xw.texture) {
-        fprintf(stderr, "Unable to recreate texture: %s\n", SDL_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    // Recreate surfaces
-    if (xw.win) SDL_FreeSurface(xw.win);
-    xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
-    if (screen2) SDL_FreeSurface(screen2);
-    screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
-
-    // Recreate screen surface for compatibility
-    if (screen) SDL_FreeSurface(screen);
-    screen = SDL_CreateRGBSurface(0, 640, 480, 16, 0xF800, 0x7E0, 0x1F, 0);
-
-    tresize(col, row);
-    xresize(col, row);
-    ttyresize();
-}
-
-void resize(SDL_Event *e) {
-    if (e->type == SDL_WINDOWEVENT && e->window.event == SDL_WINDOWEVENT_RESIZED) {
-        if (e->window.data1 == xw.w && e->window.data2 == xw.h) {
-            return;
-        }
-
-        cresize(e->window.data1, e->window.data2);
-    }
-}
-
 int ttythread(void *unused) {
     int i;
     fd_set rfd;
@@ -2797,14 +2721,6 @@ int ttythread(void *unused) {
 }
 
 void run(void) {
-#if defined(SDL12COMPAT)
-    // int res = open_adc_bnt_input();
-    // if (res != 0)
-    // {
-    // 	fprintf(stderr, "open_adc_bnt_input failed\n");
-    // }
-#endif
-
     SDL_Event ev;
     int running = 1;
     const Uint32 SCROLL_DELAY = 150;  // milliseconds between auto-scroll
@@ -2903,22 +2819,15 @@ void run(void) {
 int main(int argc, char *argv[]) {
     setenv("SDL_NOMOUSE", "1", 1);
 
-    int i;
-
     xw.fw = xw.fh = xw.fx = xw.fy = 0;
     xw.isfixed = false;
 
-#if defined(SDL12COMPAT)
-    char *high_res_env = getenv("HIGH_RES");
-    if (high_res_env) {
-        high_res = 1;
-        initial_height = 480;
-        initial_width = 640;
-    } else {
-    }
-#endif
+    // char *high_res_env = getenv("HIGH_RES");
+    // if (high_res_env) {
+    //     high_res = 1;
+    // }
 
-    for (i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         switch (argv[i][0] != '-' || argv[i][2] ? -1 : argv[i][1]) {
             case 'c':
                 if (++i < argc) opt_class = argv[i];
@@ -2950,30 +2859,6 @@ int main(int argc, char *argv[]) {
             case 'f':
                 if (++i < argc) opt_font = argv[i];
                 break;
-                // TODO
-#if 0
-            case 'g':
-                if(++i >= argc)
-                    break;
-
-                bitm = XParseGeometry(argv[i], &xr, &yr, &wr, &hr);
-                if(bitm & XValue)
-                    xw.fx = xr;
-                if(bitm & YValue)
-                    xw.fy = yr;
-                if(bitm & WidthValue)
-                    xw.fw = (int)wr;
-                if(bitm & HeightValue)
-                    xw.fh = (int)hr;
-                if(bitm & XNegative && xw.fx == 0)
-                    xw.fx = -1;
-                if(bitm & XNegative && xw.fy == 0)
-                    xw.fy = -1;
-
-                if(xw.fh != 0 && xw.fw != 0)
-                    xw.isfixed = True;
-                break;
-#endif
             case 'o':
                 if (++i < argc) opt_io = argv[i];
                 break;
@@ -2992,16 +2877,12 @@ int main(int argc, char *argv[]) {
     if (atexit(sdlshutdown)) {
         fprintf(stderr, "Unable to register SDL_Quit atexit\n");
     }
-    /*
-    char path[PATH_MAX];
-    realpath(dirname(argv[0]), path);
-    snprintf(preload_libname, PATH_MAX + 17, "%s/libst-preload.so", path); */
 
 run:
     setlocale(LC_CTYPE, "");
     tnew((initial_width - 2) / 6, (initial_height - 2) / 8);
     ttynew();
-    sdlinit(); /* Must have TTY before cresize */
+    sdlinit();
     init_keyboard();
     selinit();
     run();

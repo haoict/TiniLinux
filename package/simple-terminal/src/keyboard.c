@@ -185,15 +185,10 @@ void update_modstate(int key, int state) {
 
 void simulate_key(int key, int state) {
     update_modstate(key, state);
-    unsigned short unicode = 0;
-    if (key < 128) {
-        unicode = key;
-    }
     SDL_Event event = {.key = {.type = SDL_KEYDOWN,
                                .state = SDL_PRESSED,
                                .keysym = {
-                                   .scancode = 0, .sym = key, .mod = KMOD_SYNTHETIC,
-                                   // .unicode = unicode,
+                                   .scancode = 0, .sym = key, .mod = KMOD_SYNTHETIC
                                }}};
     if (state == STATE_TYPED) {
         SDL_PushEvent(&event);
@@ -283,7 +278,7 @@ int handle_keyboard_event(SDL_Event *event) {
     }
 
     if (!active) {
-#if defined(SDL12COMPAT)
+#if defined(BR2)
         if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
             if (event->key.keysym.sym == KEY_QUIT) {
                 return -1;

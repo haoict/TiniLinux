@@ -96,9 +96,3 @@ static Key key[] = {
 
 /* Internal shortcuts. */
 #define MODKEY KMOD_ALT
-
-static Shortcut shortcuts[] = {
-    /* modifier		key		function	argument */
-    {MODKEY | KMOD_SHIFT, SDLK_PAGEUP, xzoom, {.i = +1}},
-    {MODKEY | KMOD_SHIFT, SDLK_PAGEDOWN, xzoom, {.i = -1}},
-};
