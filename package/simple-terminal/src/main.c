@@ -189,20 +189,6 @@ typedef struct {
     char s[ESC_BUF_SIZ];
 } Key;
 
-typedef struct {
-    int mode;
-    int bx, by;
-    int ex, ey;
-    struct {
-        int x, y;
-    } b, e;
-    char *clip;
-    // Atom xtarget;
-    bool alt;
-    struct timeval tclick1;
-    struct timeval tclick2;
-} Selection;
-
 typedef union {
     int i;
     unsigned int ui;
@@ -224,7 +210,6 @@ typedef struct {
 } DC;
 
 static void die(const char *, ...);
-static bool is_word_break(char);
 static void draw(void);
 static void redraw(void);
 static void drawregion(int, int, int, int);
@@ -276,32 +261,13 @@ static void xdrawcursor(void);
 static void sdlinit(void);
 static void initcolormap(void);
 static void sdlresettitle(void);
-static void xsetsel(char *);
 static void sdltermclear(int, int, int, int);
 static void xresize(int, int);
 
 static void expose(SDL_Event *);
-static void visibility(SDL_Event *);
-static void unmap(SDL_Event *);
 static char *kmap(SDL_Keycode, Uint16);
 static void kpress(SDL_Event *);
 static void textinput(SDL_Event *);
-static void focus(SDL_Event *);
-static void activeEvent(SDL_Event *);
-static void brelease(SDL_Event *);
-static void bpress(SDL_Event *);
-static void bmotion(SDL_Event *);
-#if 0
-static void selnotify(SDL_Event *);
-static void selclear(SDL_Event *);
-static void selrequest(SDL_Event *);
-#endif
-
-static void selinit(void);
-static inline bool selected(int, int);
-static void selcopy(void);
-static void selpaste(void);
-static void selscroll(int, int);
 
 static int utf8decode(char *, long *);
 static int utf8encode(long *, char *);
@@ -314,14 +280,7 @@ static void *xrealloc(void *, size_t);
 static void *xcalloc(size_t nmemb, size_t size);
 static void xflip(void);
 
-static void (*handler[SDL_LASTEVENT])(SDL_Event *) = {
-    [SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput, [SDL_MOUSEMOTION] = bmotion, [SDL_MOUSEBUTTONDOWN] = bpress, [SDL_MOUSEBUTTONUP] = brelease,
-#if 0
-	[SelectionClear] = selclear,
-	[SelectionNotify] = selnotify,
-	[SelectionRequest] = selrequest,
-#endif
-};
+static void (*handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput};
 
 /* Globals */
 static DC dc;
@@ -331,7 +290,6 @@ static CSIEscape csiescseq;
 static STREscape strescseq;
 static int cmdfd;
 static pid_t pid;
-static Selection sel;
 static int iofd = -1;
 static char **opt_cmd = NULL;
 static int opt_cmd_size = 0;
@@ -574,24 +532,6 @@ void xflip(void) {
     SDL_RenderClear(xw.renderer);
     SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
     SDL_RenderPresent(xw.renderer);
-    // printf("xflip done\n");
-
-    // // Copy surface to texture for rendering
-    // void *pixels;
-    // int pitch;
-    // SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
-    // memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
-    // SDL_UnlockTexture(xw.texture);
-
-    // // Draw keyboard overlay
-    // draw_keyboard(xw.win);
-    // SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
-    // memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
-    // SDL_UnlockTexture(xw.texture);
-
-    // SDL_RenderClear(xw.renderer);
-    // SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
-    // SDL_RenderPresent(xw.renderer);
 }
 
 int utf8decode(char *s, long *u) {
@@ -705,307 +645,6 @@ int utf8size(char *s) {
     }
 }
 
-void selinit(void) {
-// TODO
-#if 0
-	memset(&sel.tclick1, 0, sizeof(sel.tclick1));
-	memset(&sel.tclick2, 0, sizeof(sel.tclick2));
-	sel.mode = 0;
-	sel.bx = -1;
-	sel.clip = NULL;
-	sel.xtarget = XInternAtom(xw.dpy, "UTF8_STRING", 0);
-	if(sel.xtarget == None)
-		sel.xtarget = XA_STRING;
-#endif
-}
-
-static int x2col(int x) {
-    x -= borderpx;
-    x /= xw.cw;
-
-    return LIMIT(x, 0, term.col - 1);
-}
-
-static int y2row(int y) {
-    y -= borderpx;
-    y /= xw.ch;
-
-    return LIMIT(y, 0, term.row - 1);
-}
-
-static inline bool selected(int x, int y) {
-    int bx, ex;
-
-    if (sel.ey == y && sel.by == y) {
-        bx = MIN(sel.bx, sel.ex);
-        ex = MAX(sel.bx, sel.ex);
-        return BETWEEN(x, bx, ex);
-    }
-
-    return ((sel.b.y < y && y < sel.e.y) || (y == sel.e.y && x <= sel.e.x)) || (y == sel.b.y && x >= sel.b.x && (x <= sel.e.x || sel.b.y != sel.e.y));
-}
-
-void getbuttoninfo(SDL_Event *e, int *b, int *x, int *y) {
-    if (b) *b = e->button.button;
-
-    *x = x2col(e->button.x);
-    *y = y2row(e->button.y);
-
-    sel.b.x = sel.by < sel.ey ? sel.bx : sel.ex;
-    sel.b.y = MIN(sel.by, sel.ey);
-    sel.e.x = sel.by < sel.ey ? sel.ex : sel.bx;
-    sel.e.y = MAX(sel.by, sel.ey);
-}
-
-void mousereport(SDL_Event *e) {
-    int x = x2col(e->button.x);
-    int y = y2row(e->button.y);
-    int button = e->button.button;
-    char buf[] = {'\033', '[', 'M', 0, 32 + x + 1, 32 + y + 1};
-    static int ob, ox, oy;
-
-    /* from urxvt */
-    if (e->type == SDL_MOUSEMOTION) {
-        if (!IS_SET(MODE_MOUSEMOTION) || (x == ox && y == oy)) return;
-        button = ob + 32;
-        ox = x, oy = y;
-    } else if (e->button.type == SDL_MOUSEBUTTONUP) {
-        button = 3;
-    } else {
-        button -= SDL_BUTTON_LEFT;
-        if (button >= 3) button += 64 - 3;
-        if (e->button.type == SDL_MOUSEBUTTONDOWN) {
-            ob = button;
-            ox = x, oy = y;
-        }
-    }
-
-// TODO
-#if 0
-	buf[3] = 32 + button + (state & ShiftMask ? 4 : 0)
-		+ (state & Mod4Mask    ? 8  : 0)
-		+ (state & ControlMask ? 16 : 0);
-#endif
-    buf[3] = 32 + button;
-
-    ttywrite(buf, sizeof(buf));
-}
-
-void bpress(SDL_Event *e) {
-    if (IS_SET(MODE_MOUSE)) {
-        mousereport(e);
-    } else if (e->button.button == SDL_BUTTON_LEFT) {
-        if (sel.bx != -1) {
-            sel.bx = -1;
-            tsetdirt(sel.b.y, sel.e.y);
-            draw();
-        }
-        sel.mode = 1;
-        sel.ex = sel.bx = x2col(e->button.x);
-        sel.ey = sel.by = y2row(e->button.y);
-    }
-}
-
-void selcopy(void) {
-    char *str, *ptr, *p;
-    int x, y, bufsize, is_selected = 0, size;
-    Glyph *gp, *last;
-
-    if (sel.bx == -1) {
-        str = NULL;
-    } else {
-        bufsize = (term.col + 1) * (sel.e.y - sel.b.y + 1) * UTF_SIZ;
-        ptr = str = xmalloc(bufsize);
-
-        /* append every set & selected glyph to the selection */
-        for (y = 0; y < term.row; y++) {
-            gp = &term.line[y][0];
-            last = gp + term.col;
-
-            while (--last >= gp && !(last->state & GLYPH_SET)) /* nothing */
-                ;
-
-            for (x = 0; gp <= last; x++, ++gp) {
-                if (!(is_selected = selected(x, y))) continue;
-
-                p = (gp->state & GLYPH_SET) ? gp->c : " ";
-                size = utf8size(p);
-                memcpy(ptr, p, size);
-                ptr += size;
-            }
-            /* \n at the end of every selected line except for the last one */
-            if (is_selected && y < sel.e.y) *ptr++ = '\n';
-        }
-        *ptr = 0;
-    }
-    sel.alt = IS_SET(MODE_ALTSCREEN);
-    xsetsel(str);
-}
-
-#if 0
-void selnotify(SDL_Event *e) {
-(void)e;
-// TODO
-	ulong nitems, ofs, rem;
-	int format;
-	uchar *data;
-	Atom type;
-
-	ofs = 0;
-	do {
-		if(XGetWindowProperty(xw.dpy, xw.win, XA_PRIMARY, ofs, BUFSIZ/4,
-					False, AnyPropertyType, &type, &format,
-					&nitems, &rem, &data)) {
-			fprintf(stderr, "Clipboard allocation failed\n");
-			return;
-		}
-		ttywrite((const char *) data, nitems * format / 8);
-		XFree(data);
-		/* number of 32-bit chunks returned */
-		ofs += nitems * format / 32;
-	} while(rem > 0);
-}
-#endif
-
-void selpaste(void) {
-// TODO
-#if 0
-	XConvertSelection(xw.dpy, XA_PRIMARY, sel.xtarget, XA_PRIMARY,
-			xw.win, CurrentTime);
-#endif
-}
-
-#if 0
-void selclear(SDL_Event *e) {
-	(void)e;
-	if(sel.bx == -1)
-		return;
-	sel.bx = -1;
-	tsetdirt(sel.b.y, sel.e.y);
-}
-
-void selrequest(SDL_Event *e) {
-(void)e;
-// TODO
-	XSelectionRequestEvent *xsre;
-	XSelectionEvent xev;
-	Atom xa_targets, string;
-
-	xsre = (XSelectionRequestEvent *) e;
-	xev.type = SelectionNotify;
-	xev.requestor = xsre->requestor;
-	xev.selection = xsre->selection;
-	xev.target = xsre->target;
-	xev.time = xsre->time;
-	/* reject */
-	xev.property = None;
-
-	xa_targets = XInternAtom(xw.dpy, "TARGETS", 0);
-	if(xsre->target == xa_targets) {
-		/* respond with the supported type */
-		string = sel.xtarget;
-		XChangeProperty(xsre->display, xsre->requestor, xsre->property,
-				XA_ATOM, 32, PropModeReplace,
-				(uchar *) &string, 1);
-		xev.property = xsre->property;
-	} else if(xsre->target == sel.xtarget && sel.clip != NULL) {
-		XChangeProperty(xsre->display, xsre->requestor, xsre->property,
-				xsre->target, 8, PropModeReplace,
-				(uchar *) sel.clip, strlen(sel.clip));
-		xev.property = xsre->property;
-	}
-
-	/* all done, send a notification to the listener */
-	if(!XSendEvent(xsre->display, xsre->requestor, True, 0, (XEvent *) &xev))
-		fprintf(stderr, "Error sending SelectionNotify event\n");
-}
-#endif
-
-void xsetsel(char *str) {
-    (void)str;
-// TODO
-#if 0
-	/* register the selection for both the clipboard and the primary */
-	Atom clipboard;
-
-	free(sel.clip);
-	sel.clip = str;
-
-	XSetSelectionOwner(xw.dpy, XA_PRIMARY, xw.win, CurrentTime);
-
-	clipboard = XInternAtom(xw.dpy, "CLIPBOARD", 0);
-	XSetSelectionOwner(xw.dpy, clipboard, xw.win, CurrentTime);
-#endif
-}
-
-void brelease(SDL_Event *e) {
-    struct timeval now;
-
-    if (IS_SET(MODE_MOUSE)) {
-        mousereport(e);
-        return;
-    }
-
-    if (e->button.button == SDL_BUTTON_MIDDLE) {
-        selpaste();
-    } else if (e->button.button == SDL_BUTTON_LEFT) {
-        sel.mode = 0;
-        getbuttoninfo(e, NULL, &sel.ex, &sel.ey);
-        term.dirty[sel.ey] = 1;
-        if (sel.bx == sel.ex && sel.by == sel.ey) {
-            sel.bx = -1;
-            gettimeofday(&now, NULL);
-
-            if (TIMEDIFF(now, sel.tclick2) <= tripleclicktimeout) {
-                /* triple click on the line */
-                sel.b.x = sel.bx = 0;
-                sel.e.x = sel.ex = term.col;
-                sel.b.y = sel.e.y = sel.ey;
-                selcopy();
-            } else if (TIMEDIFF(now, sel.tclick1) <= doubleclicktimeout) {
-                /* double click to select word */
-                sel.bx = sel.ex;
-                while (sel.bx > 0 && term.line[sel.ey][sel.bx - 1].state & GLYPH_SET && !is_word_break(term.line[sel.ey][sel.bx - 1].c[0])) {
-                    sel.bx--;
-                }
-                sel.b.x = sel.bx;
-                while (sel.ex < term.col - 1 && term.line[sel.ey][sel.ex + 1].state & GLYPH_SET && !is_word_break(term.line[sel.ey][sel.ex + 1].c[0])) {
-                    sel.ex++;
-                }
-                sel.e.x = sel.ex;
-                sel.b.y = sel.e.y = sel.ey;
-                selcopy();
-            }
-        } else {
-            selcopy();
-        }
-    }
-
-    memcpy(&sel.tclick2, &sel.tclick1, sizeof(struct timeval));
-    gettimeofday(&sel.tclick1, NULL);
-}
-
-void bmotion(SDL_Event *e) {
-    int starty, endy, oldey, oldex;
-
-    if (IS_SET(MODE_MOUSE)) {
-        mousereport(e);
-        return;
-    }
-
-    if (sel.mode) {
-        oldey = sel.ey;
-        oldex = sel.ex;
-        getbuttoninfo(e, NULL, &sel.ex, &sel.ey);
-
-        if (oldey != sel.ey || oldex != sel.ex) {
-            starty = MIN(oldey, sel.ey);
-            endy = MAX(oldey, sel.ey);
-            tsetdirt(starty, endy);
-        }
-    }
-}
-
 void die(const char *errstr, ...) {
     va_list ap;
 
@@ -1015,23 +654,10 @@ void die(const char *errstr, ...) {
     sdlshutdown();
 }
 
-bool is_word_break(char c) {
-    static char *word_break = WORD_BREAK;
-    char *s = word_break;
-    while (*s) {
-        if (*s == c) return true;
-        s++;
-    }
-    return false;
-}
-
 void execsh(void) {
     char **args;
     char *envshell = getenv("SHELL");
     const struct passwd *pass = getpwuid(getuid());
-#if 0
-	char buf[sizeof(long) * 8 + 1];
-#endif
 
     unsetenv("COLUMNS");
     unsetenv("LINES");
@@ -1057,11 +683,6 @@ void execsh(void) {
         system("uname -a");
         system("echo '\n'");
     }
-
-#if 0
-	snprintf(buf, sizeof(buf), "%lu", xw.win);
-	setenv("WINDOWID", buf, 1);
-#endif
 
     signal(SIGCHLD, SIG_DFL);
     signal(SIGHUP, SIG_DFL);
@@ -1261,8 +882,6 @@ void tscrolldown(int orig, int n) {
         term.dirty[i] = 1;
         term.dirty[i - n] = 1;
     }
-
-    selscroll(orig, n);
 }
 
 void tscrollup(int orig, int n) {
@@ -1279,29 +898,6 @@ void tscrollup(int orig, int n) {
 
         term.dirty[i] = 1;
         term.dirty[i + n] = 1;
-    }
-
-    selscroll(orig, -n);
-}
-
-void selscroll(int orig, int n) {
-    if (sel.bx == -1) return;
-
-    if (BETWEEN(sel.by, orig, term.bot) || BETWEEN(sel.ey, orig, term.bot)) {
-        if ((sel.by += n) > term.bot || (sel.ey += n) < term.top) {
-            sel.bx = -1;
-            return;
-        }
-        if (sel.by < term.top) {
-            sel.by = term.top;
-            sel.bx = 0;
-        }
-        if (sel.ey > term.bot) {
-            sel.ey = term.bot;
-            sel.ex = term.col;
-        }
-        sel.b.y = sel.by, sel.b.x = sel.bx;
-        sel.e.y = sel.ey, sel.e.x = sel.ex;
     }
 }
 
@@ -1692,7 +1288,6 @@ void csihandle(void) {
             while (csiescseq.arg[0]--) tputtab(1);
             break;
         case 'J': /* ED -- Clear screen */
-            sel.bx = -1;
             switch (csiescseq.arg[0]) {
                 case 0: /* below */
                     tclearregion(term.c.x, term.c.y, term.col - 1, term.c.y);
@@ -1957,10 +1552,6 @@ void tputc(char *c, int len) {
                 tnewline(IS_SET(MODE_CRLF));
                 return;
             case '\a': /* BEL */
-#if 0
-			if(!(xw.state & WIN_FOCUSED))
-				xseturgency(1);
-#endif
                 return;
             case '\033': /* ESC */
                 csireset();
@@ -2113,7 +1704,6 @@ void tputc(char *c, int len) {
      * Display control codes only if we are in graphic mode
      */
     if (control && !(term.c.attr.mode & ATTR_GFX)) return;
-    if (sel.bx != -1 && BETWEEN(term.c.y, sel.by, sel.ey)) sel.bx = -1;
     if (IS_SET(MODE_WRAP) && term.c.state & CURSOR_WRAPNEXT) tnewline(1); /* always go to first col */
     tsetchar(c, &term.c.attr, term.c.x, term.c.y);
     if (term.c.x + 1 < term.col)
@@ -2394,9 +1984,8 @@ void drawregion(int x1, int y1, int x2, int y2) {
     int ic, ib, x, y, ox, sl;
     Glyph base, new;
     char buf[DRAW_BUF_SIZ];
-    bool ena_sel = sel.bx != -1, alt = IS_SET(MODE_ALTSCREEN);
+    bool alt = IS_SET(MODE_ALTSCREEN);
 
-    if ((sel.alt && !alt) || (!sel.alt && alt)) ena_sel = 0;
     if (!(xw.state & WIN_VISIBLE)) return;
 
     for (y = y1; y < y2; y++) {
@@ -2408,7 +1997,6 @@ void drawregion(int x1, int y1, int x2, int y2) {
         ic = ib = ox = 0;
         for (x = x1; x < x2; x++) {
             new = term.line[y][x];
-            if (ena_sel && *(new.c) && selected(x, y)) new.mode ^= ATTR_REVERSE;
             if (ib > 0 && (!(new.state &GLYPH_SET) || ATTRCMP(base, new) || ib >= DRAW_BUF_SIZ - UTF_SIZ)) {
                 xdraws(buf, base, ox, y, ic, ib);
                 ic = ib = 0;
@@ -2429,57 +2017,9 @@ void drawregion(int x1, int y1, int x2, int y2) {
     xdrawcursor();
 }
 
-void activeEvent(SDL_Event *ev) {
-    // switch (ev->active.type)
-    // {
-    // case SDL_APPACTIVE:
-    // 	visibility(ev);
-    // 	if (!ev->active.gain)
-    // 		unmap(ev);
-    // 	break;
-    // case SDL_APPMOUSEFOCUS:
-    // case SDL_APPINPUTFOCUS:
-    // 	focus(ev);
-    // 	break;
-    // }
-}
-
 void expose(SDL_Event *ev) {
     (void)ev;
     xw.state |= WIN_VISIBLE | WIN_REDRAW;
-}
-
-void visibility(SDL_Event *ev) {
-    // SDL_ActiveEvent *e = &ev->active;
-
-    // if (!e->gain)
-    // {
-    // 	xw.state &= ~WIN_VISIBLE;
-    // }
-    // else if (!(xw.state & WIN_VISIBLE))
-    // {
-    // 	/* need a full redraw for next Expose, not just a buf copy */
-    // 	xw.state |= WIN_VISIBLE | WIN_REDRAW;
-    // }
-}
-
-void unmap(SDL_Event *ev) {
-    (void)ev;
-    xw.state &= ~WIN_VISIBLE;
-}
-
-void focus(SDL_Event *ev) {
-    // 	if (ev->active.gain)
-    // 	{
-    // 		xw.state |= WIN_FOCUSED;
-    // #if 0
-    // 		xseturgency(0);
-    // #endif
-    // 	}
-    // 	else
-    // 	{
-    // 		xw.state &= ~WIN_FOCUSED;
-    // 	}
 }
 
 char *kmap(SDL_Keycode k, Uint16 state) {
@@ -2621,12 +2161,7 @@ void kpress(SDL_Event *ev) {
                 break;
             case SDLK_LCTRL:
             case SDLK_RCTRL:
-                // handle Ctrl keys
                 ttywrite("\033[6~", 4);
-                break;
-
-            case SDLK_INSERT:
-                if (shift) selpaste();
                 break;
             case SDLK_TAB:
                 if (shift)
@@ -2736,6 +2271,7 @@ void run(void) {
             }
 
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
+                // printf("Keyboard event received - key: %s, state: %s\n", SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
                 int keyboard_event = handle_keyboard_event(&ev);
                 if (keyboard_event == -1) {
                     // SDL_QUIT
@@ -2884,7 +2420,6 @@ run:
     ttynew();
     sdlinit();
     init_keyboard();
-    selinit();
     run();
     return 0;
 }
