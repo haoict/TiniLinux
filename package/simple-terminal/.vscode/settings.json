@@ -5,6 +5,7 @@
         "ctype.h": "c",
         "sdl.h": "c",
         "locale.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "types.h": "c"
     }
 }

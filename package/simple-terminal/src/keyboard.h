@@ -3,9 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-
 #define KMOD_SYNTHETIC (1 << 14)
-
 
 #define JOYBUTTON_UP 13
 #define JOYBUTTON_DOWN 14
@@ -24,9 +22,6 @@
 #define JOYBUTTON_L3 11
 #define JOYBUTTON_R3 12
 #define JOYBUTTON_MENU 10
-
-
-
 
 #ifdef RGB30_SDL12COMPAT
 
@@ -69,8 +64,6 @@
 #define KEY_ARROW_DOWN SDLK_KP_PERIOD
 
 #endif
-
-
 
 void init_keyboard();
 void draw_keyboard(SDL_Surface *surface);
