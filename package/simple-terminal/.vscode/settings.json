@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "numbers": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "ctype.h": "c",
+        "sdl.h": "c",
+        "locale.h": "c",
+        "cstdlib": "c"
     }
 }

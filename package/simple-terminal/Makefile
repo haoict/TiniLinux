@@ -3,11 +3,7 @@
 
 include makefiles/config.mk
 
-ifeq ($(UNION_PLATFORM),rg35xxplus)
-include makefiles/config-rg35xxplus.mk
-else ifeq ($(UNION_PLATFORM),r36s)
-include makefiles/config-r36s.mk
-else ifeq ($(UNION_PLATFORM),upscale)
+ifeq ($(UNION_PLATFORM),upscale)
 include makefiles/config-generic-linux-upscale.mk
 else ifeq ($(UNION_PLATFORM),r36s-sdl12compat)
 include makefiles/config-r36s-sdl12compat.mk

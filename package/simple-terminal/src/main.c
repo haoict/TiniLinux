@@ -29,10 +29,6 @@
 #include "font.h"
 #include "keyboard.h"
 
-#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP)
-#include "keymon.h"
-#endif
-
 #define Glyph Glyph_
 #define Font Font_
 
@@ -286,9 +282,7 @@ static void xzoom(const Arg *);
 #include "config.h"
 
 SDL_Surface *screen;
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
 SDL_Surface *screen2;
-#endif
 char preload_libname[PATH_MAX + 17];
 
 /* Drawing Context */
@@ -429,6 +423,7 @@ static int high_res = 0;
 static int initial_width = 320;
 static int initial_height = 240;
 static volatile int thread_should_exit = 0;
+SDL_Joystick *joystick;
 
 ssize_t xwrite(int fd, char *s, size_t len)
 {
@@ -533,11 +528,10 @@ void sdlshutdown(void)
 		}
 		if (xw.win)
 			SDL_FreeSurface(xw.win);
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
 		if (screen2)
 			SDL_FreeSurface(screen2);
-#endif
 		xw.win = NULL;
+		SDL_JoystickClose(joystick);
 		SDL_Quit();
 	}
 }
@@ -549,7 +543,7 @@ void sdlinit(void)
 
 	// dc.font = dc.ifont = dc.bfont = dc.ibfont = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
 	{
 		fprintf(stderr, "Unable to initialize SDL: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
@@ -598,18 +592,7 @@ void sdlinit(void)
 	xw.h = initial_height;
 
 	int window_w, window_h;
-#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(UPSCALE)
 	window_w = 640; window_h = 480;
-#elif defined(TRIMUISP)
-	window_w = 1280; window_h = 720;
-#elif defined(MIYOOMINI)
-	window_w = 640; window_h = 480;
-#elif defined(TRIMUISMART)
-	setenv("SDL_USE_PAN", "true", 1); // allow DOUBLEBUF
-	window_w = 240; window_h = 320;
-#else
-	window_w = 320; window_h = 240;
-#endif
 
 	xw.window = SDL_CreateWindow("Simple Terminal",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -631,6 +614,9 @@ void sdlinit(void)
 		}
 	}
 
+	// if rgb30
+	// SDL_RenderSetLogicalSize(xw.renderer, window_w, window_h);
+
 	xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565,
 		SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
 	if (!xw.texture)
@@ -638,12 +624,8 @@ void sdlinit(void)
 		fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
 		exit(EXIT_FAILURE);
 	}
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
 	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
 	screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
-#else
-	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
-#endif
 
 	// Create a temporary surface for the screen to maintain compatibility
 	screen = SDL_CreateRGBSurface(0, window_w, window_h, 16, 0xF800, 0x7E0, 0x1F, 0);
@@ -664,243 +646,57 @@ void sdlinit(void)
 	// Note: SDL2 doesn't have SDL_EnableKeyRepeat - it's handled differently
 	// Key repeat is now automatic in SDL2
 
+	joystick = SDL_JoystickOpen(0);
+
+
 	SDL_Event event = {.type = SDL_WINDOWEVENT};
 	event.window.event = SDL_WINDOWEVENT_EXPOSED;
 	SDL_PushEvent(&event);
 }
 
-#if defined(RG35XXPLUS)
-// upscale 320x240x16 -> 640x480x32
-void upscale2x(uint32_t *restrict src, uint32_t *restrict dst)
-{
-	uint32_t x, y, pix, dpix;
-	if (high_res)
-	{
+// void high_res(uint32_t *restrict src, uint32_t *restrict dst)
+// {
+// 	uint32_t x, y, pix, dpix1, dpix2;
+// 	for (y = 480; y > 0; y--)
+// 	{
+// 		for (x = 640 / 2; x > 0; x--)
+// 		{
+// 			pix = *src++;
+// 			*dst++ = (pix & 0xFFFFFFFF) | ((unsigned long long)pix << 32);
+// 		}
+// 	}
 
-		for (y = 480; y > 0; y--)
-		{
-			for (x = 640 / 2; x > 0; x--)
-			{
-				pix = *src++;
-				//   00000000RRRRRRRRGGGGGGGGBBBBBBBB
-				dpix = ((pix >> 2) & 0b00000000000000000000000000000111) |
-					   ((pix >> 1) & 0b00000000000000000000001100000000) |
-					   ((pix << 3) & 0b00000000000001110000000011111000) |
-					   ((pix << 5) & 0b00000000000000001111110000000000) |
-					   ((pix << 8) & 0b00000000111110000000000000000000);
-				*dst++ = dpix;
-				dpix = ((pix >> 8) & 0b00000000111110000000000000000000) |
-					   ((pix >> 11) & 0b00000000000000001111110000000000) |
-					   ((pix >> 13) & 0b00000000000001110000000011111000) |
-					   ((pix >> 17) & 0b00000000000000000000001100000000) |
-					   ((pix >> 18) & 0b00000000000000000000000000000111);
-				*dst++ = dpix;
-			}
-		}
-	}
-	else
-	{
-		for (y = 240; y > 0; y--, dst += 640)
-		{
-			for (x = 320 / 2; x > 0; x--, dst += 4)
-			{
-				pix = *src++;
-				//   00000000RRRRRRRRGGGGGGGGBBBBBBBB
-				dpix = ((pix >> 2) & 0b00000000000000000000000000000111) |
-					   ((pix >> 1) & 0b00000000000000000000001100000000) |
-					   ((pix << 3) & 0b00000000000001110000000011111000) |
-					   ((pix << 5) & 0b00000000000000001111110000000000) |
-					   ((pix << 8) & 0b00000000111110000000000000000000);
-				*dst = dpix;
-				*(dst + 1) = dpix;
-				*(dst + 640) = dpix;
-				*(dst + 641) = dpix;
-				dpix = ((pix >> 8) & 0b00000000111110000000000000000000) |
-					   ((pix >> 11) & 0b00000000000000001111110000000000) |
-					   ((pix >> 13) & 0b00000000000001110000000011111000) |
-					   ((pix >> 17) & 0b00000000000000000000001100000000) |
-					   ((pix >> 18) & 0b00000000000000000000000000000111);
-				*(dst + 2) = dpix;
-				*(dst + 3) = dpix;
-				*(dst + 642) = dpix;
-				*(dst + 643) = dpix;
-			}
-		}
-	}
-}
-#elif defined(MIYOOMINI)
-//	upscale 320x240x16 -> 640x480x32 with rotate180
-void upscale_and_rotate(uint32_t *restrict src, uint32_t *restrict dst)
-{
-	dst = dst + 640 * 480 - 1;
-	uint32_t x, y, pix, dpix;
-	for (y = 240; y > 0; y--, dst -= 640)
-	{
-		for (x = 320 / 2; x > 0; x--, dst -= 4)
-		{
-			pix = *src++;
-			//   00000000RRRRRRRRGGGGGGGGBBBBBBBB
-			dpix = ((pix >> 2) & 0b00000000000000000000000000000111) |
-				   ((pix >> 1) & 0b00000000000000000000001100000000) |
-				   ((pix << 3) & 0b00000000000001110000000011111000) |
-				   ((pix << 5) & 0b00000000000000001111110000000000) |
-				   ((pix << 8) & 0b00000000111110000000000000000000);
-			*dst = dpix;
-			*(dst - 1) = dpix;
-			*(dst - 640) = dpix;
-			*(dst - 641) = dpix;
-			dpix = ((pix >> 8) & 0b00000000111110000000000000000000) |
-				   ((pix >> 11) & 0b00000000000000001111110000000000) |
-				   ((pix >> 13) & 0b00000000000001110000000011111000) |
-				   ((pix >> 17) & 0b00000000000000000000001100000000) |
-				   ((pix >> 18) & 0b00000000000000000000000000000111);
-			*(dst - 2) = dpix;
-			*(dst - 3) = dpix;
-			*(dst - 642) = dpix;
-			*(dst - 643) = dpix;
-		}
-	}
-}
-#elif defined(TRIMUISMART)
-//	320x240 -> 240x320 rotate90 CCW
-//	AB    BD
-//	CD -> AC
-void rotate320x240_rw32(void *__restrict src, void *__restrict dst)
-{
-	uint32_t *s, *d, pix1, pix2;
-	int x, y;
-
-	s = (uint32_t *)src + 159;
-	d = (uint32_t *)dst;
-	for (x = 160; x > 0; x--, s -= 160 * 240 + 1, d += 120)
-	{
-		for (y = 120; y > 0; y--, s += 320, d++)
-		{
-			pix1 = s[0];							   // read AB
-			pix2 = s[160];							   // read CD
-			d[0] = (pix1 >> 16) | (pix2 & 0xFFFF0000); // write BD
-			d[120] = (pix1 & 0xFFFF) | (pix2 << 16);   // write AC
-		}
-	}
-}
-#elif defined(UPSCALE) || defined(SDL12COMPAT)
-// upscale 320x240x16 -> 640x480x16
-void upscale(uint32_t *restrict src, uint32_t *restrict dst)
-{
-	uint32_t x, y, pix, dpix1, dpix2;
-	if (high_res)
-	{
-		for (y = 480; y > 0; y--)
-		{
-			for (x = 640 / 2; x > 0; x--)
-			{
-				pix = *src++;
-				*dst++ = (pix & 0xFFFFFFFF) | ((unsigned long long)pix << 32);
-			}
-		}
-	}
-	else
-	{
-		for (y = 240; y > 0; y--, dst += 320)
-		{
-			for (x = 320 / 2; x > 0; x--, dst += 2)
-			{
-				pix = *src++;
-				dpix1 = (pix & 0x0000FFFF) | (pix << 16);
-				dpix2 = (pix & 0xFFFF0000) | (pix >> 16);
-				dst[0] = dpix1;
-				dst[1] = dpix2;
-				dst[320] = dpix1;
-				dst[321] = dpix2;
-			}
-		}
-	}
-}
-#elif defined(TRIMUISP)
-// upscale 320x240x16 -> 1280x720x16
-void upscale4x3(uint32_t *restrict src, uint32_t *restrict dst)
-{
-	uint32_t x, y, pix, dpix1, dpix2;
-	if (high_res)
-	{
-		for (y = 480; y > 0; y--)
-		{
-			for (x = 640 / 2; x > 0; x--)
-			{
-				pix = *src++;
-				*dst++ = (pix & 0x0000FFFF) | (pix << 16);
-				*dst++ = (pix & 0xFFFF0000) | (pix >> 16);
-			}
-		}
-	}
-	else
-	{
-		for (y = 240; y > 0; y--, dst += 1280)
-		{
-			for (x = 320 / 2; x > 0; x--, dst += 4)
-			{
-				pix = *src++;
-				dpix1 = (pix & 0x0000FFFF) | (pix << 16);
-				dpix2 = (pix & 0xFFFF0000) | (pix >> 16);
-				dst[0] = dpix1;
-				dst[1] = dpix1;
-				dst[2] = dpix2;
-				dst[3] = dpix2;
-				dst[1280] = dpix1;
-				dst[1281] = dpix1;
-				dst[1282] = dpix2;
-				dst[1283] = dpix2;
-			}
-		}
-	}
-}
-#endif
+// }
 
 void xflip(void)
 {
 	if (xw.win == NULL)
 		return;
-		// printf("flip\n");
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
-	if (high_res)
-		memcpy(screen2->pixels, xw.win->pixels, 640 * 480 * 2); // copy for keyboardMix
-	else
-		memcpy(screen2->pixels, xw.win->pixels, 320 * 240 * 2);
+	memcpy(screen2->pixels, xw.win->pixels, 640 * 480 * 2);
 	draw_keyboard(screen2); // screen2(SW) = console + keyboard
-#if defined(RG35XXPLUS)
-	upscale2x(screen2->pixels, screen->pixels);
-#elif defined(TRIMUISP)
-	upscale4x3(screen2->pixels, screen->pixels);
-#elif defined(MIYOOMINI)
-	upscale_and_rotate(screen2->pixels, screen->pixels);
-#elif defined(UPSCALE) || defined(SDL12COMPAT)
-	upscale(screen2->pixels, screen->pixels);
-#else
-	rotate320x240_rw32(screen2->pixels, screen->pixels);
-#endif
 	// Update texture with screen pixels and render
-	SDL_UpdateTexture(xw.texture, NULL, screen->pixels, screen->pitch);
+	SDL_UpdateTexture(xw.texture, NULL, screen2->pixels, screen2->pitch);
 	SDL_RenderClear(xw.renderer);
 	SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
 	SDL_RenderPresent(xw.renderer);
-#else
-	// Copy surface to texture for rendering
-	void *pixels;
-	int pitch;
-	SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
-	memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
-	SDL_UnlockTexture(xw.texture);
+
+
+	// // Copy surface to texture for rendering
+	// void *pixels;
+	// int pitch;
+	// SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
+	// memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
+	// SDL_UnlockTexture(xw.texture);
 	
-	// Draw keyboard overlay
-	draw_keyboard(xw.win);
-	SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
-	memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
-	SDL_UnlockTexture(xw.texture);
+	// // Draw keyboard overlay
+	// draw_keyboard(xw.win);
+	// SDL_LockTexture(xw.texture, NULL, &pixels, &pitch);
+	// memcpy(pixels, xw.win->pixels, xw.w * xw.h * 2);
+	// SDL_UnlockTexture(xw.texture);
 	
-	SDL_RenderClear(xw.renderer);
-	SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
-	SDL_RenderPresent(xw.renderer);
-#endif
+	// SDL_RenderClear(xw.renderer);
+	// SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
+	// SDL_RenderPresent(xw.renderer);
 }
 
 int utf8decode(char *s, long *u)
@@ -2127,6 +1923,9 @@ void tsetmode(bool priv, bool set, int *args, int narg)
 			case 1048:
 				tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
 				break;
+			case 2004: /* bracketed paste mode */
+				// MODBIT(term.mode, set, MODE_BRACKETPASTE);
+				break;
 			default:
 				/* case 2:  DECANM -- ANSI/VT52 (NOT SUPPOURTED) */
 				/* case 3:  DECCOLM -- Column  (NOT SUPPORTED) */
@@ -3203,18 +3002,18 @@ void focus(SDL_Event *ev)
 
 char *kmap(SDL_Keycode k, Uint16 state)
 {
-	// int i;
-	// SDLMod mask;
+	int i;
+	SDL_Keymod mask;
 
-	// for (i = 0; i < LEN(key); i++)
-	// {
-	// 	mask = key[i].mask;
+	for (i = 0; i < LEN(key); i++)
+	{
+		mask = key[i].mask;
 
-	// 	if (key[i].k == k && ((state & mask) == mask || (mask == 0 && !state)))
-	// 	{
-	// 		return (char *)key[i].s;
-	// 	}
-	// }
+		if (key[i].k == k && ((state & mask) == mask || (mask == 0 && !state)))
+		{
+			return (char *)key[i].s;
+		}
+	}
 	return NULL;
 }
 
@@ -3222,7 +3021,7 @@ void kpress(SDL_Event *ev)
 {
 	SDL_KeyboardEvent *e = &ev->key;
 	char buf[32], *customkey;
-	int meta, shift, i;
+	int meta, shift, ctrl, synth, i;
 	SDL_Keycode ksym = e->keysym.sym;
 
 	if (IS_SET(MODE_KBDLOCK))
@@ -3230,6 +3029,10 @@ void kpress(SDL_Event *ev)
 
 	meta = e->keysym.mod & KMOD_ALT;
 	shift = e->keysym.mod & KMOD_SHIFT;
+	ctrl = e->keysym.mod & KMOD_CTRL;
+	synth = e->keysym.mod & KMOD_SYNTHETIC;
+
+	// printf("kpress: keysym=%d scancode=%d mod=%d\n", ksym, e->keysym.scancode, e->keysym.mod);
 
 	/* 1. shortcuts */
 	for (i = 0; i < LEN(shortcuts); i++)
@@ -3243,11 +3046,108 @@ void kpress(SDL_Event *ev)
 	/* 2. custom keys from config.h */
 	if ((customkey = kmap(ksym, e->keysym.mod)))
 	{
+		printf("Custom key mapped: %s\n", customkey);
 		ttywrite(customkey, strlen(customkey));
 		/* 2. hardcoded (overrides X lookup) */
 	}
+	else if (ctrl && !meta && !shift)
+	{
+		switch (ksym)
+		{
+		case SDLK_a:
+			ttywrite("\001", 1);
+			break;
+		case SDLK_b:
+			ttywrite("\002", 1);
+			break;
+		case SDLK_c:
+			ttywrite("\003", 1);
+			break;
+		case SDLK_d:
+			ttywrite("\004", 1);
+			break;
+		case SDLK_e:
+			ttywrite("\005", 1);
+			break;
+		case SDLK_f:
+			ttywrite("\006", 1);
+			break;
+		case SDLK_g:
+			ttywrite("\007", 1);
+			break;
+		case SDLK_h:
+			ttywrite("\010", 1);
+			break;
+		case SDLK_i:
+			ttywrite("\011", 1);
+			break;
+		case SDLK_j:
+			ttywrite("\012", 1);
+			break;
+		case SDLK_k:
+			ttywrite("\013", 1);
+			break;
+		case SDLK_l:
+			ttywrite("\014", 1);
+			break;
+		case SDLK_m:
+			ttywrite("\015", 1);
+			break;
+		case SDLK_n:
+			ttywrite("\016", 1);
+			break;
+		case SDLK_o:
+			ttywrite("\017", 1);
+			break;
+		case SDLK_p:
+			ttywrite("\020", 1);
+			break;
+		case SDLK_q:
+			ttywrite("\021", 1);
+			break;
+		case SDLK_r:
+			ttywrite("\022", 1);
+			break;
+		case SDLK_s:
+			ttywrite("\023", 1);
+			break;
+		case SDLK_t:
+			ttywrite("\024", 1);
+			break;
+		case SDLK_u:
+			ttywrite("\025", 1);
+			break;
+		case SDLK_v:
+			ttywrite("\026", 1);
+			break;
+		case SDLK_w:
+			ttywrite("\027", 1);
+			break;
+		case SDLK_x:
+			ttywrite("\030", 1);
+			break;
+		case SDLK_y:
+			ttywrite("\031", 1);
+			break;
+		case SDLK_z:
+			ttywrite("\032", 1);
+			break;
+		default:
+			break;
+		}
+	}
+	/* 3. standard keys */
 	else
 	{
+		// special volumeup/down/ powerkey handling
+		if (e->keysym.scancode == 128) {
+			printf("Volume Up key pressed\n");
+		} else if (e->keysym.scancode == 129) {
+			printf("Volume Down key pressed\n");
+		} else if (e->keysym.scancode == 102) {
+			printf("Power key pressed\n");
+		}
+
 		switch (ksym)
 		{
 		case SDLK_UP:
@@ -3255,14 +3155,30 @@ void kpress(SDL_Event *ev)
 		case SDLK_LEFT:
 		case SDLK_RIGHT:
 			/* XXX: shift up/down doesn't work */
-			sprintf(buf, "\033%c%c",
-					IS_SET(MODE_APPKEYPAD) ? 'O' : '[',
-					(shift ? "abcd" : "ABCD")[ksym - SDLK_UP]);
+			sprintf(buf, "\033%c%c", IS_SET(MODE_APPKEYPAD) ? 'O' : '[', (shift ? "cdba" : "CDBA")[ksym - SDLK_RIGHT]);
 			ttywrite(buf, 3);
 			break;
+		case SDLK_LCTRL:
+		case SDLK_RCTRL:
+			// handle Ctrl keys
+			ttywrite("\033[6~", 4);
+			break;
+		
 		case SDLK_INSERT:
 			if (shift)
 				selpaste();
+			break;
+		case SDLK_TAB:
+			if (shift)
+				ttywrite("\033[Z", 3);
+			else
+				ttywrite("\t", 1);
+			break;
+		case SDLK_BACKSPACE:
+			ttywrite("\x7f", 1);
+			break;
+		case SDLK_DELETE:
+			ttywrite("\033[3~", 4);
 			break;
 		case SDLK_RETURN:
 			if (meta)
@@ -3279,6 +3195,16 @@ void kpress(SDL_Event *ev)
 			break;
 			/* 3. For printable characters, we'll rely on SDL_TEXTINPUT events */
 		default:
+			if (synth) {
+				// printf("Synthetic key event: %s\n", SDL_GetKeyName(e->keysym.sym));
+				if (e->keysym.sym <= 128) {
+					char ch = (char)e->keysym.sym;
+					if (meta) {
+						ttywrite("\033", 1);
+					}
+					ttywrite(&ch, 1);
+				}
+			}
 			/* For SDL2, we handle text input separately with SDL_TEXTINPUT events */
 			break;
 		}
@@ -3293,7 +3219,8 @@ void textinput(SDL_Event *ev)
 
 void cresize(int width, int height)
 {
-	printf("%d %d\n", width, height);
+	width = MAX(360, 0);
+	height = MAX(360, 0);
 	int col, row;
 
 	if (width != 0)
@@ -3320,29 +3247,16 @@ void cresize(int width, int height)
 	// Recreate surfaces
 	if (xw.win)
 		SDL_FreeSurface(xw.win);
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
 	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // console screen
 	if (screen2)
 		SDL_FreeSurface(screen2);
 	screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0); // for keyboardMix
-#else
-	xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
-#endif
+
 	
 	// Recreate screen surface for compatibility
 	if (screen)
 		SDL_FreeSurface(screen);
-#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(UPSCALE)
 	screen = SDL_CreateRGBSurface(0, 640, 480, 16, 0xF800, 0x7E0, 0x1F, 0);
-#elif defined(TRIMUISP)
-	screen = SDL_CreateRGBSurface(0, 1280, 720, 16, 0xF800, 0x7E0, 0x1F, 0);
-#elif defined(MIYOOMINI)
-	screen = SDL_CreateRGBSurface(0, 640, 480, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-#elif defined(TRIMUISMART)
-	screen = SDL_CreateRGBSurface(0, 240, 320, 16, 0xF800, 0x7E0, 0x1F, 0);
-#else
-	screen = SDL_CreateRGBSurface(0, 320, 240, 16, 0xF800, 0x7E0, 0x1F, 0);
-#endif
 
 	tresize(col, row);
 	xresize(col, row);
@@ -3353,8 +3267,9 @@ void resize(SDL_Event *e)
 {
 	if (e->type == SDL_WINDOWEVENT && e->window.event == SDL_WINDOWEVENT_RESIZED)
 	{
-		if (e->window.data1 == xw.w && e->window.data2 == xw.h)
+		if (e->window.data1 == xw.w && e->window.data2 == xw.h) {
 			return;
+		}
 
 		cresize(e->window.data1, e->window.data2);
 	}
@@ -3409,7 +3324,7 @@ int ttythread(void *unused)
 
 		if (SDL_PushEvent(&event))
 		{
-			fputs("Warning: unable to push tty update event.\n", stderr);
+			// printf("Warning: unable to push tty update event. %s\n", SDL_GetError());
 		}
 	}
 
@@ -3418,12 +3333,12 @@ int ttythread(void *unused)
 
 void run(void)
 {
-#if defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP)
-	int res = open_adc_bnt_input();
-	if (res != 0)
-	{
-		fprintf(stderr, "open_adc_bnt_input failed\n");
-	}
+#if defined(SDL12COMPAT)
+	// int res = open_adc_bnt_input();
+	// if (res != 0)
+	// {
+	// 	fprintf(stderr, "open_adc_bnt_input failed\n");
+	// }
 #endif
 
 	SDL_Event ev;
@@ -3451,11 +3366,7 @@ void run(void)
 				}
 				else if (keyboard_event == 1)
 				{
-					#ifdef R36S_SDL12COMPAT
-					// FIXME: remove these 2 draw(). this is a hack to prevent the keyboard from being stuck
-					xflip();
-					xflip();
-					#endif
+					// printf("On-screen keyboard handled the event.\n");
 					/*SDL_Event expose_event = {
 						.type = SDL_VIDEOEXPOSE
 					};
@@ -3476,6 +3387,21 @@ void run(void)
 					case KEY_DOWN:  buttonDownHeld  = held; break;
 					default: break;
 				}
+			}
+			else if (ev.type == SDL_JOYBUTTONDOWN || ev.type == SDL_JOYBUTTONUP)
+			{
+				// printf("Joystick event received - %d\n", ev.jbutton.button);
+				SDL_Event sdl_event = {
+					.key = {
+						.type = (ev.jbutton.state == SDL_PRESSED) ? SDL_KEYDOWN : SDL_KEYUP,
+						.state = (ev.jbutton.state == SDL_PRESSED) ? SDL_PRESSED : SDL_RELEASED,
+						.keysym = {
+							.scancode = ev.jbutton.button,
+							.sym = ev.jbutton.button,
+							.mod = 0,
+						}}};
+
+				SDL_PushEvent(&sdl_event);
 			}
 			else
 			{
@@ -3521,7 +3447,7 @@ int main(int argc, char *argv[])
 	xw.fw = xw.fh = xw.fx = xw.fy = 0;
 	xw.isfixed = false;
 
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT) || defined(TRIMUISP) || defined(UPSCALE)
+#if defined(SDL12COMPAT)
 	char *high_res_env = getenv("HIGH_RES");
 	if (high_res_env)
 	{

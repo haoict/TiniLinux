@@ -6,9 +6,6 @@
 #define NUM_ROWS 6
 #define NUM_KEYS 18
 
-
-#define KMOD_SYNTHETIC (1 << 13)
-
 static int row_length[NUM_ROWS] = {13, 17, 17, 15, 14, 10};
 
 static SDL_Keycode keys[2][NUM_ROWS][NUM_KEYS] = {
@@ -47,8 +44,8 @@ static int shifted = 0;
 static int location = 0;
 static int mod_state = 0;
 
-int active = 0;
-int show_help = 0;
+int active = 1;
+int show_help = 1;
 
 void init_keyboard()
 {
@@ -65,21 +62,14 @@ char *help =
 	"  ARROWS:     select key from keyboard\n"
 	"  A:          press key\n"
 	"  B:          backspace\n"
-#ifndef TRIMUISMART
 	"  L1:         shift\n"
 	"  R1:         toggle key (for shift/ctrl...)\n"
-#else
-	"  L:          shift\n"
-	"  R:          backspace\n"
-#endif
 	"  Y:          change keyboard location\n"
 	"  X:          show / hide keyboard\n"
 	"  START:      enter\n"
 	"  SELECT:     tab\n"
-#ifndef TRIMUISMART
 	"  L2:         left\n"
 	"  R2:         right\n"
-#endif
 	"  MENU:       quit\n\n"
 	"Cheatcheet (tutorial at www.shellscript.sh):\n"
 	"  TAB key         complete path\n"
@@ -290,14 +280,6 @@ int compute_new_col(int visual_offset, int old_row, int new_row)
 int handle_keyboard_event(SDL_Event *event)
 {
 	// printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
-#if defined(R36S_SDL12COMPAT)
-	// TODO: some keys are regconiized as "`" key. Temporary disable it. (r36s)
-	if (event->key.keysym.sym == SDLK_BACKQUOTE)
-	{
-		return 1;
-	}
-#endif
-
 	if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_ACTIVATE)
 	{
 		active = !active;
@@ -345,30 +327,13 @@ int handle_keyboard_event(SDL_Event *event)
 
 	if (!active)
 	{
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT)
+#if defined(SDL12COMPAT)
 		if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED)
 		{
 			if (event->key.keysym.sym == KEY_QUIT)
 			{
 				return -1;
 			}
-			// TODO: fix this: when connect to bluetooth keyboard, some keys (L:108, G:103) are confliciting with arrow keys
-			// else if (event->key.keysym.sym == KEY_UP || event->key.keysym.sym == KEY_ARROW_UP)
-			// {
-			// 	simulate_key(SDLK_UP, STATE_TYPED);
-			// }
-			// else if (event->key.keysym.sym == KEY_DOWN || event->key.keysym.sym == KEY_ARROW_DOWN)
-			// {
-			// 	simulate_key(SDLK_DOWN, STATE_TYPED);
-			// }
-			// else if (event->key.keysym.sym == KEY_LEFT || event->key.keysym.sym == KEY_ARROW_LEFT)
-			// {
-			// 	simulate_key(SDLK_LEFT, STATE_TYPED);
-			// }
-			// else if (event->key.keysym.sym == KEY_RIGHT || event->key.keysym.sym == KEY_ARROW_RIGHT)
-			// {
-			// 	simulate_key(SDLK_RIGHT, STATE_TYPED);
-			// }
 			else if (event->key.keysym.sym == KEY_RETURN)
 			{
 				simulate_key(SDLK_RETURN, STATE_TYPED);
@@ -380,6 +345,7 @@ int handle_keyboard_event(SDL_Event *event)
 
 	if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED)
 	{
+		// printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
 		if (show_help)
 		{
 			// do nothing
@@ -409,8 +375,6 @@ int handle_keyboard_event(SDL_Event *event)
 		else if (event->key.keysym.sym == KEY_ARROW_DOWN)
 		{
 			simulate_key(SDLK_DOWN, STATE_TYPED);
-
-#ifndef TRIMUISMART
 		}
 		else if (event->key.keysym.sym == KEY_ARROW_LEFT)
 		{
@@ -419,7 +383,6 @@ int handle_keyboard_event(SDL_Event *event)
 		else if (event->key.keysym.sym == KEY_ARROW_RIGHT)
 		{
 			simulate_key(SDLK_RIGHT, STATE_TYPED);
-#endif
 		}
 		else if (event->key.keysym.sym == KEY_TAB)
 		{
@@ -530,46 +493,3 @@ int handle_narrow_keys_held(int sym) {
 	}
 	return 1;
 }
-
-
-#ifdef TEST_KEYBOARD
-
-int main()
-{
-	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_Surface *screen = SDL_SetVideoMode(320 * 4, 240 * 4, 16, SDL_SWSURFACE);
-	SDL_Surface *buffer = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 16, screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
-	while (1)
-	{
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			if (event.type == SDL_QUIT)
-			{
-				return 0;
-			}
-			else
-			{
-				handle_keyboard_event(&event);
-			}
-		}
-		SDL_Rect r = {0, 0, buffer->w, buffer->h};
-		SDL_FillRect(buffer, &r, 0);
-		draw_keyboard(buffer);
-		SDL_LockSurface(buffer);
-		for (int j = 0; j < buffer->h; j++)
-		{
-			for (int i = 0; i < buffer->w; i++)
-			{
-				SDL_Rect rect = {i * 4, j * 4, 4, 4};
-				SDL_FillRect(screen, &rect, ((unsigned short *)buffer->pixels)[j * (buffer->pitch >> 1) + i]);
-			}
-		}
-		SDL_UnlockSurface(buffer);
-		SDL_Flip(screen);
-		SDL_Delay(1000 / 30);
-	}
-	SDL_Quit();
-}
-
-#endif
