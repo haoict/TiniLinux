@@ -1,1 +1,0 @@
-INCS += -DBR2 -DRGB30

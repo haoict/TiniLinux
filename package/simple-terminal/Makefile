@@ -1,11 +1,20 @@
-include makefiles/config.mk
+VERSION = 2.0.0
+PREFIX = /usr
+# compiler and linker
+CROSS_COMPILE = 
+CC = ${CROSS_COMPILE}gcc
+SYSROOT = $(shell ${CC} --print-sysroot)
+# flags
+CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto
+LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
 
-ifeq ($(UNION_PLATFORM),buildroot_rgb30)
-include makefiles/config-buildroot-rgb30.mk
-else ifeq ($(UNION_PLATFORM),buildroot_h700)
-include makefiles/config-buildroot-h700.mk
-else ifeq ($(UNION_PLATFORM),buildroot_raspberrypi)
-include makefiles/config-buildroot-raspberrypi.mk
+
+ifeq ($(PLATFORM),buildroot_rgb30)
+CFLAGS += -DBR2 -DRGB30
+else ifeq ($(PLATFORM),buildroot_h700)
+CFLAGS += -DBR2 -DH700
+else ifeq ($(PLATFORM),buildroot_raspberrypi)
+CFLAGS += -DBR2 -DRPI
 endif
 
 SRC = $(wildcard src/*.c)
@@ -14,23 +23,22 @@ all: options build
 
 options:
 	@echo st build options:
-	@echo "UNION_PLATFORM = ${UNION_PLATFORM}"
+	@echo "PLATFORM       = ${PLATFORM}"
 	@echo "PREFIX         = ${PREFIX}"
 	@echo "CROSS_COMPILE  = ${CROSS_COMPILE}"
 	@echo "SYSROOT        = ${SYSROOT}"
-	@echo "CFLAGS   = ${CFLAGS}"
-	@echo "LDFLAGS  = ${LDFLAGS}"
-	@echo "CC       = ${CC}"
-	@echo "SRC      = ${SRC}"
-	@echo "VERSION  = ${VERSION}"
+	@echo "CFLAGS         = ${CFLAGS}"
+	@echo "LDFLAGS        = ${LDFLAGS}"
+	@echo "CC             = ${CC}"
+	@echo "SRC            = ${SRC}"
+	@echo "VERSION        = ${VERSION}"
 
 
 build:
-	mkdir -p build
-	${CC} -o build/SimpleTerminal ${SRC} ${CFLAGS} ${LDFLAGS}
+	${CC} -o simple-terminal ${SRC} ${CFLAGS} ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	rm -rf build
+	rm -f simple-terminal
 
 .PHONY: all options clean

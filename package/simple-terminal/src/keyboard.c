@@ -55,8 +55,8 @@ void init_keyboard() {
     mod_state = 0;
 
 #ifndef BR2
-    active = 0;
-    show_help = 0;
+    active = 1;
+    show_help = 1;
 #endif
 }
 
@@ -84,7 +84,7 @@ char *help =
     "  mv <f> <d>      move files (dest can be dir)\n"
     "  rm <f>          remove files (use -rf for dir)\n\n";
 
-#define CREDIT "Update by @haoict (c) 2025"
+#define CREDIT "@haoict (c) 2025"
 
 void draw_keyboard(SDL_Surface *surface) {
     unsigned short bg_color = SDL_MapRGB(surface->format, 64, 64, 64);
@@ -97,7 +97,13 @@ void draw_keyboard(SDL_Surface *surface) {
         SDL_FillRect(surface, NULL, text_color);
         draw_string(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, sel_toggled_color);
         draw_string(surface, help, 8, 30, sel_color);
+#ifdef VERSION
+        char credit_str[128];
+        snprintf(credit_str, sizeof(credit_str), "Version %s - %s", VERSION, CREDIT);
+        draw_string(surface, credit_str, 2, 220, sel_toggled_color);
+#else
         draw_string(surface, CREDIT, 2, 220, sel_toggled_color);
+#endif
         return;
     }
     if (!active) return;
