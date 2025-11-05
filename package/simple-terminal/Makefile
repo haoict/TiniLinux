@@ -6,7 +6,7 @@ CC = ${CROSS_COMPILE}gcc
 SYSROOT = $(shell ${CC} --print-sysroot)
 # flags
 CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto
-LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
+LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
 
 
 ifeq ($(PLATFORM),buildroot_rgb30)

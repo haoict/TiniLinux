@@ -174,7 +174,7 @@ void die(const char *, ...);
 void *xmalloc(size_t);
 void *xrealloc(void *, size_t);
 void *xcalloc(size_t nmemb, size_t size);
-ssize_t xwrite(int fd, char *s, size_t len);
+size_t xwrite(int fd, char *s, size_t len);
 void redraw(void);
 
 #endif /* VT100_H */

@@ -1,20 +1,11 @@
 /* See LICENSE file for copyright and license details. */
 
-/* appearance */
-#define USE_ANTIALIASING
-// static char font[] = "fonts/LiberationMono-Regular.ttf:fonts/LiberationMono-Bold.ttf";
-// static char font[] = "fonts/inconsolata-dz.ttf:fonts/inconsolata-dz.ttf";
-// static char font[] = "fonts/monaco.ttf:fonts/monaco.ttf";
-// static char font[] = "fonts/TerminusTTF-4.46.0.ttf:fonts/TerminusTTF-4.46.0.ttf";
-static char font[] = "fonts/FIXED_V0.TTF:fonts/FIXED_V0.TTF";
-static int fontsize = 8;
 static int borderpx = 2;
 char shell[] = "/bin/bash";
 /* TERM value */
 char termname[] = "xterm";
 
 unsigned int tabspaces = 4;
-#define WORD_BREAK " "
 
 /* Terminal colors (16 first used in escape sequence) */
 SDL_Color colormap[] = {
@@ -88,6 +79,3 @@ static Key key[] = {
     {SDLK_F11, 0, "\033[23~"},
     {SDLK_F12, 0, "\033[24~"},
 };
-
-/* Internal shortcuts. */
-#define MODKEY KMOD_ALT

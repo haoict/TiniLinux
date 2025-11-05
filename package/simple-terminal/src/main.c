@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_thread.h>
+#include <SDL2/SDL_ttf.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -22,7 +23,6 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-// #include <SDL2/SDL_ttf.h>
 
 #include "font.h"
 #include "keyboard.h"
@@ -30,7 +30,7 @@
 
 #define Font Font_
 
-#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-f font] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
+#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-font font] [-fontsize size] [-fontshade 0|1] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -124,16 +124,15 @@ char *opt_io = NULL;
 static char *opt_title = NULL;
 static char *opt_class = NULL;
 static char *opt_font = NULL;
-
-static char *usedfont = NULL;
-static int usedfontsize = 0;
+static int opt_fontsize = 12;
+static int opt_fontshade = 0;
 
 static int initial_width = 320;
 static int initial_height = 240;
 static volatile int thread_should_exit = 0;
 SDL_Joystick *joystick;
 
-ssize_t xwrite(int fd, char *s, size_t len) {
+size_t xwrite(int fd, char *s, size_t len) {
     size_t aux = len;
 
     while (len > 0) {
@@ -169,41 +168,18 @@ void *xcalloc(size_t nmemb, size_t size) {
 
 SDL_Thread *thread = NULL;
 
-void sdlloadfonts(char *fontstr, int fontsize) {
-    // char *bfontstr;
-
-    usedfont = fontstr;
-    usedfontsize = fontsize;
-
-    /* XXX: Strongly assumes the original setting had a : in it! */
-    /*if((bfontstr = strchr(fontstr, ':'))) {
-        *bfontstr = '\0';
-        bfontstr++;
+void sdlloadfonts() {
+    // Try to load TTF font if opt_font is set
+    if (opt_font && init_ttf_font(opt_font, opt_fontsize)) {
+        xw.cw = get_ttf_char_width();
+        xw.ch = get_ttf_char_height();
+        fprintf(stderr, "Using TTF font: %s (size: %d, char: %dx%d)\n", opt_font, opt_fontsize, xw.cw, xw.ch);
     } else {
-        bfontstr = strchr(fontstr, '\0');
-        bfontstr++;
-    }*/
-
-    /*if(dc.font) TTF_CloseFont(dc.font);
-    dc.font = TTF_OpenFont(fontstr, fontsize);
-    fprintf(stderr, "%s\n", fontstr);*/
-    // TTF_SizeUTF8(dc.font, "O", &xw.cw, &xw.ch);
-    xw.cw = 6;
-    xw.ch = 8;
-
-    /*if(dc.ifont) TTF_CloseFont(dc.ifont);
-    dc.ifont = TTF_OpenFont(fontstr, fontsize);
-    fprintf(stderr, "%s\n", fontstr);
-    TTF_SetFontStyle(dc.ifont, TTF_STYLE_ITALIC);
-
-    if(dc.bfont) TTF_CloseFont(dc.bfont);
-    dc.bfont = TTF_OpenFont(bfontstr, fontsize);
-    fprintf(stderr, "%s\n", bfontstr);
-
-    if(dc.ibfont) TTF_CloseFont(dc.ibfont);
-    dc.ibfont = TTF_OpenFont(bfontstr, fontsize);
-    fprintf(stderr, "%s\n", bfontstr);
-    TTF_SetFontStyle(dc.ibfont, TTF_STYLE_ITALIC);*/
+        // Fallback to bitmap font
+        xw.cw = 6;
+        xw.ch = 8;
+        fprintf(stderr, "Using embedded bitmap font (6x8)\n");
+    }
 }
 
 static int shutdown_called = 0;
@@ -222,6 +198,10 @@ void sdlshutdown(void) {
             // SDL_KillThread(thread);
             thread = NULL;
         }
+
+        // Cleanup TTF font
+        cleanup_ttf_font();
+
         if (xw.win) SDL_FreeSurface(xw.win);
         if (screen2) SDL_FreeSurface(screen2);
         xw.win = NULL;
@@ -302,10 +282,9 @@ void sdlinit(void) {
     }*/
 
     /* font */
-    usedfont = (opt_font == NULL) ? font : opt_font;
-    sdlloadfonts(usedfont, fontsize);
+    sdlloadfonts();
+    fprintf(stderr, "SDL font: %s\n", opt_font == NULL ? "embedded_bitmap_font" : opt_font);
 
-    fprintf(stderr, "SDL font: %s\n", usedfont);
     /* colors */
     initcolormap();
 
@@ -379,7 +358,7 @@ void sdlinit(void) {
 
 // make content bigger if not build for BR2
 #ifndef BR2
-    scale_to_size(xw.w / 2, xw.h / 2);
+    scale_to_size(xw.w, xw.h);
 #endif
 }
 
@@ -515,43 +494,29 @@ void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
     if (y == 0) xclear(winx, 0, winx + width, borderpx);
     if (y == term.row - 1) xclear(winx, winy + xw.ch, winx + width, xw.h);
 
-    {
-        // SDL_Surface *text_surface;
-        SDL_Rect r = {winx, winy, width, xw.ch};
+    // SDL_Surface *text_surface;
+    SDL_Rect r = {winx, winy, width, xw.ch};
 
-        if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, bg->r, bg->g, bg->b));
-        // draw_keyboard(xw.win);
+    if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, bg->r, bg->g, bg->b));
+    // draw_keyboard(xw.win);
 
-        /*#ifdef USE_ANTIALIASING
-                if(!(text_surface=TTF_RenderUTF8_Shaded(font,s,*fg, *bg))) {
-        #else
-                if(!(text_surface=TTF_RenderUTF8_Solid(font,s,*fg))) {
-        #endif
-                    printf("Could not TTF_RenderUTF8_Solid: %s\n", TTF_GetError());
-                    exit(EXIT_FAILURE);
-                } else {
-                    SDL_BlitSurface(text_surface,NULL,xw.win,&r);
-                    SDL_FreeSurface(text_surface);
-                }*/
-        int xs = r.x;
-        if (xw.win != NULL) {
-            // TODO: find a better way to draw cursor box y + 1
-            int ys = r.y + 1;
-            draw_string(xw.win, s, xs, ys, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
+    if (xw.win != NULL) {
+        // TODO: find a better way to draw cursor box y + 1
+        int ys = r.y + 1;
+        if (is_ttf_loaded()) {
+            // Use TTF rendering
+            draw_string_ttf(xw.win, s, winx, winy, *fg, *bg, opt_fontshade);
+        } else {
+            // Use bitmap rendering
+            draw_string(xw.win, s, winx, ys, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
         }
+    }
 
-        /*while(*s) {
-            draw_char(xw.win, *s, xs, r.y, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
-            xs += 6;
-            s++;
-        }*/
-
-        if (base.mode & ATTR_UNDERLINE) {
-            // r.y += TTF_FontAscent(font) + 1;
-            r.y += xw.ch;
-            r.h = 1;
-            if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
-        }
+    if (base.mode & ATTR_UNDERLINE) {
+        // r.y += TTF_FontAscent(font) + 1;
+        r.y += xw.ch;
+        r.h = 1;
+        if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
     }
 }
 
@@ -998,6 +963,39 @@ int main(int argc, char *argv[]) {
     // }
 
     for (int i = 1; i < argc; i++) {
+        // Handle multi-character options first
+        if (strcmp(argv[i], "-font") == 0) {
+            if (++i < argc) {
+                opt_font = argv[i];
+            } else {
+                fprintf(stderr, "Missing argument for -font\n");
+                die(USAGE);
+            }
+            continue;
+        }
+        if (strcmp(argv[i], "-fontsize") == 0) {
+            if (++i < argc) {
+                opt_fontsize = atoi(argv[i]);
+                if (opt_fontsize <= 0) {
+                    fprintf(stderr, "Invalid fontsize: %s (must be positive)\n", argv[i]);
+                    opt_fontsize = 0;
+                }
+            } else {
+                fprintf(stderr, "Missing argument for -fontsize\n");
+                die(USAGE);
+            }
+            continue;
+        }
+        if (strcmp(argv[i], "-fontshade") == 0) {
+            if (++i < argc) {
+                opt_fontshade = atoi(argv[i]);
+            } else {
+                fprintf(stderr, "Missing argument for -fontshade\n");
+                die(USAGE);
+            }
+            continue;
+        }
+
         switch (argv[i][0] != '-' || argv[i][2] ? -1 : argv[i][1]) {
             case 'c':
                 if (++i < argc) opt_class = argv[i];
@@ -1026,9 +1024,6 @@ int main(int argc, char *argv[]) {
                     active = 0;
                 }
                 goto run;
-            case 'f':
-                if (++i < argc) opt_font = argv[i];
-                break;
             case 'o':
                 if (++i < argc) opt_io = argv[i];
                 break;

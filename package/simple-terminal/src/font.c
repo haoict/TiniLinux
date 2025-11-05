@@ -1,6 +1,7 @@
 #include "font.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 // font from https://github.com/nesbox/TIC-80
 // Each character is 8 bytes (6 rows of pixels, plus 2 unused bytes)
@@ -151,15 +152,125 @@ static const unsigned char embedded_font[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // 127: DEL
 };
 
+/* TTF Font globals */
+static TTF_Font *ttf_font = NULL;
+static int ttf_char_width = 6;   // fallback to bitmap size
+static int ttf_char_height = 8;  // fallback to bitmap size
+
+/* Initialize TTF font */
+int init_ttf_font(const char *font_path, int font_size) {
+    if (TTF_Init() == -1) {
+        fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
+        return 0;
+    }
+
+    ttf_font = TTF_OpenFont(font_path, font_size);
+    if (!ttf_font) {
+        fprintf(stderr, "Failed to load font '%s': %s\n", font_path, TTF_GetError());
+        TTF_Quit();
+        return 0;
+    }
+
+    // Get font metrics
+    TTF_SizeText(ttf_font, "M", &ttf_char_width, &ttf_char_height);
+
+    fprintf(stderr, "TTF font loaded: %s (size: %d, char: %dx%d)\n", font_path, font_size, ttf_char_width, ttf_char_height);
+
+    return 1;
+}
+
+/* Cleanup TTF font */
+void cleanup_ttf_font(void) {
+    if (ttf_font) {
+        TTF_CloseFont(ttf_font);
+        ttf_font = NULL;
+        TTF_Quit();
+    }
+}
+
+/* Check if TTF font is loaded */
+int is_ttf_loaded(void) { return ttf_font != NULL; }
+
+/* Get TTF character dimensions */
+int get_ttf_char_width(void) { return ttf_char_width; }
+
+int get_ttf_char_height(void) { return ttf_char_height; }
+
+/* Draw string with TTF */
+void draw_string_ttf(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg, int use_shaded) {
+    if (!ttf_font || !surface || !text) return;
+
+    SDL_Surface *text_surface;
+    if (use_shaded) {
+        text_surface = TTF_RenderText_Shaded(ttf_font, text, fg, bg);
+    } else {
+        text_surface = TTF_RenderText_Solid(ttf_font, text, fg);
+    }
+
+    if (!text_surface) {
+        fprintf(stderr, "TTF_RenderText_Shaded failed: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Rect dest = {x, y, text_surface->w, text_surface->h};
+    SDL_BlitSurface(text_surface, NULL, surface, &dest);
+    SDL_FreeSurface(text_surface);
+}
+
+void draw_string_ttf_with_linebreak(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg, int use_shaded) {
+    if (!ttf_font || !surface || !text) return;
+
+    int line_height = get_ttf_char_height();
+    const char *line_start = text;
+    int cur_y = y;
+    while (*line_start) {
+        // Find next line break
+        const char *line_end = line_start;
+        while (*line_end && *line_end != '\n') line_end++;
+
+        // Copy line to buffer
+        size_t len = line_end - line_start;
+        char line_buf[1024];
+        if (len >= sizeof(line_buf)) len = sizeof(line_buf) - 1;
+        memcpy(line_buf, line_start, len);
+        line_buf[len] = '\0';
+
+        if (len > 0) {
+            SDL_Surface *text_surface;
+            if (use_shaded) {
+                text_surface = TTF_RenderText_Shaded(ttf_font, line_buf, fg, bg);
+            } else {
+                text_surface = TTF_RenderText_Solid(ttf_font, line_buf, fg);
+            }
+
+            if (!text_surface) {
+                fprintf(stderr, "TTF_RenderText_Shaded failed: %s\n", TTF_GetError());
+                return;
+            }
+
+            SDL_Rect dest = {x, cur_y, text_surface->w, text_surface->h};
+            SDL_BlitSurface(text_surface, NULL, surface, &dest);
+            SDL_FreeSurface(text_surface);
+        }
+
+        if (*line_end == '\n') {
+            cur_y += line_height;
+            line_start = line_end + 1;
+        } else {
+            break;
+        }
+    }
+}
+
+/* Existing bitmap font functions remain unchanged */
 void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color) {
     x += (8 - 1) * 1;
     int flip = 0;
-    if (symbol > 127) {  // flip symbols over 128
+    if (symbol > 127) {
         flip = 1;
         symbol -= 128;
     }
     const unsigned char *ptr = embedded_font + symbol * 8;
-
     for (int i = 0, ys = 0; i < 6; i++, ptr++, ys += 1)
         for (int col = 8 - 6, xs = x - col; col < 8; col++, xs -= 1)
             if ((*ptr & 1 << col) && y + ys < surface->h && xs < surface->w) ((unsigned short *)surface->pixels)[(y + flip * 4 + (1 - 2 * flip) * ys) * (surface->pitch >> 1) + xs] = color;

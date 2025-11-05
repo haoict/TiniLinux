@@ -95,14 +95,30 @@ void draw_keyboard(SDL_Surface *surface) {
     unsigned short toggled_color = SDL_MapRGB(surface->format, 192, 192, 0);
     if (show_help) {
         SDL_FillRect(surface, NULL, text_color);
-        draw_string(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, sel_toggled_color);
-        draw_string(surface, help, 8, 30, sel_color);
+        if (is_ttf_loaded()) {
+            // Use TTF rendering
+            draw_string_ttf(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+            draw_string_ttf_with_linebreak(surface, help, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+        } else {
+            draw_string(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, sel_toggled_color);
+            draw_string(surface, help, 8, 30, sel_color);
+        }
 #ifdef VERSION
         char credit_str[128];
         snprintf(credit_str, sizeof(credit_str), "Version %s - %s", VERSION, CREDIT);
-        draw_string(surface, credit_str, 2, 220, sel_toggled_color);
+        if (is_ttf_loaded()) {
+            // Use TTF rendering
+            draw_string_ttf(surface, credit_str, 2, 400, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+        } else {
+            draw_string(surface, credit_str, 2, 220, sel_toggled_color);
+        }
 #else
-        draw_string(surface, CREDIT, 2, 220, sel_toggled_color);
+        if (is_ttf_loaded()) {
+            // Use TTF rendering
+            draw_string_ttf(surface, CREDIT, 2, 220, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+        } else {
+            draw_string(surface, CREDIT, 2, 220, sel_toggled_color);
+        }
 #endif
         return;
     }
