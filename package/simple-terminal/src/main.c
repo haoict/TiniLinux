@@ -30,7 +30,7 @@
 
 #define Font Font_
 
-#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
+#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-o file] [-e command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -54,8 +54,6 @@ typedef struct {
     SDL_Texture *texture;
     SDL_Surface *win;
     int scr;
-    bool isfixed;       /* is fixed geometry? */
-    int fx, fy, fw, fh; /* fixed geometry */
     int tw, th;         /* tty width and height */
     int w;              /* window width */
     int h;              /* window height */
@@ -121,8 +119,6 @@ int iofd = -1;
 char **opt_cmd = NULL;
 int opt_cmd_size = 0;
 char *opt_io = NULL;
-static char *opt_title = NULL;
-static char *opt_class = NULL;
 static float opt_scale = 2.0;
 static char *opt_font = NULL;
 static int opt_fontsize = 12;
@@ -953,14 +949,6 @@ void run(void) {
 int main(int argc, char *argv[]) {
     setenv("SDL_NOMOUSE", "1", 1);
 
-    xw.fw = xw.fh = xw.fx = xw.fy = 0;
-    xw.isfixed = false;
-
-    // char *high_res_env = getenv("HIGH_RES");
-    // if (high_res_env) {
-    //     high_res = 1;
-    // }
-
     for (int i = 1; i < argc; i++) {
         // Handle multi-character options first
         if (strcmp(argv[i], "-scale") == 0) {
@@ -1009,9 +997,6 @@ int main(int argc, char *argv[]) {
         }
 
         switch (argv[i][0] != '-' || argv[i][2] ? -1 : argv[i][1]) {
-            case 'c':
-                if (++i < argc) opt_class = argv[i];
-                break;
             case 'd':
                 /* run commands from arguments with on screen keyboard */
                 if (++i < argc) {
@@ -1039,13 +1024,10 @@ int main(int argc, char *argv[]) {
             case 'o':
                 if (++i < argc) opt_io = argv[i];
                 break;
-            case 't':
-                if (++i < argc) opt_title = argv[i];
-                break;
             case 'q':
                 active = show_help = 0;
                 break;
-            case 'v':
+            case 'h':
             default:
                 die(USAGE);
         }

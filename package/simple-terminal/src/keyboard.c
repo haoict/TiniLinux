@@ -53,11 +53,6 @@ void init_keyboard() {
         for (int i = 0; i < NUM_KEYS; i++) toggled[j][i] = 0;
     selected_i = selected_j = shifted = location = 0;
     mod_state = 0;
-
-#ifndef BR2
-    active = 1;
-    show_help = 1;
-#endif
 }
 
 char *help =

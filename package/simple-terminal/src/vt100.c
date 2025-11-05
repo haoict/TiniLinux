@@ -28,7 +28,6 @@ extern char *opt_io;
 extern char **opt_cmd;
 extern int opt_cmd_size;
 extern int show_help;
-extern int active;
 
 /* VT100/Terminal global variables */
 Term term;
@@ -154,6 +153,7 @@ int utf8size(char *s) {
 
 /* External functions needed by VT100 */
 void execsh(void) {
+    printf("Executing shell...\n");
     char **args;
     char *envshell = getenv("SHELL");
     const struct passwd *pass = getpwuid(getuid());

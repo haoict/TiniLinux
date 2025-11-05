@@ -21,7 +21,7 @@
 #define JOYBUTTON_R2 7
 #define JOYBUTTON_L3 11
 #define JOYBUTTON_R3 12
-#define JOYBUTTON_MENU 10
+#define JOYBUTTON_MENU 999
 
 #ifdef BR2 // Buildroot handhelds with SDL2
 
