@@ -243,11 +243,13 @@ static void sdlinit(void);
 static void initcolormap(void);
 static void sdltermclear(int, int, int, int);
 static void xresize(int, int);
+static void scale_to_size(int, int);
 
 static void expose(SDL_Event *);
 static char *kmap(SDL_Keycode, Uint16);
 static void kpress(SDL_Event *);
 static void textinput(SDL_Event *);
+static void window_event_handler(SDL_Event *);
 
 static int utf8decode(char *, long *);
 static int utf8encode(long *, char *);
@@ -258,9 +260,9 @@ static ssize_t xwrite(int, char *, size_t);
 static void *xmalloc(size_t);
 static void *xrealloc(void *, size_t);
 static void *xcalloc(size_t nmemb, size_t size);
-static void xflip(void);
+static void update_render(void);
 
-static void (*handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput};
+static void (*event_handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput, [SDL_WINDOWEVENT] = window_event_handler};
 
 /* Globals */
 static DC dc;
@@ -281,7 +283,6 @@ static char *opt_font = NULL;
 static char *usedfont = NULL;
 static int usedfontsize = 0;
 
-static int high_res = 0;
 static int initial_width = 320;
 static int initial_height = 240;
 static volatile int thread_should_exit = 0;
@@ -384,6 +385,54 @@ void sdlshutdown(void) {
     }
 }
 
+void window_event_handler(SDL_Event *event) {
+#ifdef BR2
+    return;  // no resize for BR2 handheld devices builds because of kms video driver
+#endif
+    switch (event->window.event) {
+        case SDL_WINDOWEVENT_RESIZED:
+            scale_to_size(event->window.data1, event->window.data2);
+            break;
+        default:
+            break;
+    }
+}
+
+void scale_to_size(int width, int height) {
+    if (width <= 0 || height <= 0 || width > 8192 || height > 8192) return;
+    xw.w = width;
+    xw.h = height;
+    printf("set scale to size: %dx%d\n", xw.w, xw.h);
+
+    // Recreate texture for new size
+    if (xw.texture) {
+        SDL_DestroyTexture(xw.texture);
+    }
+    xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
+    if (!xw.texture) {
+        fprintf(stderr, "Unable to recreate texture: %s\n", SDL_GetError());
+        exit(EXIT_FAILURE);
+    }
+
+    // Recreate surfaces
+    if (xw.win) SDL_FreeSurface(xw.win);
+    xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+    if (screen2) SDL_FreeSurface(screen2);
+    screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
+
+    // Recreate screen surface for compatibility
+    if (screen) SDL_FreeSurface(screen);
+    screen = SDL_CreateRGBSurface(0, 640, 480, 16, 0xF800, 0x7E0, 0x1F, 0);
+
+    // resize terminal to fit window
+    int col, row;
+    col = (xw.w - 2 * borderpx) / xw.cw;
+    row = (xw.h - 2 * borderpx) / xw.ch;
+    tresize(col, row);
+    xresize(col, row);
+    ttyresize();
+}
+
 void sdlinit(void) {
     // const SDL_VideoInfo *vi;
     fprintf(stderr, "SDL init\n");
@@ -426,11 +475,11 @@ void sdlinit(void) {
         xw.w = mode.w / 2;
         xw.h = mode.h / 2;
 
-        #ifndef BR2
-        xw.w = 320;
-        xw.h = 240;
-        printf("Generic build, using 320x240\n");
-        #endif
+#ifndef BR2
+        xw.w = 640;
+        xw.h = 480;
+        printf("Generic build, using 640x480\n");
+#endif
     }
 
     xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, xw.w, xw.h, SDL_WINDOW_SHOWN);
@@ -482,9 +531,14 @@ void sdlinit(void) {
     tresize(col, row);
     xresize(col, row);
     ttyresize();
+
+// make content bigger if not build for BR2
+#ifndef BR2
+    scale_to_size(xw.w / 2, xw.h / 2);
+#endif
 }
 
-void xflip(void) {
+void update_render(void) {
     if (xw.win == NULL) return;
     memcpy(screen2->pixels, xw.win->pixels, xw.w * xw.h * 2);
     draw_keyboard(screen2);  // screen2(SW) = console + keyboard
@@ -1851,14 +1905,13 @@ void redraw(void) {
 
 void draw(void) {
     drawregion(0, 0, term.col, term.row);
-    xflip();
+    update_render();
 }
 
 void drawregion(int x1, int y1, int x2, int y2) {
     int ic, ib, x, y, ox, sl;
     Glyph base, new;
     char buf[DRAW_BUF_SIZ];
-    bool alt = IS_SET(MODE_ALTSCREEN);
 
     if (!(xw.state & WIN_VISIBLE)) return;
 
@@ -1913,7 +1966,7 @@ char *kmap(SDL_Keycode k, Uint16 state) {
 void kpress(SDL_Event *ev) {
     SDL_KeyboardEvent *e = &ev->key;
     char buf[32], *customkey;
-    int meta, shift, ctrl, synth, i;
+    int meta, shift, ctrl, synth;
     SDL_Keycode ksym = e->keysym.sym;
 
     if (IS_SET(MODE_KBDLOCK)) return;
@@ -1924,11 +1977,27 @@ void kpress(SDL_Event *ev) {
     synth = e->keysym.mod & KMOD_SYNTHETIC;
 
     // printf("kpress: keysym=%d scancode=%d mod=%d\n", ksym, e->keysym.scancode, e->keysym.mod);
-    /* 2. custom keys from config.h */
+    /* 1. custom keys from config.h */
     if ((customkey = kmap(ksym, e->keysym.mod))) {
-        printf("Custom key mapped: %s\n", customkey);
+        char escaped_seq[16] = {0};
+        int idx = 0;
+        for (int i = 0; customkey[i] != '\0'; i++) {
+            unsigned char ch = customkey[i];
+            if (ch == 27) {  // '\033'
+                strcpy(&escaped_seq[idx], "\\033");
+                idx += 4;
+            } else if (ch >= 32 && ch <= 126) {
+                escaped_seq[idx++] = ch;
+            } else {
+                sprintf(&escaped_seq[idx], "\\x%02X", ch);
+                idx += 4;
+            }
+        }
+        escaped_seq[idx] = '\0';
+        printf("Custom key mapped: %s - ksym=%d, scancode=%d, mod=%d\n", escaped_seq, ksym, e->keysym.scancode, e->keysym.mod);
+
         ttywrite(customkey, strlen(customkey));
-        /* 2. hardcoded (overrides X lookup) */
+        /* 2. handle ctrl key */
     } else if (ctrl && !meta && !shift) {
         switch (ksym) {
             case SDLK_a:
@@ -2015,7 +2084,7 @@ void kpress(SDL_Event *ev) {
     }
     /* 3. standard keys */
     else {
-        // special volumeup/down/ powerkey handling
+        // special volumeup/down/powerkey handling
         if (e->keysym.scancode == 128) {
             printf("Volume Up key pressed\n");
         } else if (e->keysym.scancode == 129) {
@@ -2025,6 +2094,9 @@ void kpress(SDL_Event *ev) {
         }
 
         switch (ksym) {
+            case SDLK_ESCAPE:
+                ttywrite("\033", 1);
+                break;
             case SDLK_UP:
             case SDLK_DOWN:
             case SDLK_LEFT:
@@ -2121,9 +2193,7 @@ int ttythread(void *unused) {
         i = 0;
         tv = NULL;
 
-        if (SDL_PushEvent(&event)) {
-            // printf("Warning: unable to push tty update event. %s\n", SDL_GetError());
-        }
+        SDL_PushEvent(&event);
     }
 
     return 0;
@@ -2158,7 +2228,7 @@ void run(void) {
                     };
                     SDL_PushEvent(&expose_event);*/
                 } else {
-                    if (handler[ev.type]) (handler[ev.type])(&ev);
+                    if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
                 }
 
                 // handle narrow keys held
@@ -2191,7 +2261,7 @@ void run(void) {
 
                 SDL_PushEvent(&sdl_event);
             } else {
-                if (handler[ev.type]) (handler[ev.type])(&ev);
+                if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
             }
 
             switch (ev.type) {
@@ -2219,8 +2289,8 @@ void run(void) {
             lastScrollTime = now;
         }
 
-        xflip();        // redraw the screen
-        SDL_Delay(33);  // ~30 FPS
+        update_render();  // redraw the screen
+        SDL_Delay(33);    // ~30 FPS
     }
 
     sdlshutdown();

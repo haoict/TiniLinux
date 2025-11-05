@@ -10,11 +10,6 @@ static char font[] = "fonts/FIXED_V0.TTF:fonts/FIXED_V0.TTF";
 static int fontsize = 8;
 static int borderpx = 2;
 static char shell[] = "/bin/bash";
-
-/* double-click timeout (in milliseconds) between clicks for selection */
-static unsigned int doubleclicktimeout = 300;
-static unsigned int tripleclicktimeout = 600;
-
 /* TERM value */
 static char termname[] = "xterm";
 
@@ -73,7 +68,7 @@ static Key key[] = {
     {SDLK_LEFT, KMOD_ALT, "\033[1;3D"},
     {SDLK_RIGHT, KMOD_ALT, "\033[1;3C"},
 
-    {SDLK_BACKSPACE, 0, "\177"},
+    // {SDLK_BACKSPACE, 0, "\177"},
     {SDLK_INSERT, 0, "\033[2~"},
     {SDLK_DELETE, 0, "\033[3~"},
     {SDLK_HOME, 0, "\033[1~"},
