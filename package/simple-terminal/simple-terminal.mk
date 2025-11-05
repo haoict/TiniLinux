@@ -24,7 +24,7 @@ endef
 
 define SIMPLE_TERMINAL_INSTALL_TARGET_CMDS
     mkdir -p $(TARGET_DIR)/usr/local/bin
-    $(INSTALL) -D -m 0755 $(@D)/build/SimpleTerminal  $(TARGET_DIR)/usr/local/bin
+    $(INSTALL) -D -m 0755 $(@D)/simple-terminal  $(TARGET_DIR)/usr/local/bin
 endef
 
 $(eval $(generic-package))

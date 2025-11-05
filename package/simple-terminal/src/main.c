@@ -30,7 +30,7 @@
 
 #define Font Font_
 
-#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-font font] [-fontsize size] [-fontshade 0|1] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
+#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-v] [-c class] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-g geometry] [-o file]\n[-t title] [-e command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -123,6 +123,7 @@ int opt_cmd_size = 0;
 char *opt_io = NULL;
 static char *opt_title = NULL;
 static char *opt_class = NULL;
+static float opt_scale = 2.0;
 static char *opt_font = NULL;
 static int opt_fontsize = 12;
 static int opt_fontshade = 0;
@@ -296,14 +297,13 @@ void sdlinit(void) {
         xw.h = initial_height;
     } else {
         printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
-        xw.w = mode.w / 2;
-        xw.h = mode.h / 2;
-
+        xw.w = mode.w;
+        xw.h = mode.h;
 #ifndef BR2
-        xw.w = 640;
-        xw.h = 480;
-        printf("Generic build, using 640x480\n");
+        xw.w = initial_width * 2;
+        xw.h = initial_height * 2;
 #endif
+        printf("Setting resolution to: %dx%d\n", xw.w, xw.h);
     }
 
     xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, xw.w, xw.h, SDL_WINDOW_SHOWN);
@@ -356,10 +356,9 @@ void sdlinit(void) {
     xresize(col, row);
     ttyresize();
 
-// make content bigger if not build for BR2
-#ifndef BR2
-    scale_to_size(xw.w, xw.h);
-#endif
+    if (opt_scale != 1.0) {
+        scale_to_size((int)(xw.w / opt_scale), (int)(xw.h / opt_scale));
+    }
 }
 
 void update_render(void) {
@@ -964,6 +963,19 @@ int main(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; i++) {
         // Handle multi-character options first
+        if (strcmp(argv[i], "-scale") == 0) {
+            if (++i < argc) {
+                opt_scale = atof(argv[i]);
+                if (opt_scale <= 0) {
+                    fprintf(stderr, "Invalid scale: %s (must be positive)\n", argv[i]);
+                    opt_scale = 2.0;
+                }
+            } else {
+                fprintf(stderr, "Missing argument for -scale\n");
+                die(USAGE);
+            }
+            continue;
+        }
         if (strcmp(argv[i], "-font") == 0) {
             if (++i < argc) {
                 opt_font = argv[i];

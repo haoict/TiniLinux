@@ -5,7 +5,7 @@ CROSS_COMPILE =
 CC = ${CROSS_COMPILE}gcc
 SYSROOT = $(shell ${CC} --print-sysroot)
 # flags
-CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto
+CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto -Wno-unused-result
 LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
 
 
@@ -19,9 +19,7 @@ endif
 
 SRC = $(wildcard src/*.c)
 
-all: options build
-
-options:
+build:
 	@echo st build options:
 	@echo "PLATFORM       = ${PLATFORM}"
 	@echo "PREFIX         = ${PREFIX}"
@@ -32,13 +30,10 @@ options:
 	@echo "CC             = ${CC}"
 	@echo "SRC            = ${SRC}"
 	@echo "VERSION        = ${VERSION}"
-
-
-build:
 	${CC} -o simple-terminal ${SRC} ${CFLAGS} ${LDFLAGS}
 
 clean:
 	@echo cleaning
 	rm -f simple-terminal
 
-.PHONY: all options clean
+.PHONY: build clean
