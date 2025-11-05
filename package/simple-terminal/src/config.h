@@ -9,11 +9,11 @@
 static char font[] = "fonts/FIXED_V0.TTF:fonts/FIXED_V0.TTF";
 static int fontsize = 8;
 static int borderpx = 2;
-static char shell[] = "/bin/bash";
+char shell[] = "/bin/bash";
 /* TERM value */
-static char termname[] = "xterm";
+char termname[] = "xterm";
 
-static unsigned int tabspaces = 4;
+unsigned int tabspaces = 4;
 #define WORD_BREAK " "
 
 /* Terminal colors (16 first used in escape sequence) */
@@ -49,10 +49,10 @@ SDL_Color colormap[] = {
  * Default colors (colorname index)
  * foreground, background, cursor, unfocused cursor
  */
-static unsigned int defaultfg = 7;
-static unsigned int defaultbg = 0;
-static unsigned int defaultcs = 256;
-static unsigned int defaultucs = 257;
+unsigned int defaultfg = 7;
+unsigned int defaultbg = 0;
+unsigned int defaultcs = 256;
+unsigned int defaultucs = 257;
 
 /*
  * Special keys (change & recompile st.info accordingly)
