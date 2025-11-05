@@ -153,29 +153,13 @@ int utf8size(char *s) {
 
 /* External functions needed by VT100 */
 void execsh(void) {
-    printf("Executing shell...\n");
     char **args;
     char *envshell = getenv("SHELL");
-    const struct passwd *pass = getpwuid(getuid());
 
     unsetenv("COLUMNS");
     unsetenv("LINES");
     unsetenv("TERMCAP");
-
-    if (pass) {
-        setenv("LOGNAME", pass->pw_name, 1);
-        setenv("USER", pass->pw_name, 1);
-        setenv("SHELL", pass->pw_shell, 0);
-        setenv("HOME", pass->pw_dir, 0);
-    }
     chdir(getenv("HOME"));
-
-    char *home = get_current_dir_name();
-    setenv("HOME", home, 1);
-    free(home);
-
-    setenv("PS1", "\\[\\033[32m\\]\\W\\[\\033[00m\\]\\$ ", 1);
-    setenv("LANG", "", 1);
 
     if (show_help != 0) {
         system("uname -a");
@@ -312,13 +296,15 @@ void tsetdirt(int top, int bot) {
 void tfulldirt(void) { tsetdirt(0, term.row - 1); }
 
 void tcursor(int mode) {
-    static TCursor c;
+    static TCursor c[2]; // Separate cursor save for primary[0] and alt[1] screens
 
     if (mode == CURSOR_SAVE) {
-        c = term.c;
+        int screen_idx = IS_SET(MODE_ALTSCREEN) ? 1 : 0;
+        c[screen_idx] = term.c;
     } else if (mode == CURSOR_LOAD) {
-        term.c = c;
-        tmoveto(c.x, c.y);
+        int screen_idx = IS_SET(MODE_ALTSCREEN) ? 1 : 0;
+        term.c = c[screen_idx];
+        tmoveto(c[screen_idx].x, c[screen_idx].y);
     }
 }
 
@@ -362,6 +348,12 @@ void tswapscreen(void) {
     term.alt = tmp;
     term.mode ^= MODE_ALTSCREEN;
     tfulldirt();
+    
+    // Ensure cursor is within bounds after swap
+    LIMIT(term.c.x, 0, term.col - 1);
+    LIMIT(term.c.y, 0, term.row - 1);
+    
+    redraw();  // Force immediate redraw after screen swap
 }
 
 void tscrolldown(int orig, int n) {
@@ -571,6 +563,9 @@ void tsetattr(int *attr, int l) {
             case 27:
                 term.c.attr.mode &= ~ATTR_REVERSE;
                 break;
+            case 29: /* not crossed out (most terminals don't support crossed out anyway) */
+                /* ignore - we don't have a crossed out attribute to unset */
+                break;
             case 38:
                 if (i + 2 < l && attr[i + 1] == 5) {
                     i += 2;
@@ -669,15 +664,39 @@ void tsetmode(bool priv, bool set, int *args, int narg) {
                     MODBIT(term.mode, set, MODE_MOUSEMOTION);
                     break;
                 case 1049: /* = 1047 and 1048 */
+                    // Mode 1049 combines screen switching AND cursor save/restore
+                    if (set) {
+                        // Save cursor position on primary screen, then switch to alternate screen
+                        if (!IS_SET(MODE_ALTSCREEN)) {
+                            tcursor(CURSOR_SAVE);  // Save on primary screen
+                            tswapscreen();         // Switch to alternate
+                            tmoveto(0, 0);         // Move to top-left on alternate screen
+                        }
+                    } else {
+                        // Switch back to primary screen, then restore cursor position
+                        if (IS_SET(MODE_ALTSCREEN)) {
+                            tswapscreen();         // Switch back to primary
+                            tcursor(CURSOR_LOAD);  // Restore on primary screen
+                        }
+                    }
+                    break;
                 case 47:
                 case 1047:
-                    if (IS_SET(MODE_ALTSCREEN)) tclearregion(0, 0, term.col - 1, term.row - 1);
-                    if ((set && !IS_SET(MODE_ALTSCREEN)) || (!set && IS_SET(MODE_ALTSCREEN))) {
-                        tswapscreen();
+                    // Alternate screen buffer only (no cursor save/restore)
+                    if (set) {
+                        // Switch to alternate screen
+                        if (!IS_SET(MODE_ALTSCREEN)) {
+                            tswapscreen();
+                        }
+                    } else {
+                        // Switch back to primary screen
+                        if (IS_SET(MODE_ALTSCREEN)) {
+                            tswapscreen();
+                        }
                     }
-                    if (*args != 1049) break;
-                    /* pass through */
+                    break;
                 case 1048:
+                    // Cursor save/restore only
                     tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
                     break;
                 case 2004: /* bracketed paste mode */
@@ -719,6 +738,30 @@ void tsetmode(bool priv, bool set, int *args, int narg) {
 
 void csihandle(void) {
     switch (csiescseq.mode) {
+        case 't': /* Window manipulation */
+            // See: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-Window-manipulation
+            if (csiescseq.narg > 0) {
+                int op = csiescseq.arg[0];
+                char buf[64];
+                switch (op) {
+                    case 18: // Report window size in pixels
+                        // Response: ESC [ 4 ; height ; width t
+                        snprintf(buf, sizeof(buf), "\033[4;%d;%dt", term.row * 16, term.col * 8); 
+                        ttywrite(buf, strlen(buf));
+                        break;
+                    case 19: // Report window size in characters
+                        // Response: ESC [ 8 ; height ; width t
+                        snprintf(buf, sizeof(buf), "\033[8;%d;%dt", term.row, term.col);
+                        ttywrite(buf, strlen(buf));
+                        break;
+                    case 22: // Push window title to stack (ignore for now)
+                    case 23: // Pop window title from stack (ignore for now)
+                    default:
+                        // For other window ops, ignore silently
+                        break;
+                }
+            }
+            break;
         default:
         unknown:
             fprintf(stderr, "erresc: unknown csi ");
@@ -854,6 +897,11 @@ void csihandle(void) {
             tsetmode(csiescseq.priv, 1, csiescseq.arg, csiescseq.narg);
             break;
         case 'm': /* SGR -- Terminal attribute (color) */
+            if (csiescseq.buf[0] == '>') {
+                // Handle private SGR sequences like ESC[>4;2m (bracketed paste mode queries)
+                // These are usually capability queries that we can safely ignore
+                break;
+            }
             tsetattr(csiescseq.arg, csiescseq.narg);
             break;
         case 'r': /* DECSTBM -- Set Scrolling Region */
