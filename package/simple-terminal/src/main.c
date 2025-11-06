@@ -54,12 +54,12 @@ typedef struct {
     SDL_Texture *texture;
     SDL_Surface *win;
     int scr;
-    int tw, th;         /* tty width and height */
-    int w;              /* window width */
-    int h;              /* window height */
-    int ch;             /* char height */
-    int cw;             /* char width  */
-    char state;         /* focus, redraw, visible */
+    int tw, th; /* tty width and height */
+    int w;      /* window width */
+    int h;      /* window height */
+    int ch;     /* char height */
+    int cw;     /* char width  */
+    char state; /* focus, redraw, visible */
 } XWindow;
 
 typedef struct {
@@ -574,7 +574,7 @@ void drawregion(int x1, int y1, int x2, int y2) {
         ic = ib = ox = 0;
         for (x = x1; x < x2; x++) {
             new = term.line[y][x];
-            if (ib > 0 && (!(new.state &GLYPH_SET) || ATTRCMP(base, new) || ib >= DRAW_BUF_SIZ - UTF_SIZ)) {
+            if (ib > 0 && (!(new.state & GLYPH_SET) || ATTRCMP(base, new) || ib >= DRAW_BUF_SIZ - UTF_SIZ)) {
                 xdraws(buf, base, ox, y, ic, ib);
                 ic = ib = 0;
             }
@@ -997,7 +997,7 @@ int main(int argc, char *argv[]) {
         }
 
         switch (argv[i][0] != '-' || argv[i][2] ? -1 : argv[i][1]) {
-            case 'r': // run commands from arguments, must be at the end of argv
+            case 'r':  // run commands from arguments, must be at the end of argv
                 if (++i < argc) {
                     opt_cmd = &argv[i];
                     opt_cmd_size = argc - i;
@@ -1007,13 +1007,13 @@ int main(int argc, char *argv[]) {
                     show_help = 0;
                 }
                 goto run;
-            case 'o': // save output commands to file
+            case 'o':  // save output commands to file
                 if (++i < argc) opt_io = argv[i];
                 break;
-            case 'q': // quiet mode
+            case 'q':  // quiet mode
                 active = show_help = 0;
                 break;
-            case 'h': // print help
+            case 'h':  // print help
             default:
                 die(USAGE);
         }

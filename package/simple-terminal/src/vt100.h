@@ -18,7 +18,7 @@
 #define LEN(a) (sizeof(a) / sizeof(a[0]))
 #define DEFAULT(a, b) (a) = (a) ? (a) : (b)
 #define BETWEEN(x, a, b) ((a) <= (x) && (x) <= (b))
-#define LIMIT(x, a, b) (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
+#define LIMIT(x, a, b) (x) = (x)<(a) ? (a) : (x)>(b) ? (b) : (x)
 #define ATTRCMP(a, b) ((a).mode != (b).mode || (a).fg != (b).fg || (a).bg != (b).bg)
 #define IS_SET(flag) (term.mode & (flag))
 

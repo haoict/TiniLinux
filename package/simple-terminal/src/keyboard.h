@@ -23,7 +23,7 @@
 #define JOYBUTTON_R3 12
 #define JOYBUTTON_MENU 999
 
-#ifdef BR2 // Buildroot handhelds with SDL2
+#ifdef BR2  // Buildroot handhelds with SDL2
 
 #define KEY_UP JOYBUTTON_UP
 #define KEY_DOWN JOYBUTTON_DOWN

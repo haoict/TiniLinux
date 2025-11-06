@@ -1,4 +1,6 @@
 /output*
+**/.vscode
+package/simple-terminal/simple-terminal
 
 # Ignore all rom files & pico-8 binaries
 **/pico8_64
@@ -16,4 +18,4 @@
 **/*.cue
 **/*.chd
 **/roms.tar.xz
-package/simple-terminal/simple-terminal
+

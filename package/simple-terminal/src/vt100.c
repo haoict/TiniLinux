@@ -296,7 +296,7 @@ void tsetdirt(int top, int bot) {
 void tfulldirt(void) { tsetdirt(0, term.row - 1); }
 
 void tcursor(int mode) {
-    static TCursor c[2]; // Separate cursor save for primary[0] and alt[1] screens
+    static TCursor c[2];  // Separate cursor save for primary[0] and alt[1] screens
 
     if (mode == CURSOR_SAVE) {
         int screen_idx = IS_SET(MODE_ALTSCREEN) ? 1 : 0;
@@ -348,11 +348,11 @@ void tswapscreen(void) {
     term.alt = tmp;
     term.mode ^= MODE_ALTSCREEN;
     tfulldirt();
-    
+
     // Ensure cursor is within bounds after swap
     LIMIT(term.c.x, 0, term.col - 1);
     LIMIT(term.c.y, 0, term.row - 1);
-    
+
     redraw();  // Force immediate redraw after screen swap
 }
 
@@ -744,18 +744,18 @@ void csihandle(void) {
                 int op = csiescseq.arg[0];
                 char buf[64];
                 switch (op) {
-                    case 18: // Report window size in pixels
+                    case 18:  // Report window size in pixels
                         // Response: ESC [ 4 ; height ; width t
-                        snprintf(buf, sizeof(buf), "\033[4;%d;%dt", term.row * 16, term.col * 8); 
+                        snprintf(buf, sizeof(buf), "\033[4;%d;%dt", term.row * 16, term.col * 8);
                         ttywrite(buf, strlen(buf));
                         break;
-                    case 19: // Report window size in characters
+                    case 19:  // Report window size in characters
                         // Response: ESC [ 8 ; height ; width t
                         snprintf(buf, sizeof(buf), "\033[8;%d;%dt", term.row, term.col);
                         ttywrite(buf, strlen(buf));
                         break;
-                    case 22: // Push window title to stack (ignore for now)
-                    case 23: // Pop window title from stack (ignore for now)
+                    case 22:  // Push window title to stack (ignore for now)
+                    case 23:  // Pop window title from stack (ignore for now)
                     default:
                         // For other window ops, ignore silently
                         break;
