@@ -254,7 +254,7 @@ int compute_new_col(int visual_offset, int old_row, int new_row) {
 
 int handle_keyboard_event(SDL_Event *event) {
     // printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
-    if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_ACTIVATE) {
+    if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_OSKACTIVATE) {
         active = !active;
         return 1;
     }
@@ -310,7 +310,7 @@ int handle_keyboard_event(SDL_Event *event) {
             shifted = 1;
             toggled[4][0] = 1;
             update_modstate(SDLK_LSHIFT, STATE_DOWN);
-        } else if (event->key.keysym.sym == KEY_LOCATION) {
+        } else if (event->key.keysym.sym == KEY_OSKLOCATION) {
             location = !location;
         } else if (event->key.keysym.sym == KEY_BACKSPACE) {
             simulate_key(SDLK_BACKSPACE, STATE_TYPED);
@@ -326,7 +326,7 @@ int handle_keyboard_event(SDL_Event *event) {
             simulate_key(SDLK_TAB, STATE_TYPED);
         } else if (event->key.keysym.sym == KEY_RETURN) {
             simulate_key(SDLK_RETURN, STATE_TYPED);
-        } else if (event->key.keysym.sym == KEY_TOGGLE) {
+        } else if (event->key.keysym.sym == KEY_OSKTOGGLE) {
             toggled[selected_j][selected_i] = 1 - toggled[selected_j][selected_i];
             if (toggled[selected_j][selected_i])
                 simulate_key(keys[shifted][selected_j][selected_i], STATE_DOWN);

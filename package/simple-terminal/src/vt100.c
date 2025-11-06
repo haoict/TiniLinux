@@ -36,9 +36,6 @@ STREscape strescseq;
 int cmdfd;
 static pid_t pid;
 
-/* Utility functions */
-#define SERRNO strerror(errno)
-
 /* UTF-8 functions */
 int utf8decode(char *s, long *u) {
     uchar c;
@@ -193,7 +190,7 @@ void sigchld(int a) {
     int stat = 0;
     (void)a;
 
-    if (waitpid(pid, &stat, 0) < 0) die("Waiting for pid %hd failed: %s\n", pid, SERRNO);
+    if (waitpid(pid, &stat, 0) < 0) die("Waiting for pid %hd failed: %s\n", pid, strerror(errno));
 
     if (WIFEXITED(stat)) {
         exit(WEXITSTATUS(stat));
@@ -207,7 +204,7 @@ void ttynew(void) {
     struct winsize w = {term.row, term.col, 0, 0};
 
     /* seems to work fine on linux, openbsd and freebsd */
-    if (openpty(&m, &s, NULL, NULL, &w) < 0) die("openpty failed: %s\n", SERRNO);
+    if (openpty(&m, &s, NULL, NULL, &w) < 0) die("openpty failed: %s\n", strerror(errno));
 
     switch (pid = fork()) {
         case -1:
@@ -218,7 +215,7 @@ void ttynew(void) {
             dup2(s, STDIN_FILENO);
             dup2(s, STDOUT_FILENO);
             dup2(s, STDERR_FILENO);
-            if (ioctl(s, TIOCSCTTY, NULL) < 0) die("ioctl TIOCSCTTY failed: %s\n", SERRNO);
+            if (ioctl(s, TIOCSCTTY, NULL) < 0) die("ioctl TIOCSCTTY failed: %s\n", strerror(errno));
             close(s);
             close(m);
             execsh();
@@ -253,7 +250,7 @@ void ttyread(void) {
     int ret;
 
     /* append read bytes to unprocessed bytes */
-    if ((ret = read(cmdfd, buf + buflen, LEN(buf) - buflen)) < 0) die("Couldn't read from shell: %s\n", SERRNO);
+    if ((ret = read(cmdfd, buf + buflen, LEN(buf) - buflen)) < 0) die("Couldn't read from shell: %s\n", strerror(errno));
 
     /* process every complete utf8 char */
     buflen += ret;
@@ -271,7 +268,7 @@ void ttyread(void) {
 }
 
 void ttywrite(const char *s, size_t n) {
-    if (write(cmdfd, s, n) == -1) die("write error on tty: %s\n", SERRNO);
+    if (write(cmdfd, s, n) == -1) die("write error on tty: %s\n", strerror(errno));
 }
 
 void ttyresize(void) {
@@ -281,7 +278,7 @@ void ttyresize(void) {
     w.ws_col = term.col;
     w.ws_xpixel = 0; /* mainwindow.tw */
     w.ws_ypixel = 0; /* mainwindow.th */
-    if (ioctl(cmdfd, TIOCSWINSZ, &w) < 0) fprintf(stderr, "Couldn't set window size: %s\n", SERRNO);
+    if (ioctl(cmdfd, TIOCSWINSZ, &w) < 0) fprintf(stderr, "Couldn't set window size: %s\n", strerror(errno));
 }
 
 void tsetdirt(int top, int bot) {

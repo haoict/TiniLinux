@@ -1,6 +1,7 @@
 #ifndef VT100_H
 #define VT100_H
 
+#include <SDL2/SDL.h>
 #include <stdbool.h>
 #include <stddef.h>
 

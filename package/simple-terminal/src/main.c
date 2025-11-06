@@ -24,24 +24,19 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "font.h"
 #include "keyboard.h"
 #include "vt100.h"
-
-#define Font Font_
 
 #define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-o file] [-q] [-r command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
-#define XK_NO_MOD UINT_MAX
-#define XK_ANY_MOD 0
 
 #define REDRAW_TIMEOUT (80 * 1000) /* 80 ms */
 
 /* macros */
-#define CLEANMASK(mask) (mask & (KMOD_SHIFT | KMOD_CTRL | KMOD_ALT))
-#define SERRNO strerror(errno)
 #define TIMEDIFF(t1, t2) ((t1.tv_sec - t2.tv_sec) * 1000 + (t1.tv_usec - t2.tv_usec) / 1000)
 
 enum window_state { WIN_VISIBLE = 1, WIN_REDRAW = 2, WIN_FOCUSED = 4 };
@@ -62,22 +57,55 @@ typedef struct {
     char state; /* focus, redraw, visible */
 } MainWindow;
 
+
+/*
+ * Special keys (change & recompile accordingly)
+ * Keep in mind that kpress() in main.c hardcodes some keys.
+ * Mask value:
+ * * Use XK_NO_MOD to match the key alone (no modifiers)
+ */
+#define XK_ANY_MOD 0
+
 typedef struct {
-    SDL_Keycode k;
-    Uint16 mask;
-    char s[ESC_BUF_SIZ];
-} Key;
+    SDL_Keycode k;        // key
+    Uint16 mask;          // modifier mask: KMOD_ALT, KMOD_CTRL, KMOD_SHIFT, KMOD_CAPS, ...
+    char s[ESC_BUF_SIZ];  // output string
+} NonPrintingKeyboardKey;
 
-typedef union {
-    int i;
-    unsigned int ui;
-    float f;
-    const void *v;
-} Arg;
+static NonPrintingKeyboardKey nonPrintingKeyboardKeys[] = {
+    {SDLK_ESCAPE, XK_ANY_MOD, "\033"},       // Escape
+    {SDLK_TAB, KMOD_LSHIFT, "\033[Z"},       // Shift+Tab
+    {SDLK_TAB, KMOD_RSHIFT, "\033[Z"},       // Shift+Tab
+    {SDLK_TAB, XK_ANY_MOD, "\t"},            // Tab
+    {SDLK_RETURN, KMOD_LALT, "\033\r"},      // Alt+Enter
+    {SDLK_RETURN, KMOD_RALT, "\033\r"},      // Alt+Enter
+    {SDLK_RETURN, XK_ANY_MOD, "\r"},         // Enter
+    {SDLK_LEFT, XK_ANY_MOD, "\033[D"},       // Left
+    {SDLK_RIGHT, XK_ANY_MOD, "\033[C"},      // Right
+    {SDLK_UP, XK_ANY_MOD, "\033[A"},         // Up
+    {SDLK_DOWN, XK_ANY_MOD, "\033[B"},       // Down
+    {SDLK_BACKSPACE, XK_ANY_MOD, "\177"},    // Backspace
+    {SDLK_HOME, XK_ANY_MOD, "\033[1~"},      // Home
+    {SDLK_INSERT, XK_ANY_MOD, "\033[2~"},    // Insert
+    {SDLK_DELETE, XK_ANY_MOD, "\033[3~"},    // Delete
+    {SDLK_END, XK_ANY_MOD, "\033[4~"},       // End
+    {SDLK_PAGEUP, XK_ANY_MOD, "\033[5~"},    // Page Up
+    {SDLK_PAGEDOWN, XK_ANY_MOD, "\033[6~"},  // Page Down
+    {SDLK_F1, XK_ANY_MOD, "\033OP"},         // F1
+    {SDLK_F2, XK_ANY_MOD, "\033OQ"},         // F2
+    {SDLK_F3, XK_ANY_MOD, "\033OR"},         // F3
+    {SDLK_F4, XK_ANY_MOD, "\033OS"},         // F4
+    {SDLK_F5, XK_ANY_MOD, "\033[15~"},       // F5
+    {SDLK_F6, XK_ANY_MOD, "\033[17~"},       // F6
+    {SDLK_F7, XK_ANY_MOD, "\033[18~"},       // F7
+    {SDLK_F8, XK_ANY_MOD, "\033[19~"},       // F8
+    {SDLK_F9, XK_ANY_MOD, "\033[20~"},       // F9
+    {SDLK_F10, XK_ANY_MOD, "\033[21~"},      // F10
+    {SDLK_F11, XK_ANY_MOD, "\033[23~"},      // F11
+    {SDLK_F12, XK_ANY_MOD, "\033[24~"},      // F12
+};
 
-/* Config.h for applying patches and the configuration. */
-#include "config.h"
-
+/* SDL Surfaces */
 SDL_Surface *screen;
 SDL_Surface *screen2;
 
@@ -113,6 +141,7 @@ static void (*event_handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpre
 /* Globals */
 static DC dc;
 static MainWindow mainwindow;
+static SDL_Joystick *joystick;
 int iofd = -1;
 char **opt_cmd = NULL;
 int opt_cmd_size = 0;
@@ -125,7 +154,6 @@ static int opt_fontshade = 0;
 static int initial_width = 320;
 static int initial_height = 240;
 static volatile int thread_should_exit = 0;
-SDL_Joystick *joystick;
 
 size_t xwrite(int fd, char *s, size_t len) {
     size_t aux = len;
@@ -303,7 +331,6 @@ void sdlinit(void) {
         }
     }
 
-    // if rgb30
     // SDL_RenderSetLogicalSize(mainwindow.renderer, mainwindow.w, mainwindow.h);
 
     mainwindow.texture = SDL_CreateTexture(mainwindow.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, mainwindow.w, mainwindow.h);
@@ -311,8 +338,8 @@ void sdlinit(void) {
         fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
-    mainwindow.win = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);   // console screen
-    screen2 = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
+    mainwindow.win = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+    screen2 = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);         // for keyboardMix
 
     // Create a temporary surface for the screen to maintain compatibility
     screen = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);
@@ -571,19 +598,38 @@ char *kmap(SDL_Keycode k, Uint16 state) {
     int i;
     SDL_Keymod mask;
 
-    for (i = 0; i < LEN(key); i++) {
-        mask = key[i].mask;
+    for (i = 0; i < LEN(nonPrintingKeyboardKeys); i++) {
+        mask = nonPrintingKeyboardKeys[i].mask;
 
-        if (key[i].k == k && ((state & mask) == mask || (mask == 0 && !state))) {
-            return (char *)key[i].s;
+        if (nonPrintingKeyboardKeys[i].k == k && ((state & mask) == mask || (mask == 0 && !state))) {
+            return (char *)nonPrintingKeyboardKeys[i].s;
         }
     }
     return NULL;
 }
 
+void printNonPrintingKeyForDebug(char *nonPrintingKey, SDL_KeyboardEvent *e) {
+    char escaped_seq[16] = {0};
+    int idx = 0;
+    for (int i = 0; nonPrintingKey[i] != '\0'; i++) {
+        unsigned char ch = nonPrintingKey[i];
+        if (ch == 27) {  // '\033'
+            strcpy(&escaped_seq[idx], "\\033");
+            idx += 4;
+        } else if (ch >= 32 && ch <= 126) {
+            escaped_seq[idx++] = ch;
+        } else {
+            sprintf(&escaped_seq[idx], "\\x%02X", ch);
+            idx += 4;
+        }
+    }
+    escaped_seq[idx] = '\0';
+    printf("Custom key mapped: %s - ksym=%d, scancode=%d, mod=%d\n", escaped_seq, e->keysym.sym, e->keysym.scancode, e->keysym.mod);
+}
+
 void kpress(SDL_Event *ev) {
     SDL_KeyboardEvent *e = &ev->key;
-    char buf[32], *customkey;
+    char *nonPrintingKey;
     int meta, shift, ctrl, synth;
     SDL_Keycode ksym = e->keysym.sym;
 
@@ -595,28 +641,11 @@ void kpress(SDL_Event *ev) {
     synth = e->keysym.mod & KMOD_SYNTHETIC;
 
     // printf("kpress: keysym=%d scancode=%d mod=%d\n", ksym, e->keysym.scancode, e->keysym.mod);
-    /* 1. custom keys from config.h */
-    if ((customkey = kmap(ksym, e->keysym.mod))) {
-        char escaped_seq[16] = {0};
-        int idx = 0;
-        for (int i = 0; customkey[i] != '\0'; i++) {
-            unsigned char ch = customkey[i];
-            if (ch == 27) {  // '\033'
-                strcpy(&escaped_seq[idx], "\\033");
-                idx += 4;
-            } else if (ch >= 32 && ch <= 126) {
-                escaped_seq[idx++] = ch;
-            } else {
-                sprintf(&escaped_seq[idx], "\\x%02X", ch);
-                idx += 4;
-            }
-        }
-        escaped_seq[idx] = '\0';
-        printf("Custom key mapped: %s - ksym=%d, scancode=%d, mod=%d\n", escaped_seq, ksym, e->keysym.scancode, e->keysym.mod);
 
-        ttywrite(customkey, strlen(customkey));
-        /* 2. handle ctrl key */
-    } else if (ctrl && !meta && !shift) {
+    if ((nonPrintingKey = kmap(ksym, e->keysym.mod))) { /* 1. non printing keys from vt100.h */
+        // printNonPrintingKeyForDebug(nonPrintingKey, e);
+        ttywrite(nonPrintingKey, strlen(nonPrintingKey));
+    } else if (ctrl && !meta && !shift) { /* 2. handle ctrl key */
         switch (ksym) {
             case SDLK_a:
                 ttywrite("\001", 1);
@@ -699,9 +728,7 @@ void kpress(SDL_Event *ev) {
             default:
                 break;
         }
-    }
-    /* 3. standard keys */
-    else {
+    } else {
         // special volumeup/down/powerkey handling
         if (e->keysym.scancode == 128) {
             printf("Volume Up key pressed\n");
@@ -711,59 +738,19 @@ void kpress(SDL_Event *ev) {
             printf("Power key pressed\n");
         }
 
-        switch (ksym) {
-            case SDLK_ESCAPE:
-                ttywrite("\033", 1);
-                break;
-            case SDLK_UP:
-            case SDLK_DOWN:
-            case SDLK_LEFT:
-            case SDLK_RIGHT:
-                /* XXX: shift up/down doesn't work */
-                sprintf(buf, "\033%c%c", IS_SET(MODE_APPKEYPAD) ? 'O' : '[', (shift ? "cdba" : "CDBA")[ksym - SDLK_RIGHT]);
-                ttywrite(buf, 3);
-                break;
-            case SDLK_LCTRL:
-            case SDLK_RCTRL:
-                ttywrite("\033[6~", 4);
-                break;
-            case SDLK_TAB:
-                if (shift)
-                    ttywrite("\033[Z", 3);
-                else
-                    ttywrite("\t", 1);
-                break;
-            case SDLK_BACKSPACE:
-                ttywrite("\x7f", 1);
-                break;
-            case SDLK_DELETE:
-                ttywrite("\033[3~", 4);
-                break;
-            case SDLK_RETURN:
-                if (meta) ttywrite("\033", 1);
-
-                if (IS_SET(MODE_CRLF)) {
-                    ttywrite("\r\n", 2);
-                } else {
-                    ttywrite("\r", 1);
+        // keys pressed by on-screen keyboard
+        if (synth) {
+            // printf("Synthetic key event: %s\n", SDL_GetKeyName(e->keysym.sym));
+            if (e->keysym.sym <= 128) {
+                char ch = (char)e->keysym.sym;
+                if (meta) {
+                    ttywrite("\033", 1);
                 }
-                break;
-                /* 3. For printable characters, we'll rely on SDL_TEXTINPUT events */
-            default:
-                if (synth) {
-                    // printf("Synthetic key event: %s\n", SDL_GetKeyName(e->keysym.sym));
-                    if (e->keysym.sym <= 128) {
-                        char ch = (char)e->keysym.sym;
-                        if (meta) {
-                            ttywrite("\033", 1);
-                        }
-                        ttywrite(&ch, 1);
-                    }
-                }
-                /* For SDL2, we handle text input separately with SDL_TEXTINPUT events */
-                break;
+                ttywrite(&ch, 1);
+            }
         }
     }
+    /* For printable keys, we handle text input separately with SDL_TEXTINPUT events */
 }
 
 void textinput(SDL_Event *ev) {
@@ -789,7 +776,7 @@ int ttythread(void *unused) {
         FD_SET(cmdfd, &rfd);
         if (select(cmdfd + 1, &rfd, NULL, NULL, tv) < 0) {
             if (errno == EINTR) continue;
-            die("select failed: %s\n", SERRNO);
+            die("select failed: %s\n", strerror(errno));
         }
 
         /*
