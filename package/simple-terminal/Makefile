@@ -1,9 +1,9 @@
 VERSION = 2.0.0
 PREFIX = /usr
 # compiler and linker
-CROSS_COMPILE = 
+CROSS_COMPILE ?= 
 CC = ${CROSS_COMPILE}gcc
-SYSROOT = $(shell ${CC} --print-sysroot)
+SYSROOT ?= $(shell ${CC} --print-sysroot)
 # flags
 CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto -Wno-unused-result
 LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
