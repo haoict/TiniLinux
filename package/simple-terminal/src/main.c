@@ -89,7 +89,6 @@ typedef struct {
 
 static void draw(void);
 static void drawregion(int, int, int, int);
-
 static void run(void);
 int ttythread(void *unused);
 
@@ -97,12 +96,11 @@ static void xdraws(char *, Glyph, int, int, int, int);
 static void xclear(int, int, int, int);
 static void xdrawcursor(void);
 static void sdlinit(void);
+static void create_ttythread();
 static void initcolormap(void);
 static void sdltermclear(int, int, int, int);
 static void xresize(int, int);
 static void scale_to_size(int, int);
-
-static void expose(SDL_Event *);
 static char *kmap(SDL_Keycode, Uint16);
 static void kpress(SDL_Event *);
 static void textinput(SDL_Event *);
@@ -256,10 +254,7 @@ void scale_to_size(int width, int height) {
 }
 
 void sdlinit(void) {
-    // const SDL_VideoInfo *vi;
     fprintf(stderr, "SDL init\n");
-
-    // dc.font = dc.ifont = dc.bfont = dc.ibfont = NULL;
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         fprintf(stderr, "Unable to initialize SDL: %s\n", SDL_GetError());
@@ -268,15 +263,6 @@ void sdlinit(void) {
 
     SDL_ShowCursor(0);
     SDL_StartTextInput();
-
-    /*if(TTF_Init() == -1) {
-        printf("TTF_Init: %s\n", TTF_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    if(atexit(TTF_Quit)) {
-        fprintf(stderr,"Unable to register TTF_Quit atexit\n");
-    }*/
 
     /* font */
     sdlloadfonts();
@@ -331,29 +317,16 @@ void sdlinit(void) {
     // Create a temporary surface for the screen to maintain compatibility
     screen = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 
+    xw.state |= WIN_VISIBLE | WIN_REDRAW;
+
+    joystick = SDL_JoystickOpen(0);
+}
+
+void create_ttythread() {
     // TODO: might need to use system threads
     if (!(thread = SDL_CreateThread(ttythread, "ttythread", NULL))) {
         fprintf(stderr, "Unable to create thread: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
-    }
-
-    expose(NULL);
-
-    joystick = SDL_JoystickOpen(0);
-
-    SDL_Event event = {.type = SDL_WINDOWEVENT};
-    event.window.event = SDL_WINDOWEVENT_EXPOSED;
-    SDL_PushEvent(&event);
-
-    // resize terminal to fit window
-    int col = (xw.w - 2 * borderpx) / xw.cw;
-    int row = (xw.h - 2 * borderpx) / xw.ch;
-    tresize(col, row);
-    xresize(col, row);
-    ttyresize();
-
-    if (opt_scale != 1.0) {
-        scale_to_size((int)(xw.w / opt_scale), (int)(xw.h / opt_scale));
     }
 }
 
@@ -592,11 +565,6 @@ void drawregion(int x1, int y1, int x2, int y2) {
         if (ib > 0) xdraws(buf, base, ox, y, ic, ib);
     }
     xdrawcursor();
-}
-
-void expose(SDL_Event *ev) {
-    (void)ev;
-    xw.state |= WIN_VISIBLE | WIN_REDRAW;
 }
 
 char *kmap(SDL_Keycode k, Uint16 state) {
@@ -873,10 +841,6 @@ void run(void) {
                     break;
                 } else if (keyboard_event == 1) {
                     // printf("On-screen keyboard handled the event.\n");
-                    /*SDL_Event expose_event = {
-                        .type = SDL_VIDEOEXPOSE
-                    };
-                    SDL_PushEvent(&expose_event);*/
                 } else {
                     if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
                 }
@@ -915,8 +879,6 @@ void run(void) {
             }
 
             switch (ev.type) {
-                // case SDL_VIDEORESIZE:
-                // case SDL_VIDEOEXPOSE:
                 case SDL_USEREVENT:
                     draw();
             }
@@ -1006,7 +968,7 @@ int main(int argc, char *argv[]) {
                     }
                     show_help = 0;
                 }
-                goto run;
+                break;
             case 'o':  // save output commands to file
                 if (++i < argc) opt_io = argv[i];
                 break;
@@ -1023,11 +985,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unable to register SDL_Quit atexit\n");
     }
 
-run:
-    setlocale(LC_CTYPE, "");
-    tnew((initial_width - 2) / 6, (initial_height - 2) / 8);
-    ttynew();
     sdlinit();
+    tnew((xw.w - 2) / 6, (xw.h - 2) / 8);
+    ttynew();
+    create_ttythread();
+    scale_to_size((int)(xw.w / opt_scale), (int)(xw.h / opt_scale));
     init_keyboard();
     run();
     return 0;
