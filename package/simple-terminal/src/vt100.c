@@ -279,8 +279,8 @@ void ttyresize(void) {
 
     w.ws_row = term.row;
     w.ws_col = term.col;
-    w.ws_xpixel = 0; /* xw.tw */
-    w.ws_ypixel = 0; /* xw.th */
+    w.ws_xpixel = 0; /* mainwindow.tw */
+    w.ws_ypixel = 0; /* mainwindow.th */
     if (ioctl(cmdfd, TIOCSWINSZ, &w) < 0) fprintf(stderr, "Couldn't set window size: %s\n", SERRNO);
 }
 

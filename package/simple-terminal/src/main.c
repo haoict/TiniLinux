@@ -60,7 +60,7 @@ typedef struct {
     int ch;     /* char height */
     int cw;     /* char width  */
     char state; /* focus, redraw, visible */
-} XWindow;
+} MainWindow;
 
 typedef struct {
     SDL_Keycode k;
@@ -112,7 +112,7 @@ static void (*event_handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpre
 
 /* Globals */
 static DC dc;
-static XWindow xw;
+static MainWindow mainwindow;
 int iofd = -1;
 char **opt_cmd = NULL;
 int opt_cmd_size = 0;
@@ -166,13 +166,13 @@ SDL_Thread *thread = NULL;
 void sdlloadfonts() {
     // Try to load TTF font if opt_font is set
     if (opt_font && init_ttf_font(opt_font, opt_fontsize)) {
-        xw.cw = get_ttf_char_width();
-        xw.ch = get_ttf_char_height();
-        fprintf(stderr, "Using TTF font: %s (size: %d, char: %dx%d)\n", opt_font, opt_fontsize, xw.cw, xw.ch);
+        mainwindow.cw = get_ttf_char_width();
+        mainwindow.ch = get_ttf_char_height();
+        fprintf(stderr, "Using TTF font: %s (size: %d, char: %dx%d)\n", opt_font, opt_fontsize, mainwindow.cw, mainwindow.ch);
     } else {
         // Fallback to bitmap font
-        xw.cw = 6;
-        xw.ch = 8;
+        mainwindow.cw = 6;
+        mainwindow.ch = 8;
         fprintf(stderr, "Using embedded bitmap font (6x8)\n");
     }
 }
@@ -197,9 +197,9 @@ void sdlshutdown(void) {
         // Cleanup TTF font
         cleanup_ttf_font();
 
-        if (xw.win) SDL_FreeSurface(xw.win);
+        if (mainwindow.win) SDL_FreeSurface(mainwindow.win);
         if (screen2) SDL_FreeSurface(screen2);
-        xw.win = NULL;
+        mainwindow.win = NULL;
         SDL_JoystickClose(joystick);
         SDL_Quit();
     }
@@ -220,25 +220,25 @@ void window_event_handler(SDL_Event *event) {
 
 void scale_to_size(int width, int height) {
     if (width <= 0 || height <= 0 || width > 8192 || height > 8192) return;
-    xw.w = width;
-    xw.h = height;
-    printf("set scale to size: %dx%d\n", xw.w, xw.h);
+    mainwindow.w = width;
+    mainwindow.h = height;
+    printf("set scale to size: %dx%d\n", mainwindow.w, mainwindow.h);
 
     // Recreate texture for new size
-    if (xw.texture) {
-        SDL_DestroyTexture(xw.texture);
+    if (mainwindow.texture) {
+        SDL_DestroyTexture(mainwindow.texture);
     }
-    xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
-    if (!xw.texture) {
+    mainwindow.texture = SDL_CreateTexture(mainwindow.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, mainwindow.w, mainwindow.h);
+    if (!mainwindow.texture) {
         fprintf(stderr, "Unable to recreate texture: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
 
     // Recreate surfaces
-    if (xw.win) SDL_FreeSurface(xw.win);
-    xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+    if (mainwindow.win) SDL_FreeSurface(mainwindow.win);
+    mainwindow.win = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
     if (screen2) SDL_FreeSurface(screen2);
-    screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
+    screen2 = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
 
     // Recreate screen surface for compatibility
     if (screen) SDL_FreeSurface(screen);
@@ -246,8 +246,8 @@ void scale_to_size(int width, int height) {
 
     // resize terminal to fit window
     int col, row;
-    col = (xw.w - 2 * borderpx) / xw.cw;
-    row = (xw.h - 2 * borderpx) / xw.ch;
+    col = (mainwindow.w - 2 * borderpx) / mainwindow.cw;
+    row = (mainwindow.h - 2 * borderpx) / mainwindow.ch;
     tresize(col, row);
     xresize(col, row);
     ttyresize();
@@ -275,49 +275,49 @@ void sdlinit(void) {
     SDL_DisplayMode mode;
     if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
         printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
-        xw.w = initial_width;
-        xw.h = initial_height;
+        mainwindow.w = initial_width;
+        mainwindow.h = initial_height;
     } else {
         printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
-        xw.w = mode.w;
-        xw.h = mode.h;
+        mainwindow.w = mode.w;
+        mainwindow.h = mode.h;
 #ifndef BR2
-        xw.w = initial_width * 2;
-        xw.h = initial_height * 2;
+        mainwindow.w = initial_width * 2;
+        mainwindow.h = initial_height * 2;
 #endif
-        printf("Setting resolution to: %dx%d\n", xw.w, xw.h);
+        printf("Setting resolution to: %dx%d\n", mainwindow.w, mainwindow.h);
     }
 
-    xw.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, xw.w, xw.h, SDL_WINDOW_SHOWN);
-    if (!xw.window) {
+    mainwindow.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, mainwindow.w, mainwindow.h, SDL_WINDOW_SHOWN);
+    if (!mainwindow.window) {
         fprintf(stderr, "Unable to create window: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
 
-    xw.renderer = SDL_CreateRenderer(xw.window, -1, SDL_RENDERER_ACCELERATED);
-    if (!xw.renderer) {
-        xw.renderer = SDL_CreateRenderer(xw.window, -1, SDL_RENDERER_SOFTWARE);
-        if (!xw.renderer) {
+    mainwindow.renderer = SDL_CreateRenderer(mainwindow.window, -1, SDL_RENDERER_ACCELERATED);
+    if (!mainwindow.renderer) {
+        mainwindow.renderer = SDL_CreateRenderer(mainwindow.window, -1, SDL_RENDERER_SOFTWARE);
+        if (!mainwindow.renderer) {
             fprintf(stderr, "Unable to create renderer: %s\n", SDL_GetError());
             exit(EXIT_FAILURE);
         }
     }
 
     // if rgb30
-    // SDL_RenderSetLogicalSize(xw.renderer, xw.w, xw.h);
+    // SDL_RenderSetLogicalSize(mainwindow.renderer, mainwindow.w, mainwindow.h);
 
-    xw.texture = SDL_CreateTexture(xw.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, xw.w, xw.h);
-    if (!xw.texture) {
+    mainwindow.texture = SDL_CreateTexture(mainwindow.renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, mainwindow.w, mainwindow.h);
+    if (!mainwindow.texture) {
         fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
-    xw.win = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);   // console screen
-    screen2 = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
+    mainwindow.win = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);   // console screen
+    screen2 = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboardMix
 
     // Create a temporary surface for the screen to maintain compatibility
-    screen = SDL_CreateRGBSurface(0, xw.w, xw.h, 16, 0xF800, 0x7E0, 0x1F, 0);
+    screen = SDL_CreateRGBSurface(0, mainwindow.w, mainwindow.h, 16, 0xF800, 0x7E0, 0x1F, 0);
 
-    xw.state |= WIN_VISIBLE | WIN_REDRAW;
+    mainwindow.state |= WIN_VISIBLE | WIN_REDRAW;
 
     joystick = SDL_JoystickOpen(0);
 }
@@ -331,14 +331,14 @@ void create_ttythread() {
 }
 
 void update_render(void) {
-    if (xw.win == NULL) return;
-    memcpy(screen2->pixels, xw.win->pixels, xw.w * xw.h * 2);
+    if (mainwindow.win == NULL) return;
+    memcpy(screen2->pixels, mainwindow.win->pixels, mainwindow.w * mainwindow.h * 2);
     draw_keyboard(screen2);  // screen2(SW) = console + keyboard
     // Update texture with screen pixels and render
-    SDL_UpdateTexture(xw.texture, NULL, screen2->pixels, screen2->pitch);
-    SDL_RenderClear(xw.renderer);
-    SDL_RenderCopy(xw.renderer, xw.texture, NULL, NULL);
-    SDL_RenderPresent(xw.renderer);
+    SDL_UpdateTexture(mainwindow.texture, NULL, screen2->pixels, screen2->pitch);
+    SDL_RenderClear(mainwindow.renderer);
+    SDL_RenderCopy(mainwindow.renderer, mainwindow.texture, NULL, NULL);
+    SDL_RenderPresent(mainwindow.renderer);
 }
 
 void die(const char *errstr, ...) {
@@ -351,8 +351,8 @@ void die(const char *errstr, ...) {
 }
 
 void xresize(int col, int row) {
-    xw.tw = MAX(1, 2 * borderpx + col * xw.cw);
-    xw.th = MAX(1, 2 * borderpx + row * xw.ch);
+    mainwindow.tw = MAX(1, 2 * borderpx + col * mainwindow.cw);
+    mainwindow.th = MAX(1, 2 * borderpx + row * mainwindow.ch);
 }
 
 void initcolormap(void) {
@@ -382,24 +382,24 @@ void initcolormap(void) {
 }
 
 void sdltermclear(int col1, int row1, int col2, int row2) {
-    if (xw.win == NULL) return;
-    SDL_Rect r = {borderpx + col1 * xw.cw, borderpx + row1 * xw.ch, (col2 - col1 + 1) * xw.cw, (row2 - row1 + 1) * xw.ch};
+    if (mainwindow.win == NULL) return;
+    SDL_Rect r = {borderpx + col1 * mainwindow.cw, borderpx + row1 * mainwindow.ch, (col2 - col1 + 1) * mainwindow.cw, (row2 - row1 + 1) * mainwindow.ch};
     SDL_Color c = dc.colors[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
-    SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, c.r, c.g, c.b));
+    SDL_FillRect(mainwindow.win, &r, SDL_MapRGB(mainwindow.win->format, c.r, c.g, c.b));
 }
 
 /*
  * Absolute coordinates.
  */
 void xclear(int x1, int y1, int x2, int y2) {
-    if (xw.win == NULL) return;
+    if (mainwindow.win == NULL) return;
     SDL_Rect r = {x1, y1, x2 - x1, y2 - y1};
     SDL_Color c = dc.colors[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
-    SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, c.r, c.g, c.b));
+    SDL_FillRect(mainwindow.win, &r, SDL_MapRGB(mainwindow.win->format, c.r, c.g, c.b));
 }
 
 void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
-    int winx = borderpx + x * xw.cw, winy = borderpx + y * xw.ch, width = charlen * xw.cw;
+    int winx = borderpx + x * mainwindow.cw, winy = borderpx + y * mainwindow.ch, width = charlen * mainwindow.cw;
     // TTF_Font *font = dc.font;
     SDL_Color *fg = &dc.colors[base.fg], *bg = &dc.colors[base.bg], *temp, revfg, revbg;
 
@@ -454,37 +454,37 @@ void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
 
     /* Intelligent cleaning up of the borders. */
     if (x == 0) {
-        xclear(0, (y == 0) ? 0 : winy, borderpx, winy + xw.ch + (y == term.row - 1) ? xw.h : 0);
+        xclear(0, (y == 0) ? 0 : winy, borderpx, winy + mainwindow.ch + (y == term.row - 1) ? mainwindow.h : 0);
     }
     if (x + charlen >= term.col - 1) {
-        xclear(winx + width, (y == 0) ? 0 : winy, xw.w, (y == term.row - 1) ? xw.h : (winy + xw.ch));
+        xclear(winx + width, (y == 0) ? 0 : winy, mainwindow.w, (y == term.row - 1) ? mainwindow.h : (winy + mainwindow.ch));
     }
     if (y == 0) xclear(winx, 0, winx + width, borderpx);
-    if (y == term.row - 1) xclear(winx, winy + xw.ch, winx + width, xw.h);
+    if (y == term.row - 1) xclear(winx, winy + mainwindow.ch, winx + width, mainwindow.h);
 
     // SDL_Surface *text_surface;
-    SDL_Rect r = {winx, winy, width, xw.ch};
+    SDL_Rect r = {winx, winy, width, mainwindow.ch};
 
-    if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, bg->r, bg->g, bg->b));
-    // draw_keyboard(xw.win);
+    if (mainwindow.win != NULL) SDL_FillRect(mainwindow.win, &r, SDL_MapRGB(mainwindow.win->format, bg->r, bg->g, bg->b));
+    // draw_keyboard(mainwindow.win);
 
-    if (xw.win != NULL) {
+    if (mainwindow.win != NULL) {
         // TODO: find a better way to draw cursor box y + 1
         int ys = r.y + 1;
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(xw.win, s, winx, winy, *fg, *bg, opt_fontshade);
+            draw_string_ttf(mainwindow.win, s, winx, winy, *fg, *bg, opt_fontshade);
         } else {
             // Use bitmap rendering
-            draw_string(xw.win, s, winx, ys, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
+            draw_string(mainwindow.win, s, winx, ys, SDL_MapRGB(mainwindow.win->format, fg->r, fg->g, fg->b));
         }
     }
 
     if (base.mode & ATTR_UNDERLINE) {
         // r.y += TTF_FontAscent(font) + 1;
-        r.y += xw.ch;
+        r.y += mainwindow.ch;
         r.h = 1;
-        if (xw.win != NULL) SDL_FillRect(xw.win, &r, SDL_MapRGB(xw.win->format, fg->r, fg->g, fg->b));
+        if (mainwindow.win != NULL) SDL_FillRect(mainwindow.win, &r, SDL_MapRGB(mainwindow.win->format, fg->r, fg->g, fg->b));
     }
 }
 
@@ -508,7 +508,7 @@ void xdrawcursor(void) {
 
     /* draw the new one */
     if (!(term.c.state & CURSOR_HIDE)) {
-        if (!(xw.state & WIN_FOCUSED)) g.bg = defaultucs;
+        if (!(mainwindow.state & WIN_FOCUSED)) g.bg = defaultucs;
 
         if (IS_SET(MODE_REVERSE)) g.mode |= ATTR_REVERSE, g.fg = defaultcs, g.bg = defaultfg;
 
@@ -536,7 +536,7 @@ void drawregion(int x1, int y1, int x2, int y2) {
     Glyph base, new;
     char buf[DRAW_BUF_SIZ];
 
-    if (!(xw.state & WIN_VISIBLE)) return;
+    if (!(mainwindow.state & WIN_VISIBLE)) return;
 
     for (y = y1; y < y2; y++) {
         if (!term.dirty[y]) continue;
@@ -986,10 +986,10 @@ int main(int argc, char *argv[]) {
     }
 
     sdlinit();
-    tnew((xw.w - 2) / 6, (xw.h - 2) / 8);
+    tnew((mainwindow.w - 2) / 6, (mainwindow.h - 2) / 8);
     ttynew();
     create_ttythread();
-    scale_to_size((int)(xw.w / opt_scale), (int)(xw.h / opt_scale));
+    scale_to_size((int)(mainwindow.w / opt_scale), (int)(mainwindow.h / opt_scale));
     init_keyboard();
     run();
     return 0;
