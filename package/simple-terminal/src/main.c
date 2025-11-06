@@ -30,7 +30,7 @@
 
 #define Font Font_
 
-#define USAGE "st (c) 2010-2012 st engineers\nusage: st [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-o file] [-e command ...]\n"
+#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-o file] [-q] [-r command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -997,37 +997,23 @@ int main(int argc, char *argv[]) {
         }
 
         switch (argv[i][0] != '-' || argv[i][2] ? -1 : argv[i][1]) {
-            case 'd':
-                /* run commands from arguments with on screen keyboard */
+            case 'r': // run commands from arguments, must be at the end of argv
                 if (++i < argc) {
                     opt_cmd = &argv[i];
-                    opt_cmd_size = argc - 2;
+                    opt_cmd_size = argc - i;
                     for (int j = 0; j < opt_cmd_size; j++) {
                         printf("Command to execute: %s\n", opt_cmd[j]);
                     }
                     show_help = 0;
-                    active = 1;
                 }
                 goto run;
-            case 'e':
-                /* run commands from arguments without on screen keyboard */
-                if (++i < argc) {
-                    opt_cmd = &argv[i];
-                    opt_cmd_size = argc - 2;
-                    for (int j = 0; j < opt_cmd_size; j++) {
-                        printf("Command to execute: %s\n", opt_cmd[j]);
-                    }
-                    show_help = 0;
-                    active = 0;
-                }
-                goto run;
-            case 'o':
+            case 'o': // save output commands to file
                 if (++i < argc) opt_io = argv[i];
                 break;
-            case 'q':
+            case 'q': // quiet mode
                 active = show_help = 0;
                 break;
-            case 'h':
+            case 'h': // print help
             default:
                 die(USAGE);
         }
