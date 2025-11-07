@@ -113,7 +113,7 @@ SDL_Surface *oskScreen;
 
 static void draw(void);
 static void drawregion(int, int, int, int);
-static void run(void);
+static void mainLoop(void);
 int ttythread(void *unused);
 
 static void xdraws(char *, Glyph, int, int, int, int);
@@ -807,12 +807,11 @@ void take_screenshot() {
     }
 }
 
-void run(void) {
+void mainLoop(void) {
     SDL_Event ev;
     int running = 1;
-    const Uint32 SCROLL_DELAY = 150;  // milliseconds between auto-scroll
     int buttonUpHeld = 0, buttonDownHeld = 0, buttonLeftHeld = 0, buttonRightHeld = 0;
-    Uint32 lastScrollTime = 0;
+    Uint32 lastButtonHeldTime = 0;
     while (running) {
         while (SDL_PollEvent(&ev))
         // while (SDL_WaitEvent(&ev))
@@ -831,7 +830,6 @@ void run(void) {
                     if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
                 }
 
-                // handle narrow keys held
                 int held = (ev.type == SDL_KEYDOWN);
                 switch (ev.key.keysym.sym) {
                     case KEY_LEFT:
@@ -875,7 +873,6 @@ void run(void) {
         }
 
         Uint32 now = SDL_GetTicks();
-
         int key = 0;
         if (buttonDownHeld)
             key = KEY_DOWN;
@@ -886,9 +883,9 @@ void run(void) {
         else if (buttonRightHeld)
             key = KEY_RIGHT;
 
-        if (key && now - lastScrollTime > SCROLL_DELAY) {
+        if (key && now - lastButtonHeldTime > BUTTON_HELD_DELAY) {
             handle_narrow_keys_held(key);
-            lastScrollTime = now;
+            lastButtonHeldTime = now;
         }
 
         update_render();  // redraw the screen
@@ -976,11 +973,11 @@ int main(int argc, char *argv[]) {
     }
 
     sdlinit();
-    tnew((mainwindow.width - 2) / mainwindow.charWidth, (mainwindow.height - 2) / mainwindow.charHeight);
+    tnew((mainwindow.width - borderpx) / mainwindow.charWidth, (mainwindow.height - borderpx) / mainwindow.charHeight);
     ttynew();
     create_ttythread();
     scale_to_size((int)(mainwindow.width / opt_scale), (int)(mainwindow.height / opt_scale));
     init_keyboard();
-    run();
+    mainLoop();
     return 0;
 }

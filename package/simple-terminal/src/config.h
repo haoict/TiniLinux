@@ -10,6 +10,8 @@ static char *opt_font = NULL;
 static int opt_fontsize = 12;
 static int opt_fontshade = 0;
 
+static const Uint32 BUTTON_HELD_DELAY = 150;  // milliseconds between button triggers when held
+
 /* TERM value */
 char termname[] = "xterm";
 
