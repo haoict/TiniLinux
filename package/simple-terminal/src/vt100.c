@@ -19,11 +19,10 @@
 extern unsigned int defaultfg;
 extern unsigned int defaultbg;
 extern unsigned int tabspaces;
-extern char shell[];
+extern char defaultShell[];
 extern char termname[];
 
 /* External variables from main.c */
-extern int iofd;
 extern char *opt_io;
 extern char **opt_cmd;
 extern int opt_cmd_size;
@@ -34,6 +33,7 @@ Term term;
 CSIEscape csiescseq;
 STREscape strescseq;
 int cmdfd;
+int iofd = -1;
 static pid_t pid;
 
 /* UTF-8 functions */
@@ -170,7 +170,7 @@ void execsh(void) {
     signal(SIGTERM, SIG_DFL);
     signal(SIGALRM, SIG_DFL);
 
-    DEFAULT(envshell, shell);
+    DEFAULT(envshell, defaultShell);
     setenv("TERM", termname, 1);
     args = (char *[]){envshell, "-i", NULL};
 

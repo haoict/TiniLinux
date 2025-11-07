@@ -1,7 +1,15 @@
 /* See LICENSE file for copyright and license details. */
 
 static int borderpx = 2;
-char shell[] = "/bin/bash";
+char defaultShell[] = "/bin/sh";
+
+static int initial_width = 320;
+static int initial_height = 240;
+static float opt_scale = 2.0;
+static char *opt_font = NULL;
+static int opt_fontsize = 12;
+static int opt_fontshade = 0;
+
 /* TERM value */
 char termname[] = "xterm";
 

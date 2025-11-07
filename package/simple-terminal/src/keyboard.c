@@ -88,6 +88,9 @@ void draw_keyboard(SDL_Surface *surface) {
     unsigned short sel_color = SDL_MapRGB(surface->format, 128, 255, 128);
     unsigned short sel_toggled_color = SDL_MapRGB(surface->format, 255, 255, 128);
     unsigned short toggled_color = SDL_MapRGB(surface->format, 192, 192, 0);
+    if (is_ttf_loaded()) {
+        show_help = 0;  // disable when TTF is available to avoid text overlap
+    }
     if (show_help) {
         SDL_FillRect(surface, NULL, text_color);
         if (is_ttf_loaded()) {
