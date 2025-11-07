@@ -5,6 +5,8 @@
 
 #include "font.h"
 
+#define KEYBOARD_PADDING 16
+
 #define NUM_ROWS 6
 #define NUM_KEYS 18
 
@@ -48,11 +50,29 @@ static int mod_state = 0;
 int active = 1;
 int show_help = 1;
 
-void init_keyboard() {
+static int embededFontCharWidth;
+static int embededFontCharHeight;
+static int ttfCharWidth;
+static int ttfCharHeight;
+
+int useEmbededFontForKeyboard = 0;
+
+void init_keyboard(int _useEmbededFontForKeyboard) {
+    useEmbededFontForKeyboard = _useEmbededFontForKeyboard;
     for (int j = 0; j < NUM_ROWS; j++)
         for (int i = 0; i < NUM_KEYS; i++) toggled[j][i] = 0;
     selected_i = selected_j = shifted = location = 0;
     mod_state = 0;
+
+    embededFontCharWidth = get_embeded_font_char_width();
+    embededFontCharHeight = get_embeded_font_char_height();
+    ttfCharWidth = get_ttf_char_width();
+    ttfCharHeight = get_ttf_char_height();
+
+    if (is_ttf_loaded()) {
+        syms[0][2][16] = " v ";
+        syms[1][2][16] = " v ";
+    }
 }
 
 char *help =
@@ -95,8 +115,8 @@ void draw_keyboard(SDL_Surface *surface) {
         SDL_FillRect(surface, NULL, text_color);
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(surface, "Simple Terminal", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
-            draw_string_ttf_with_linebreak(surface, help, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+            draw_string_ttf(surface, "Simple Terminal", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
+            draw_string_ttf_with_linebreak(surface, help, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
             draw_string(surface, "Simple Terminal", 2, 10, sel_toggled_color);
             draw_string(surface, help, 8, 30, sel_color);
@@ -106,14 +126,14 @@ void draw_keyboard(SDL_Surface *surface) {
         snprintf(credit_str, sizeof(credit_str), "Version %s - %s", VERSION, CREDIT);
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(surface, credit_str, 2, 400, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+            draw_string_ttf(surface, credit_str, 2, 400, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
             draw_string(surface, credit_str, 2, 220, sel_toggled_color);
         }
 #else
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(surface, CREDIT, 2, 220, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+            draw_string_ttf(surface, CREDIT, 2, 220, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
             draw_string(surface, CREDIT, 2, 220, sel_toggled_color);
         }
@@ -123,37 +143,81 @@ void draw_keyboard(SDL_Surface *surface) {
 
     if (!active) return;
 
-    int total_length = -1;
-    for (int i = 0; i < NUM_KEYS && syms[0][0][i]; i++) {
-        total_length += (1 + strlen(syms[0][0][i])) * 6;
-    }
-    int center_x = (surface->w - total_length) / 2;
-    int x = center_x, y = surface->h - 8 * (NUM_ROWS)-16;
-    if (location == 1) y = 16;
-
-    SDL_Rect rect = {x - 4, y - 3, total_length + 3, NUM_ROWS * 8 + 3};
-    SDL_FillRect(surface, &rect, bg_color);
-
-    for (int j = 0; j < NUM_ROWS; j++) {
-        x = center_x;
-        for (int i = 0; i < row_length[j]; i++) {
-            int length = strlen(syms[shifted][j][i]);
-            SDL_Rect r2 = {x - 2, y - 1, length * 6 + 4, 7};
-            if (toggled[j][i]) {
-                if (selected_i == i && selected_j == j) {
-                    SDL_FillRect(surface, &r2, sel_toggled_color);
-                } else {
-                    SDL_FillRect(surface, &r2, toggled_color);
-                }
-            } else if (selected_i == i && selected_j == j) {
-                SDL_FillRect(surface, &r2, sel_color);
-            } else {
-                SDL_FillRect(surface, &r2, key_color);
-            }
-            draw_string(surface, syms[shifted][j][i], x, y, text_color);
-            x += 6 * (length + 1);
+    if (useEmbededFontForKeyboard || !is_ttf_loaded()) {
+        int total_length = -1;
+        for (int i = 0; i < NUM_KEYS && syms[0][0][i]; i++) {
+            total_length += (1 + strlen(syms[0][0][i])) * embededFontCharWidth;
         }
-        y += 8;
+        int center_x = (surface->w - total_length) / 2;
+        int x = center_x, y = surface->h - embededFontCharHeight * (NUM_ROWS)-KEYBOARD_PADDING;
+        if (location == 1) y = KEYBOARD_PADDING;
+
+        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * embededFontCharHeight + 3};
+        SDL_FillRect(surface, &keyboardRect, bg_color);
+
+        for (int j = 0; j < NUM_ROWS; j++) {
+            x = center_x;
+            for (int i = 0; i < row_length[j]; i++) {
+                int length = strlen(syms[shifted][j][i]);
+                SDL_Rect keyRect = {x - 2, y - 1, length * embededFontCharWidth + embededFontCharWidth - 2, embededFontCharHeight - 1};
+                if (toggled[j][i]) {
+                    if (selected_i == i && selected_j == j) {
+                        SDL_FillRect(surface, &keyRect, sel_toggled_color);
+                    } else {
+                        SDL_FillRect(surface, &keyRect, toggled_color);
+                    }
+                } else if (selected_i == i && selected_j == j) {
+                    SDL_FillRect(surface, &keyRect, sel_color);
+                } else {
+                    SDL_FillRect(surface, &keyRect, key_color);
+                }
+                draw_string(surface, syms[shifted][j][i], x, y, text_color);
+                x += embededFontCharWidth * (length + 1);
+            }
+            y += embededFontCharHeight;
+        }
+    } else {
+        int total_length = -1;
+        for (int i = 0; i < NUM_KEYS && syms[0][0][i]; i++) {
+            total_length += (1 + strlen(syms[0][0][i])) * ttfCharWidth;
+        }
+        int center_x = (surface->w - total_length) / 2;
+        int x = center_x;
+        int y = surface->h - ttfCharHeight * (NUM_ROWS)-KEYBOARD_PADDING;
+        if (location == 1) y = KEYBOARD_PADDING;
+
+        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * ttfCharHeight + 3};
+        SDL_FillRect(surface, &keyboardRect, bg_color);
+
+        for (int j = 0; j < NUM_ROWS; j++) {
+            x = center_x;
+            for (int i = 0; i < row_length[j]; i++) {
+                SDL_Color ttf_shaded_bg;
+                int length = strlen(syms[shifted][j][i]);
+                SDL_Rect keyRect = {x - 2, y - 1, length * ttfCharWidth + ttfCharWidth - 2, ttfCharHeight - 1};
+                if (toggled[j][i]) {
+                    if (selected_i == i && selected_j == j) {
+                        ttf_shaded_bg = (SDL_Color){255, 255, 128, 255};
+                        SDL_FillRect(surface, &keyRect, sel_toggled_color);
+                    } else {
+                        ttf_shaded_bg = (SDL_Color){192, 192, 0, 255};
+                        SDL_FillRect(surface, &keyRect, toggled_color);
+                    }
+                } else if (selected_i == i && selected_j == j) {
+                    ttf_shaded_bg = (SDL_Color){128, 255, 128, 255};
+                    SDL_FillRect(surface, &keyRect, sel_color);
+                } else {
+                    ttf_shaded_bg = (SDL_Color){128, 128, 128, 255};
+                    SDL_FillRect(surface, &keyRect, key_color);
+                }
+                if (is_ttf_loaded()) {
+                    draw_string_ttf(surface, syms[shifted][j][i], x, y - 2, (SDL_Color){0, 0, 0, 255}, ttf_shaded_bg);
+                } else
+                    draw_string(surface, syms[shifted][j][i], x, y, text_color);
+                x += ttfCharWidth * (length + 1);
+            }
+            y += ttfCharHeight;
+        }
     }
 }
 

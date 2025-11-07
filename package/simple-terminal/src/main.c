@@ -29,7 +29,7 @@
 #include "keyboard.h"
 #include "vt100.h"
 
-#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1] [-o file] [-q] [-r command ...]\n"
+#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1|2] [-o file] [-q] [-r command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -140,11 +140,14 @@ static DrawingContext drawingContext;
 static MainWindow mainwindow;
 static SDL_Joystick *joystick;
 
+SDL_Thread *thread = NULL;
+
 char **opt_cmd = NULL;
 int opt_cmd_size = 0;
 char *opt_io = NULL;
 
 static volatile int thread_should_exit = 0;
+static int shutdown_called = 0;
 
 char popupMessage[256];
 
@@ -162,43 +165,34 @@ size_t xwrite(int fd, char *s, size_t len) {
 
 void *xmalloc(size_t len) {
     void *p = malloc(len);
-
     if (!p) die("Out of memory\n");
-
     return p;
 }
 
 void *xrealloc(void *p, size_t len) {
     if ((p = realloc(p, len)) == NULL) die("Out of memory\n");
-
     return p;
 }
 
 void *xcalloc(size_t nmemb, size_t size) {
     void *p = calloc(nmemb, size);
-
     if (!p) die("Out of memory\n");
-
     return p;
 }
 
-SDL_Thread *thread = NULL;
-
 void sdlloadfonts() {
     // Try to load TTF font if opt_font is set
-    if (opt_font && init_ttf_font(opt_font, opt_fontsize)) {
+    if (opt_font && init_ttf_font(opt_font, opt_fontsize, opt_fontshade)) {
         mainwindow.charWidth = get_ttf_char_width();
         mainwindow.charHeight = get_ttf_char_height();
-        fprintf(stderr, "Using TTF font: %s (size: %d, char: %dx%d)\n", opt_font, opt_fontsize, mainwindow.charWidth, mainwindow.charHeight);
     } else {
         // Fallback to bitmap font
-        mainwindow.charWidth = 6;
-        mainwindow.charHeight = 8;
-        fprintf(stderr, "Using embedded bitmap font (6x8)\n");
+        mainwindow.charWidth = get_embeded_font_char_width();
+        mainwindow.charHeight = get_embeded_font_char_height();
+        fprintf(stderr, "Using embedded bitmap font (%dx%d)\n", mainwindow.charWidth, mainwindow.charHeight);
     }
 }
 
-static int shutdown_called = 0;
 void sdlshutdown(void) {
     if (SDL_WasInit(SDL_INIT_EVERYTHING) != 0 && !shutdown_called) {
         shutdown_called = 1;
@@ -243,7 +237,7 @@ void scale_to_size(int width, int height) {
     if (width <= 0 || height <= 0 || width > 8192 || height > 8192) return;
     mainwindow.width = width;
     mainwindow.height = height;
-    printf("set scale to size: %dx%d\n", mainwindow.width, mainwindow.height);
+    printf("Set scale to size: %dx%d (x%.1f)\n", mainwindow.width, mainwindow.height, opt_scale);
 
     // Recreate texture for new size
     if (mainwindow.texture) {
@@ -287,7 +281,6 @@ void sdlinit(void) {
 
     /* font */
     sdlloadfonts();
-    fprintf(stderr, "SDL font: %s\n", opt_font == NULL ? "embedded_bitmap_font" : opt_font);
 
     /* colors */
     initcolormap();
@@ -371,7 +364,6 @@ void update_render(void) {
 
 void die(const char *errstr, ...) {
     va_list ap;
-
     va_start(ap, errstr);
     vfprintf(stderr, errstr, ap);
     va_end(ap);
@@ -499,7 +491,7 @@ void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
         int ys = r.y + 1;
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(mainwindow.surface, s, winx, winy, *fg, *bg, opt_fontshade);
+            draw_string_ttf(mainwindow.surface, s, winx, winy, *fg, *bg);
         } else {
             // Use bitmap rendering
             draw_string(mainwindow.surface, s, winx, ys, SDL_MapRGB(mainwindow.surface->format, fg->r, fg->g, fg->b));
@@ -924,6 +916,7 @@ void mainLoop(void) {
 
 int main(int argc, char *argv[]) {
     setenv("SDL_NOMOUSE", "1", 1);
+    int isScaleSetByUser = 0;
 
     for (int i = 1; i < argc; i++) {
         // Handle multi-character options first
@@ -934,6 +927,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Invalid scale: %s (must be positive)\n", argv[i]);
                     opt_scale = 2.0;
                 }
+                isScaleSetByUser = 1;
             } else {
                 fprintf(stderr, "Missing argument for -scale\n");
                 die(USAGE);
@@ -943,6 +937,9 @@ int main(int argc, char *argv[]) {
         if (strcmp(argv[i], "-font") == 0) {
             if (++i < argc) {
                 opt_font = argv[i];
+                if (!isScaleSetByUser) {
+                    opt_scale = 1.0;  // if custom font is set, default scale to 1.0
+                }
             } else {
                 fprintf(stderr, "Missing argument for -font\n");
                 die(USAGE);
@@ -967,6 +964,15 @@ int main(int argc, char *argv[]) {
                 opt_fontshade = atoi(argv[i]);
             } else {
                 fprintf(stderr, "Missing argument for -fontshade\n");
+                die(USAGE);
+            }
+            continue;
+        }
+        if (strcmp(argv[i], "-useEmbededFontForKeyboard") == 0) {
+            if (++i < argc) {
+                opt_useEmbededFontForKeyboard = atoi(argv[i]);
+            } else {
+                fprintf(stderr, "Missing argument for -useEmbededFontForKeyboard\n");
                 die(USAGE);
             }
             continue;
@@ -1004,7 +1010,7 @@ int main(int argc, char *argv[]) {
     ttynew();
     create_ttythread();
     scale_to_size((int)(mainwindow.width / opt_scale), (int)(mainwindow.height / opt_scale));
-    init_keyboard();
+    init_keyboard(opt_useEmbededFontForKeyboard);
     mainLoop();
     return 0;
 }
