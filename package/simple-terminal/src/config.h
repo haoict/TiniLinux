@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 static int borderpx = 2;
-char defaultShell[] = "/bin/sh";
+char defaultShell[] = "/bin/bash";
 
 static int initial_width = 320;
 static int initial_height = 240;

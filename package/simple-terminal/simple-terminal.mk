@@ -16,8 +16,6 @@ else ifeq ($(findstring rgb30,$(BR2_DEFCONFIG)),rgb30)
 	SIMPLE_TERMINAL_MAKE_OPTS = PLATFORM=buildroot_rgb30
 endif
 
-SIMPLE_TERMINAL_MAKE_OPTS = PLATFORM=buildroot_rgb30
-
 define SIMPLE_TERMINAL_BUILD_CMDS
     $(MAKE) $(SIMPLE_TERMINAL_MAKE_OPTS) CC="$(TARGET_CC)" LD="$(TARGET_LD)" -C $(@D)
 endef

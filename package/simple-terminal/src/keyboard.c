@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "font.h"
+#include "vt100.h"
 
 #define KEYBOARD_PADDING 16
 
@@ -321,8 +322,17 @@ int compute_new_col(int visual_offset, int old_row, int new_row) {
     return new_col;
 }
 
+#if defined(RGB30)
+static int rgb30_first_jbutton10_pressed = 0;  // TODO: temp fix for RGB30, for unknown reason, Joystick jbutton 10 (KEY_QUIT) always triggers at startup, so we must ignore it
+#endif
 int handle_keyboard_event(SDL_Event *event) {
     if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == KEY_QUIT) {
+#if defined(RGB30)
+        if (!rgb30_first_jbutton10_pressed) {
+            rgb30_first_jbutton10_pressed = 1;
+            return 1;
+        }
+#endif
         printf("Exit event requested by Exit button\n");
         SDL_Event quit_event;
         quit_event.type = SDL_QUIT;
@@ -378,7 +388,7 @@ int handle_keyboard_event(SDL_Event *event) {
             } else if (event->key.keysym.sym == JOYBUTTON_SELECT) {
                 simulate_key(SDLK_TAB, STATE_TYPED);
             } else if (event->key.keysym.sym == JOYBUTTON_B) {
-                simulate_key(SDLK_BACKSPACE, STATE_TYPED);
+                ttywrite("\003", 1);  // Ctrl+C
             }
             return 1;
         }
