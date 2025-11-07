@@ -258,43 +258,27 @@ int compute_new_col(int visual_offset, int old_row, int new_row) {
 int handle_keyboard_event(SDL_Event *event) {
     // printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
     if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_OSKACTIVATE) {
+        if (show_help) {
+            show_help = 0;
+            return 1;
+        }
         active = !active;
         return 1;
     }
 
     if ((event->key.type == SDL_KEYUP || event->key.type == SDL_KEYDOWN) && event->key.keysym.mod & KMOD_SYNTHETIC) {
         if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == KEY_QUIT) {
-            // safe exit the program
+            printf("Exit event requested\n");
             SDL_Event quit_event;
             quit_event.type = SDL_QUIT;
             SDL_PushEvent(&quit_event);
-
-            // show_help = 1;
-
-            // time_t seconds = time(NULL);
-            // char screen_shot_filename[255];
-            // snprintf(screen_shot_filename, 255, "SimpleTerminal-screenshot-%ld.bmp", seconds);
-            // SDL_SaveBMP(SDL_GetVideoSurface(), screen_shot_filename);
-
-            // TODO: not working
-            // int w = 640;
-            // int h = 480;
-
-            // SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 16, 0, 0, 0, 0);
-            // SDL_LockSurface(surface);
-            // int bpp = surface->format->BitsPerPixel;
-            // for (int i = 0; i < h; i++)
-            // {
-            // 	for (int j = 0; j < w; j++)
-            // 	{
-            // 		// Uint32 *p = (Uint32 *)surface->pixels + (i * surface->pitch) + (j * bpp);
-            // 		Uint32 *p = (Uint32 *)((Uint8 *)surface->pixels + (i * surface->pitch) + (j * bpp));
-            // 		*p = SDL_MapRGB(surface->format, i, j, i);
-            // 	}
-            // }
-            // SDL_UnlockSurface(surface);
-            // SDL_SaveBMP(surface, "Test.bmp");
-            // SDL_FreeSurface(surface);
+        }
+        if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_PRINTSCREEN) {
+            printf("Screenshot event requested\n");
+            SDL_Event screenshotEvent;
+            screenshotEvent.type = SDL_USEREVENT;
+            screenshotEvent.user.code = 1;
+            SDL_PushEvent(&screenshotEvent);
         }
         return 0;
     }
@@ -307,8 +291,6 @@ int handle_keyboard_event(SDL_Event *event) {
         // printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
         if (show_help) {
             // do nothing
-        } else if (event->key.keysym.sym == KEY_QUIT) {
-            return -999;
         } else if (event->key.keysym.sym == KEY_SHIFT) {
             shifted = 1;
             toggled[4][0] = 1;

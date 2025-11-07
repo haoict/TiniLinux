@@ -792,6 +792,21 @@ int ttythread(void *unused) {
     return 0;
 }
 
+void take_screenshot() {
+    char filename[64];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(filename, sizeof(filename), "simple-terminal-screenshot_%Y%m%d_%H%M%S.bmp", t);
+
+    if (mainwindow.surface) {
+        if (SDL_SaveBMP(mainwindow.surface, filename) == 0) {
+            printf("Screenshot saved to %s\n", filename);
+        } else {
+            fprintf(stderr, "Failed to save screenshot: %s\n", SDL_GetError());
+        }
+    }
+}
+
 void run(void) {
     SDL_Event ev;
     int running = 1;
@@ -810,11 +825,7 @@ void run(void) {
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
                 // printf("Keyboard event received - key: %s, state: %s\n", SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
                 int keyboard_event = handle_keyboard_event(&ev);
-                if (keyboard_event == -999) {
-                    // SDL_QUIT
-                    running = 0;
-                    break;
-                } else if (keyboard_event == 1) {
+                if (keyboard_event == 1) {
                     // printf("On-screen keyboard handled the event.\n");
                 } else {
                     if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
@@ -855,7 +866,11 @@ void run(void) {
 
             switch (ev.type) {
                 case SDL_USEREVENT:
-                    draw();
+                    if (ev.user.code == 0) {  // redraw terminal
+                        draw();
+                    } else if (ev.user.code == 1) {  // Take a screenshot
+                        take_screenshot();
+                    }
             }
         }
 
