@@ -840,7 +840,7 @@ void mainLoop(void) {
             }
 
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
-                // printf("Keyboard event received - key: %s, state: %s\n", SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
+                // printf("Keyboard event received - key: %d (%s), state: %s\n", ev.key.keysym.sym, SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
                 int keyboard_event = handle_keyboard_event(&ev);
                 if (keyboard_event == 1) {
                     // printf("OSK handled the event.\n");
@@ -867,12 +867,12 @@ void mainLoop(void) {
                         break;
                 }
             } else if (ev.type == SDL_JOYBUTTONDOWN || ev.type == SDL_JOYBUTTONUP) {
-                // printf("Joystick event received - %d\n", ev.jbutton.button);
+                // printf("Joystick event received type: %s - %d\n", (ev.jbutton.state == SDL_PRESSED) ? "down" : "up", ev.jbutton.button);
                 SDL_Event sdl_event = {.key = {.type = (ev.jbutton.state == SDL_PRESSED) ? SDL_KEYDOWN : SDL_KEYUP,
                                                .state = (ev.jbutton.state == SDL_PRESSED) ? SDL_PRESSED : SDL_RELEASED,
                                                .keysym = {
-                                                   .scancode = ev.jbutton.button,
-                                                   .sym = ev.jbutton.button,
+                                                   .scancode = -ev.jbutton.button,
+                                                   .sym = -ev.jbutton.button,
                                                    .mod = 0,
                                                }}};
 

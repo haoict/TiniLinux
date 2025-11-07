@@ -322,7 +322,14 @@ int compute_new_col(int visual_offset, int old_row, int new_row) {
 }
 
 int handle_keyboard_event(SDL_Event *event) {
-    // printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
+    if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == KEY_QUIT) {
+        printf("Exit event requested by Exit button\n");
+        SDL_Event quit_event;
+        quit_event.type = SDL_QUIT;
+        SDL_PushEvent(&quit_event);
+        return 1;
+    }
+
     if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_OSKACTIVATE) {
         if (show_help) {
             show_help = 0;
@@ -335,12 +342,6 @@ int handle_keyboard_event(SDL_Event *event) {
     if ((event->key.type == SDL_KEYUP || event->key.type == SDL_KEYDOWN) && event->key.keysym.mod & KMOD_SYNTHETIC) {
         if (event->key.type == SDL_KEYDOWN) {
             switch (event->key.keysym.sym) {
-                case KEY_QUIT:
-                    printf("Exit event requested\n");
-                    SDL_Event quit_event;
-                    quit_event.type = SDL_QUIT;
-                    SDL_PushEvent(&quit_event);
-                    return 1;
                 case SDLK_PRINTSCREEN:
                     printf("Screenshot event requested\n");
                     SDL_Event screenshotEvent;
@@ -349,21 +350,44 @@ int handle_keyboard_event(SDL_Event *event) {
                     SDL_PushEvent(&screenshotEvent);
                     return 1;
                 case KEY_OSKLOCATION:
+                    // printf("Change keyboard location button pressed, sym: %d\n", event->key.keysym.sym);
                     location = !location;
                     return 1;
                 default:
-                    return 0;
+                    break;
             }
         }
+        // printf("handle_keyboard_event: type: %s, sym: %d (%s), scancode:%d\n", event->key.type == SDL_KEYDOWN ? "keydown" : "keyup", event->key.keysym.sym, SDL_GetKeyName(event->key.keysym.sym), event->key.keysym.scancode);
         return 0;
     }
 
     if (!active) {
+#if defined(BR2)
+        // handle joystick button directly when OSK is inactive
+        if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
+            if (event->key.keysym.sym == JOYBUTTON_UP) {
+                simulate_key(SDLK_UP, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_DOWN) {
+                simulate_key(SDLK_DOWN, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_LEFT) {
+                simulate_key(SDLK_LEFT, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_RIGHT) {
+                simulate_key(SDLK_RIGHT, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_START || event->key.keysym.sym == JOYBUTTON_A) {
+                simulate_key(SDLK_RETURN, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_SELECT) {
+                simulate_key(SDLK_TAB, STATE_TYPED);
+            } else if (event->key.keysym.sym == JOYBUTTON_B) {
+                simulate_key(SDLK_BACKSPACE, STATE_TYPED);
+            }
+            return 1;
+        }
+#endif
         return 0;
     }
 
     if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
-        // printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
+        // printf("handle_keyboard_event: type: %s, sym: %d (%s), scancode:%d\n", event->key.type == SDL_KEYDOWN ? "keydown" : "keyup", event->key.keysym.sym, SDL_GetKeyName(event->key.keysym.sym), event->key.keysym.scancode);
         if (show_help) {
             // do nothing
         } else if (event->key.keysym.sym == KEY_SHIFT) {
@@ -374,9 +398,9 @@ int handle_keyboard_event(SDL_Event *event) {
             location = !location;
         } else if (event->key.keysym.sym == KEY_BACKSPACE) {
             simulate_key(SDLK_BACKSPACE, STATE_TYPED);
-        } else if (event->key.keysym.sym == KEY_ARROW_UP) {
+        } else if (event->key.keysym.sym == KEY_ARROW_UP || event->key.keysym.sym == SDLK_VOLUMEUP) {
             simulate_key(SDLK_UP, STATE_TYPED);
-        } else if (event->key.keysym.sym == KEY_ARROW_DOWN) {
+        } else if (event->key.keysym.sym == KEY_ARROW_DOWN || event->key.keysym.sym == SDLK_VOLUMEDOWN) {
             simulate_key(SDLK_DOWN, STATE_TYPED);
         } else if (event->key.keysym.sym == KEY_ARROW_LEFT) {
             simulate_key(SDLK_LEFT, STATE_TYPED);
@@ -407,6 +431,7 @@ int handle_keyboard_event(SDL_Event *event) {
             }
         } else {
             // fprintf(stderr,"unrecognized key: %d\n",event->key.keysym.sym);
+            // return 0;
         }
     } else if (event->key.type == SDL_KEYUP || event->key.state == SDL_RELEASED) {
         if (show_help) {

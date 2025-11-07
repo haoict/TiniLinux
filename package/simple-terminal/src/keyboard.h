@@ -5,25 +5,25 @@
 
 #define KMOD_SYNTHETIC (1 << 14)
 
-#define JOYBUTTON_UP 13
-#define JOYBUTTON_DOWN 14
-#define JOYBUTTON_LEFT 15
-#define JOYBUTTON_RIGHT 16
-#define JOYBUTTON_A 1
-#define JOYBUTTON_B 0
-#define JOYBUTTON_X 2
-#define JOYBUTTON_Y 3
-#define JOYBUTTON_SELECT 8
-#define JOYBUTTON_START 9
-#define JOYBUTTON_L1 4
-#define JOYBUTTON_R1 5
-#define JOYBUTTON_L2 6
-#define JOYBUTTON_R2 7
-#define JOYBUTTON_L3 11
-#define JOYBUTTON_R3 12
-#define JOYBUTTON_MENU 999
-
 #ifdef BR2  // Buildroot handhelds with SDL2
+// use minus values to avoid conflict with real keyboard keycodes
+#define JOYBUTTON_UP -13
+#define JOYBUTTON_DOWN -14
+#define JOYBUTTON_LEFT -15
+#define JOYBUTTON_RIGHT -16
+#define JOYBUTTON_A -1
+#define JOYBUTTON_B -0
+#define JOYBUTTON_X -2
+#define JOYBUTTON_Y -3
+#define JOYBUTTON_SELECT -8
+#define JOYBUTTON_START -9
+#define JOYBUTTON_L1 -4
+#define JOYBUTTON_R1 -5
+#define JOYBUTTON_L2 -6
+#define JOYBUTTON_R2 -7
+#define JOYBUTTON_L3 -11
+#define JOYBUTTON_R3 -12
+#define JOYBUTTON_MENU -10
 
 #define KEY_UP JOYBUTTON_UP
 #define KEY_DOWN JOYBUTTON_DOWN
