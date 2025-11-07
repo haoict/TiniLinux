@@ -92,10 +92,10 @@ void draw_keyboard(SDL_Surface *surface) {
         SDL_FillRect(surface, NULL, text_color);
         if (is_ttf_loaded()) {
             // Use TTF rendering
-            draw_string_ttf(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
+            draw_string_ttf(surface, "Simple Terminal", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
             draw_string_ttf_with_linebreak(surface, help, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){255, 255, 255, 255}, 0);
         } else {
-            draw_string(surface, "SDL Terminal by Benob, based on st-sdl", 2, 10, sel_toggled_color);
+            draw_string(surface, "Simple Terminal", 2, 10, sel_toggled_color);
             draw_string(surface, help, 8, 30, sel_color);
         }
 #ifdef VERSION
