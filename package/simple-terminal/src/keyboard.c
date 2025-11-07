@@ -29,13 +29,13 @@ static char *syms[2][NUM_ROWS][NUM_KEYS] = {{{"Esc", "F1", "F2", "F3", "F4", "F5
                                              {"Tab", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\", "Home", "End", " \xde ", NULL},
                                              {"Caps", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "Enter", "Pg Up", " < ", NULL},
                                              {"Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", " Shift", "Pg Dn", " > ", NULL},
-                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Mov", "Exit", NULL}},
+                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "PrS", "Mov", "Exit", NULL}},
                                             {{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
                                              {"~ ", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "Bsp", "Ins", "Del", " ^ ", NULL},
                                              {"Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "{", "}", "|", "Home", "End", " \xde ", NULL},
                                              {"Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "\"", "Enter", "Pg Up", " < ", NULL},
                                              {"Shift", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", " Shift", "Pg Dn", " > ", NULL},
-                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Mov", "Exit", NULL}}};
+                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "PrS", "Mov", "Exit", NULL}}};
 
 static unsigned char toggled[NUM_ROWS][NUM_KEYS];
 
@@ -120,7 +120,9 @@ void draw_keyboard(SDL_Surface *surface) {
 #endif
         return;
     }
+
     if (!active) return;
+
     int total_length = -1;
     for (int i = 0; i < NUM_KEYS && syms[0][0][i]; i++) {
         total_length += (1 + strlen(syms[0][0][i])) * 6;

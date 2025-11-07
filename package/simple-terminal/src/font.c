@@ -198,7 +198,10 @@ int get_ttf_char_height(void) { return ttf_char_height; }
 
 /* Draw string with TTF */
 void draw_string_ttf(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg, int use_shaded) {
-    if (!ttf_font || !surface || !text) return;
+    if (!ttf_font || !surface || !text) {
+        fprintf(stderr, "Invalid parameters for draw_string_ttf\n");
+        return;
+    }
 
     SDL_Surface *text_surface;
     if (use_shaded) {

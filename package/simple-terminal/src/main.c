@@ -131,6 +131,7 @@ static void textinput(SDL_Event *);
 static void window_event_handler(SDL_Event *);
 
 static void update_render(void);
+static Uint32 clear_popup_timer(Uint32 interval, void *param);
 
 static void (*event_handler[SDL_LASTEVENT])(SDL_Event *) = {[SDL_KEYDOWN] = kpress, [SDL_TEXTINPUT] = textinput, [SDL_WINDOWEVENT] = window_event_handler};
 
@@ -144,6 +145,8 @@ int opt_cmd_size = 0;
 char *opt_io = NULL;
 
 static volatile int thread_should_exit = 0;
+
+char popupMessage[256];
 
 size_t xwrite(int fd, char *s, size_t len) {
     size_t aux = len;
@@ -349,9 +352,17 @@ void create_ttythread() {
 
 void update_render(void) {
     if (mainwindow.surface == NULL) return;
+
     memcpy(oskScreen->pixels, mainwindow.surface->pixels, mainwindow.width * mainwindow.height * 2);
+    if (popupMessage[0] != '\0') {
+        SDL_Rect rect = {borderpx, mainwindow.height / 2 - mainwindow.charHeight / 2 - 4, mainwindow.width - borderpx * 2, mainwindow.charHeight + 6};
+        SDL_Color popupBoxBg = drawingContext.colors[8];
+        SDL_Color popupBoxStr = drawingContext.colors[11];
+        SDL_FillRect(oskScreen, &rect, SDL_MapRGB(oskScreen->format, popupBoxBg.r, popupBoxBg.g, popupBoxBg.b));
+        draw_string(oskScreen, popupMessage, rect.x + 2, rect.y + 4, SDL_MapRGB(oskScreen->format, popupBoxStr.r, popupBoxStr.g, popupBoxStr.b));
+    }
     draw_keyboard(oskScreen);  // oskScreen(SW) = console + keyboard
-    // Update texture with screen pixels and render
+                               // Update texture with screen pixels and render
     SDL_UpdateTexture(mainwindow.texture, NULL, oskScreen->pixels, oskScreen->pitch);
     SDL_RenderClear(mainwindow.renderer);
     SDL_RenderCopy(mainwindow.renderer, mainwindow.texture, NULL, NULL);
@@ -792,19 +803,34 @@ int ttythread(void *unused) {
     return 0;
 }
 
+static Uint32 clear_popup_timer(Uint32 interval, void *param) {
+    popupMessage[0] = '\0';
+    return 0;  // one-shot timer
+}
+
 void take_screenshot() {
     char filename[64];
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
-    strftime(filename, sizeof(filename), "simple-terminal-screenshot_%Y%m%d_%H%M%S.bmp", t);
+    strftime(filename, sizeof(filename), "st-%y%m%d_%H%M%S.bmp", t);
+    // get home directory
+    const char *homeDir = getenv("HOME");
+    if (homeDir != NULL) {
+        char filepath[256];
+        snprintf(filepath, sizeof(filepath), "%s/%s", homeDir, filename);
+        strcpy(filename, filepath);
+    }
 
     if (mainwindow.surface) {
         if (SDL_SaveBMP(mainwindow.surface, filename) == 0) {
-            printf("Screenshot saved to %s\n", filename);
+            sprintf(popupMessage, "Screenshot saved to %s", filename);
         } else {
-            fprintf(stderr, "Failed to save screenshot: %s\n", SDL_GetError());
+            sprintf(popupMessage, "Failed to save screenshot: %s", SDL_GetError());
         }
     }
+
+    // Clear the popup message after 3 seconds
+    SDL_AddTimer(3000, clear_popup_timer, NULL);
 }
 
 void mainLoop(void) {
