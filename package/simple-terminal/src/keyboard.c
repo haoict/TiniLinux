@@ -16,26 +16,26 @@ static SDL_Keycode keys[2][NUM_ROWS][NUM_KEYS] = {
      {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, SDLK_LEFTBRACKET, SDLK_RIGHTBRACKET, SDLK_BACKSLASH, SDLK_HOME, SDLK_END, SDLK_DOWN},
      {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_SEMICOLON, SDLK_QUOTE, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
      {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_COMMA, SDLK_PERIOD, SDLK_SLASH, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, KEY_QUIT}},
+     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, KEY_OSKLOCATION, KEY_QUIT}},
     {{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F7, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
      {'~', SDLK_EXCLAIM, SDLK_AT, SDLK_HASH, SDLK_DOLLAR, '%', SDLK_CARET, SDLK_AMPERSAND, SDLK_ASTERISK, SDLK_LEFTPAREN, SDLK_RIGHTPAREN, SDLK_UNDERSCORE, SDLK_PLUS, SDLK_BACKSPACE, SDLK_INSERT, SDLK_DELETE, SDLK_UP},
      {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, '{', '}', '|', SDLK_HOME, SDLK_END, SDLK_DOWN},
      {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_COLON, SDLK_QUOTEDBL, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
      {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_LESS, SDLK_GREATER, SDLK_QUESTION, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, SDLK_PAUSE, KEY_QUIT}}};
+     {SDLK_LCTRL, SDLK_LGUI, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RGUI, SDLK_RCTRL, SDLK_PRINTSCREEN, KEY_OSKLOCATION, KEY_QUIT}}};
 
 static char *syms[2][NUM_ROWS][NUM_KEYS] = {{{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
                                              {"` ", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Bsp", "Ins", "Del", " ^ ", NULL},
                                              {"Tab", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\", "Home", "End", " \xde ", NULL},
                                              {"Caps", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "Enter", "Pg Up", " < ", NULL},
                                              {"Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", " Shift", "Pg Dn", " > ", NULL},
-                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Br", " Exit ", NULL}},
+                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Mov", "Exit", NULL}},
                                             {{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
                                              {"~ ", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "Bsp", "Ins", "Del", " ^ ", NULL},
                                              {"Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "{", "}", "|", "Home", "End", " \xde ", NULL},
                                              {"Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "\"", "Enter", "Pg Up", " < ", NULL},
                                              {"Shift", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", " Shift", "Pg Dn", " > ", NULL},
-                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Br", " Exit ", NULL}}};
+                                             {"Ctl", "", "Alt", "   Space   ", "Alt", "", "Ctl", "Pr", "Mov", "Exit", NULL}}};
 
 static unsigned char toggled[NUM_ROWS][NUM_KEYS];
 
@@ -267,18 +267,27 @@ int handle_keyboard_event(SDL_Event *event) {
     }
 
     if ((event->key.type == SDL_KEYUP || event->key.type == SDL_KEYDOWN) && event->key.keysym.mod & KMOD_SYNTHETIC) {
-        if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == KEY_QUIT) {
-            printf("Exit event requested\n");
-            SDL_Event quit_event;
-            quit_event.type = SDL_QUIT;
-            SDL_PushEvent(&quit_event);
-        }
-        if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_PRINTSCREEN) {
-            printf("Screenshot event requested\n");
-            SDL_Event screenshotEvent;
-            screenshotEvent.type = SDL_USEREVENT;
-            screenshotEvent.user.code = 1;
-            SDL_PushEvent(&screenshotEvent);
+        if (event->key.type == SDL_KEYDOWN) {
+            switch (event->key.keysym.sym) {
+                case KEY_QUIT:
+                    printf("Exit event requested\n");
+                    SDL_Event quit_event;
+                    quit_event.type = SDL_QUIT;
+                    SDL_PushEvent(&quit_event);
+                    return 1;
+                case SDLK_PRINTSCREEN:
+                    printf("Screenshot event requested\n");
+                    SDL_Event screenshotEvent;
+                    screenshotEvent.type = SDL_USEREVENT;
+                    screenshotEvent.user.code = 1;
+                    SDL_PushEvent(&screenshotEvent);
+                    return 1;
+                case KEY_OSKLOCATION:
+                    location = !location;
+                    return 1;
+                default:
+                    return 0;
+            }
         }
         return 0;
     }

@@ -825,8 +825,9 @@ void mainLoop(void) {
                 // printf("Keyboard event received - key: %s, state: %s\n", SDL_GetKeyName(ev.key.keysym.sym), (ev.type == SDL_KEYDOWN) ? "DOWN" : "UP");
                 int keyboard_event = handle_keyboard_event(&ev);
                 if (keyboard_event == 1) {
-                    // printf("On-screen keyboard handled the event.\n");
+                    // printf("OSK handled the event.\n");
                 } else {
+                    // printf("OSK passing event to default handler.\n");
                     if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
                 }
 
