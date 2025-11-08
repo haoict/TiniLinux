@@ -1,11 +1,13 @@
 Simple Launcher
+Test
+echo "test" > ./test.txt
 Wifi
 /usr/local/bin/Wifi.sh
 Quit launcher
 killall simple-launcher && echo "Press Fn + Select + Start to restart Simple Launcher" >> /dev/tty1
 Sleep
-systemctl suspend
+CONFIRM::systemctl suspend
 Reboot
-systemctl reboot -f
+CONFIRM::systemctl reboot -f
 Poweroff
-systemctl poweroff
+CONFIRM::systemctl poweroff

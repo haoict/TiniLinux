@@ -1,1 +1,0 @@
-CFLAGS += -DBR2 -DH700

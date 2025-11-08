@@ -1,1 +1,0 @@
-CFLAGS += -DX64 -DDEBUG

@@ -1,4 +1,0 @@
-CROSS_COMPILE = 
-CC = ${CROSS_COMPILE}gcc
-
-LDFLAGS += -lSDL2 -lSDL2_ttf

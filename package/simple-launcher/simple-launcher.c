@@ -1,8 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <linux/limits.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <linux/limits.h>
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -11,9 +11,10 @@
 #define MAX_COMMAND_LENGTH MAX_BUFFER_SIZE
 #define MAX_NAME_LENGTH 128
 
+#ifndef VERSION
 #define VERSION "1.0.0"
+#endif
 
-#if defined(BR2)
 // Up:544, Down:545, Left:546, Right:547, A:305, B:304, X:307, Y:308, L1:310, R1:311, L2:312, R2:313, Select:314, Start:315, L3:317, R3:318
 #define BTN_A 1
 #define BTN_B 0
@@ -29,24 +30,6 @@
 #define BTN_R2 7
 #define BTN_L3 11
 #define BTN_R3 12
-
-#else
-#define BTN_A SDLK_RETURN
-#define BTN_B SDLK_BACKSPACE
-#define BTN_UP SDLK_UP
-#define BTN_DOWN SDLK_DOWN
-#define BTN_LEFT SDLK_LEFT
-#define BTN_RIGHT SDLK_RIGHT
-#define BTN_SELECT SDLK_ESCAPE
-#define BTN_START SDLK_SPACE
-#define BTN_L1 SDLK_LCTRL
-#define BTN_R1 SDLK_LALT
-#define BTN_L2 SDLK_LSHIFT
-#define BTN_R2 SDLK_TAB
-#define BTN_L3 SDLK_LSUPER
-#define BTN_R3 SDLK_RSUPER
-#endif
-
 
 #if defined(RGB30)
 #define FALLBACK_SCREEN_WIDTH 720
@@ -68,28 +51,26 @@
 #define VOLUME_COMMAND "amixer get -c 0 DAC | awk -F'[][]' '/Front Left:/ { print $2 }'"
 #define CREDIT "TiniLinux " VERSION " (H700)"
 
-#elif defined(RASBERRYPI)
+#elif defined(RPI)
 #define FALLBACK_SCREEN_WIDTH 800
 #define FALLBACK_SCREEN_HEIGHT 600
 #define ITEMS_PER_PAGE 10
-#define BATTERY_CAPACITY_FILE "" // no battery
-#define BATTERY_STATUS_FILE "" // no battery
-#define BRIGHTNESS_FILE "" // no brightness
+#define BATTERY_CAPACITY_FILE ""  // no battery
+#define BATTERY_STATUS_FILE ""    // no battery
+#define BRIGHTNESS_FILE ""        // no brightness
 #define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Front Left:/ { print $2 }'"
 #define CREDIT "TiniLinux " VERSION " (RPI)"
 
 #else
-#define FALLBACK_SCREEN_WIDTH 480
+#define FALLBACK_SCREEN_WIDTH 640
 #define FALLBACK_SCREEN_HEIGHT 480
 #define ITEMS_PER_PAGE 8
-#define BATTERY_CAPACITY_FILE "" // no battery
-#define BATTERY_STATUS_FILE "" // no battery
-#define BRIGHTNESS_FILE "" // no brightness
+#define BATTERY_CAPACITY_FILE ""  // no battery
+#define BATTERY_STATUS_FILE ""    // no battery
+#define BRIGHTNESS_FILE ""        // no brightness
 #define VOLUME_COMMAND ""
 #define CREDIT "TiniLinux " VERSION " (Generic) "
 #endif
-
-
 
 const char *FONT_PATH = "/roms/simple-launcher/font.ttf";
 const char *FONT_PATH_FALLBACK = "/usr/share/fonts/Fiery_Turk.ttf";
@@ -111,9 +92,9 @@ TTF_Font *titleFont;
 
 typedef struct Command Command;
 struct Command {
-	char name[MAX_NAME_LENGTH];
-	char command[MAX_COMMAND_LENGTH];
-	int needsConfirmation;
+    char name[MAX_NAME_LENGTH];
+    char command[MAX_COMMAND_LENGTH];
+    int needsConfirmation;
 };
 
 Command *commands = NULL;
@@ -129,669 +110,658 @@ char creditDisplayString[MAX_BUFFER_SIZE];
 char pagesDisplayString[20];
 char dialogBoxString[1024];
 int showDialogBox = 0;
-int dialogSelectedButton = 0; // 0: Ok, 1: Cancel
+int dialogSelectedButton = 0;  // 0: Ok, 1: Cancel
 int isShowingSystemInfo = 0;
 
 void loadCommands() {
-	FILE *file = fopen(COMMANDS_FILE, "r");
-	if (file == NULL) {
-		printf("Could not open %s, fallback to %s\n", COMMANDS_FILE, COMMANDS_FILE_FALLBACK);
-		file = fopen(COMMANDS_FILE_FALLBACK, "r");
-		if (file == NULL) {
-			printf("Could not open %s. Exit!\n", COMMANDS_FILE_FALLBACK);
-			exit(1);
-		}
-	}
+    FILE *file = fopen(COMMANDS_FILE, "r");
+    if (file == NULL) {
+        printf("Could not open %s, fallback to %s\n", COMMANDS_FILE, COMMANDS_FILE_FALLBACK);
+        file = fopen(COMMANDS_FILE_FALLBACK, "r");
+        if (file == NULL) {
+            printf("Could not open %s. Exit!\n", COMMANDS_FILE_FALLBACK);
+            exit(1);
+        }
+    }
 
-	char line[MAX_BUFFER_SIZE];
+    char line[MAX_BUFFER_SIZE];
 
-	if (fgets(title, sizeof(title), file) == NULL) {
-		printf("Could not read title\n");
-		exit(1);
-	}
-	title[strlen(title) - 1] = '\0';
+    if (fgets(title, sizeof(title), file) == NULL) {
+        printf("Could not read title\n");
+        exit(1);
+    }
+    title[strlen(title) - 1] = '\0';
 
-	while (fgets(line, sizeof(line), file)) {
-		// Remove trailing newline
-		size_t len = strlen(line);
-		if (len > 0 && line[len - 1] == '\n') {
-			line[len - 1] = '\0';
-		}
-		// Skip empty line
-		if (line[0] == '\0') {
-			continue;
-		}
+    while (fgets(line, sizeof(line), file)) {
+        // Remove trailing newline
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+        // Skip empty line
+        if (line[0] == '\0') {
+            continue;
+        }
 
-		// Allocate or reallocate commands array
-		commands = realloc(commands, (numCommands + 1) * sizeof(*commands));
-		if (commands == NULL) {
-			printf("Could not allocate memory for commands\n");
-			return;
-		}
+        // Allocate or reallocate commands array
+        commands = realloc(commands, (numCommands + 1) * sizeof(*commands));
+        if (commands == NULL) {
+            printf("Could not allocate memory for commands\n");
+            return;
+        }
 
-		// Copy name
-		strncpy(commands[numCommands].name, line, MAX_NAME_LENGTH - 1);
-		commands[numCommands].name[MAX_NAME_LENGTH - 1] = '\0';
+        // Copy name
+        strncpy(commands[numCommands].name, line, MAX_NAME_LENGTH - 1);
+        commands[numCommands].name[MAX_NAME_LENGTH - 1] = '\0';
 
-		// Read next line for command
-		if (fgets(line, sizeof(line), file) == NULL) {
-			printf("Could not read command for %s\n", commands[numCommands].name);
-			return;
-		}
+        // Read next line for command
+        if (fgets(line, sizeof(line), file) == NULL) {
+            printf("Could not read command for %s\n", commands[numCommands].name);
+            return;
+        }
 
-		// Check line overflow
-		if (strchr(line, '\n') == NULL) {
-			perror("Line is too long (max 512 chars). Skip this command\n");
-			strcpy(commands[numCommands].command, "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty1 && sleep 2");
-			// If the buffer doesn't contain a newline character, read and discard remaining characters
-			int ch;
-			while ((ch = fgetc(file)) != '\n' && ch != EOF) {
-				// Do nothing, just discard the character
-			}
-		} else {
-			// Remove trailing newline
-			len = strlen(line);
-			if (len > 0 && line[len - 1] == '\n') {
-				line[len - 1] = '\0';
-			}
+        // Check line overflow
+        if (strchr(line, '\n') == NULL) {
+            perror("Line is too long (max 512 chars). Skip this command\n");
+            strcpy(commands[numCommands].command, "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty1 && sleep 2");
+            // If the buffer doesn't contain a newline character, read and discard remaining characters
+            int ch;
+            while ((ch = fgetc(file)) != '\n' && ch != EOF) {
+                // Do nothing, just discard the character
+            }
+        } else {
+            // Remove trailing newline
+            len = strlen(line);
+            if (len > 0 && line[len - 1] == '\n') {
+                line[len - 1] = '\0';
+            }
 
-			// Check for CONFIRM:: prefix
-			const char *confirmPrefix = "CONFIRM::";
-			if (strncmp(line, confirmPrefix, strlen(confirmPrefix)) == 0) {
-				commands[numCommands].needsConfirmation = 1;
-				// Copy command without prefix
-				strncpy(commands[numCommands].command, line + strlen(confirmPrefix), MAX_COMMAND_LENGTH - 1);
-			} else {
-				commands[numCommands].needsConfirmation = 0;
-				// Copy command
-				strncpy(commands[numCommands].command, line, MAX_COMMAND_LENGTH - 1);
-			}
-			commands[numCommands].command[MAX_COMMAND_LENGTH - 1] = '\0';
-		}
+            // Check for CONFIRM:: prefix
+            const char *confirmPrefix = "CONFIRM::";
+            if (strncmp(line, confirmPrefix, strlen(confirmPrefix)) == 0) {
+                commands[numCommands].needsConfirmation = 1;
+                // Copy command without prefix
+                strncpy(commands[numCommands].command, line + strlen(confirmPrefix), MAX_COMMAND_LENGTH - 1);
+            } else {
+                commands[numCommands].needsConfirmation = 0;
+                // Copy command
+                strncpy(commands[numCommands].command, line, MAX_COMMAND_LENGTH - 1);
+            }
+            commands[numCommands].command[MAX_COMMAND_LENGTH - 1] = '\0';
+        }
 
-		numCommands++;
-	}
+        numCommands++;
+    }
 
-	fclose(file);
+    fclose(file);
 }
 
 void updateHwInfo() {
-	// Update battery percentage
-	if (strlen(BATTERY_CAPACITY_FILE) > 0) {
-		FILE *batteryFile = fopen(BATTERY_CAPACITY_FILE, "r");
-		if (batteryFile == NULL) {
-			printf("Could not open battery file\n");
-		} else {
-			fgets(batteryCapacity, sizeof(batteryCapacity), batteryFile);
-			fclose(batteryFile);
-			batteryCapacity[strlen(batteryCapacity) - 1] = '\0';
-			strcpy(batteryCapacityDisplayString, "Batt: ");
-			strcat(batteryCapacityDisplayString, batteryCapacity);
-			strcat(batteryCapacityDisplayString, "%");
-			// Read battery status
-			if (strlen(BATTERY_STATUS_FILE) > 0) {
-				FILE *batteryStatusFile = fopen(BATTERY_STATUS_FILE, "r");
-				if (batteryStatusFile == NULL) {
-					printf("Could not open battery status file\n");
-				} else {
-					char batteryStatus[32];
-					fgets(batteryStatus, sizeof(batteryStatus), batteryStatusFile);
-					fclose(batteryStatusFile);
-					if (strncmp(batteryStatus, "Charging", 8) == 0)
-						strcat(batteryCapacityDisplayString, " (C)");
-				}
-			}
-		}
-	}
+    // Update battery percentage
+    if (strlen(BATTERY_CAPACITY_FILE) > 0) {
+        FILE *batteryFile = fopen(BATTERY_CAPACITY_FILE, "r");
+        if (batteryFile == NULL) {
+            printf("Could not open battery file\n");
+        } else {
+            fgets(batteryCapacity, sizeof(batteryCapacity), batteryFile);
+            fclose(batteryFile);
+            batteryCapacity[strlen(batteryCapacity) - 1] = '\0';
+            strcpy(batteryCapacityDisplayString, "Batt: ");
+            strcat(batteryCapacityDisplayString, batteryCapacity);
+            strcat(batteryCapacityDisplayString, "%");
+            // Read battery status
+            if (strlen(BATTERY_STATUS_FILE) > 0) {
+                FILE *batteryStatusFile = fopen(BATTERY_STATUS_FILE, "r");
+                if (batteryStatusFile == NULL) {
+                    printf("Could not open battery status file\n");
+                } else {
+                    char batteryStatus[32];
+                    fgets(batteryStatus, sizeof(batteryStatus), batteryStatusFile);
+                    fclose(batteryStatusFile);
+                    if (strncmp(batteryStatus, "Charging", 8) == 0) strcat(batteryCapacityDisplayString, " (C)");
+                }
+            }
+        }
+    }
 
-	strcpy(creditDisplayString, CREDIT);
-	// Read brightness
-	if (strlen(BRIGHTNESS_FILE) > 0) {
-		FILE *brightnessFile = fopen(BRIGHTNESS_FILE, "r");
-		if (brightnessFile == NULL) {
-			printf("Could not open brightness file\n");
-		} else {
-			fgets(brightness, sizeof(brightness), brightnessFile);
-			fclose(brightnessFile);
-			strcpy(brightnessDisplayString, "Brightness: ");
-			brightness[strlen(brightness) - 1] = '\0';
-			strcat(brightnessDisplayString, brightness);
+    strcpy(creditDisplayString, CREDIT);
+    // Read brightness
+    if (strlen(BRIGHTNESS_FILE) > 0) {
+        FILE *brightnessFile = fopen(BRIGHTNESS_FILE, "r");
+        if (brightnessFile == NULL) {
+            printf("Could not open brightness file\n");
+        } else {
+            fgets(brightness, sizeof(brightness), brightnessFile);
+            fclose(brightnessFile);
+            strcpy(brightnessDisplayString, "Brightness: ");
+            brightness[strlen(brightness) - 1] = '\0';
+            strcat(brightnessDisplayString, brightness);
 
-			strcat(creditDisplayString, " | ");
-			strcat(creditDisplayString, brightnessDisplayString);
-		}
-	}
-	// Read volume
-	if (strlen(VOLUME_COMMAND) > 0) {
-		FILE *pipe = popen(VOLUME_COMMAND, "r");
-		if (pipe == NULL) {
-			printf("Failed to open pipe\n");
-		} else {
-			fgets(volume, sizeof(volume), pipe);
-			pclose(pipe);
-			if (volume == NULL || strlen(volume) == 0) {
-				strcpy(volume, "0%\n");
-			}
-			volume[strlen(volume) - 1] = '\0';
-			strcpy(volumeDisplayString, "Volume: ");
-			strcat(volumeDisplayString, volume);
+            strcat(creditDisplayString, " | ");
+            strcat(creditDisplayString, brightnessDisplayString);
+        }
+    }
+    // Read volume
+    if (strlen(VOLUME_COMMAND) > 0) {
+        FILE *pipe = popen(VOLUME_COMMAND, "r");
+        if (pipe == NULL) {
+            printf("Failed to open pipe\n");
+        } else {
+            fgets(volume, sizeof(volume), pipe);
+            pclose(pipe);
+            if (volume[0] == '\0' || strlen(volume) == 0) {
+                strcpy(volume, "0%\n");
+            }
+            volume[strlen(volume) - 1] = '\0';
+            strcpy(volumeDisplayString, "Volume: ");
+            strcat(volumeDisplayString, volume);
 
-			strcat(creditDisplayString, " | ");
-			strcat(creditDisplayString, volumeDisplayString);
-		}
-	}
+            strcat(creditDisplayString, " | ");
+            strcat(creditDisplayString, volumeDisplayString);
+        }
+    }
 }
 
 void get_command_output(const char *cmd, char *buf, size_t size) {
-	FILE *fp = popen(cmd, "r");
-	if (fp == NULL) {
-		snprintf(buf, size, "N/A");
-		return;
-	}
+    FILE *fp = popen(cmd, "r");
+    if (fp == NULL) {
+        snprintf(buf, size, "N/A");
+        return;
+    }
 
-	if (fgets(buf, size, fp) == NULL) {
-		snprintf(buf, size, "N/A");
-	} else {
-		// Remove trailing newline
-		buf[strcspn(buf, "\n")] = 0;
-	}
+    if (fgets(buf, size, fp) == NULL) {
+        snprintf(buf, size, "N/A");
+    } else {
+        // Remove trailing newline
+        buf[strcspn(buf, "\n")] = 0;
+    }
 
-	pclose(fp);
+    pclose(fp);
 }
 
-char* loadSystemInfo() {
-	char systemInfoString[1024], hostname[128], kernel[128], build[128], ram[128], disk[128], ssid[128], ip[128];
-	get_command_output("hostname", hostname, sizeof(hostname));
-	get_command_output("uname -r", kernel, sizeof(kernel));
-	get_command_output("cat /etc/os-release | grep BUILD_ID | cut -d '=' -f2", build, sizeof(build));
-	get_command_output("free -h | awk '/Mem:/ {print $3 \"/\" $2 \"\"}'", ram, sizeof(ram));
-	get_command_output("df -h / | awk 'NR==2 {print $3 \"/\" $2 \"\"}'", disk, sizeof(disk));
-	get_command_output("nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\\: -f1", ssid, sizeof(ssid));
-	if (strcmp(ssid, "N/A") == 0) {
-		get_command_output("ip -f inet addr show eth0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
-		if (strcmp(ip, "N/A") != 0) {
-			strncpy(ssid, "eth0", sizeof(ssid));
-		}
-	} else {
-		get_command_output("ip -f inet addr show wlan0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
-	}
+char *loadSystemInfo() {
+    char systemInfoString[1024], hostname[128], kernel[128], build[128], ram[128], disk[128], ssid[128], ip[128];
+    get_command_output("hostname", hostname, sizeof(hostname));
+    get_command_output("uname -r", kernel, sizeof(kernel));
+    get_command_output("cat /etc/os-release | grep BUILD_ID | cut -d '=' -f2", build, sizeof(build));
+    get_command_output("free -h | awk '/Mem:/ {print $3 \"/\" $2 \"\"}'", ram, sizeof(ram));
+    get_command_output("df -h / | awk 'NR==2 {print $3 \"/\" $2 \"\"}'", disk, sizeof(disk));
+    get_command_output("nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\\: -f1", ssid, sizeof(ssid));
+    if (strcmp(ssid, "N/A") == 0) {
+        get_command_output("ip -f inet addr show eth0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
+        if (strcmp(ip, "N/A") != 0) {
+            strncpy(ssid, "eth0", sizeof(ssid));
+        }
+    } else {
+        get_command_output("ip -f inet addr show wlan0 | sed -En -e 's/.*inet ([0-9.]+).*/\\1/p'", ip, sizeof(ip));
+    }
 
-	snprintf(systemInfoString, sizeof(systemInfoString),
-		"System Information:\n"
-		"-------------------\n"
-		"Hostname: %s\n"
-		"Kernel: %s\n"
-		"Build: %s\n"
-		"RAM: %s\n"
-		"Disk: %s\n"
-		"SSID: %s\n"
-		"IP: %s\n",
-		hostname, kernel, build, ram, disk, ssid, ip);
-	return strdup(systemInfoString);
+    snprintf(systemInfoString, sizeof(systemInfoString),
+             "System Information:\n"
+             "-------------------\n"
+             "Hostname: %s\n"
+             "Kernel: %s\n"
+             "Build: %s\n"
+             "RAM: %s\n"
+             "Disk: %s\n"
+             "SSID: %s\n"
+             "IP: %s\n",
+             hostname, kernel, build, ram, disk, ssid, ip);
+    return strdup(systemInfoString);
 }
 
 void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
-	SDL_SetRenderDrawColor(renderer, 14, 14, 14, 255); // Set the color to gray
-	SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 14, 14, 14, 255);  // Set the color to gray
+    SDL_RenderClear(renderer);
 
-	// menu items
-	int selectedPage = selectedItem / ITEMS_PER_PAGE;
-	for (int i = 0; i < numCommands; i++) {
-		if (i >= selectedPage * ITEMS_PER_PAGE && i < (selectedPage + 1) * ITEMS_PER_PAGE) {
-			char itemName[MAX_NAME_LENGTH] = "> ";
-			SDL_Surface *surface =
-				TTF_RenderText_Blended(mFont,
-							   selectedItem == i ? strcat(itemName, commands[i].name) : commands[i].name,
-							   selectedItem == i ? highlightColor : color);
-			SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-			SDL_Rect rect = { 20, 80 + (i - (selectedPage * ITEMS_PER_PAGE)) * 40, surface->w, surface->h };
-			SDL_RenderCopy(renderer, texture, NULL, &rect);
-			SDL_FreeSurface(surface);
-			SDL_DestroyTexture(texture);
-		}
-	}
-	// pages
-	int totalPages = (numCommands - 1) / ITEMS_PER_PAGE + 1;
-	sprintf(pagesDisplayString, "Page %d / %d", selectedPage + 1, totalPages);
-	SDL_Surface *pagesSurface = TTF_RenderText_Blended(xsFont, pagesDisplayString, color);
-	SDL_Texture *pagesTexture = SDL_CreateTextureFromSurface(renderer, pagesSurface);
-	SDL_Rect pagesRect = { 20, windowHeight - pagesSurface->h - 40, pagesSurface->w, pagesSurface->h };
-	SDL_RenderCopy(renderer, pagesTexture, NULL, &pagesRect);
-	SDL_FreeSurface(pagesSurface);
-	SDL_DestroyTexture(pagesTexture);
+    // menu items
+    unsigned int selectedPage = selectedItem / ITEMS_PER_PAGE;
+    for (int i = 0; i < numCommands; i++) {
+        if (i >= selectedPage * ITEMS_PER_PAGE && i < (selectedPage + 1) * ITEMS_PER_PAGE) {
+            char itemName[MAX_NAME_LENGTH] = "> ";
+            SDL_Surface *surface = TTF_RenderText_Blended(mFont, selectedItem == i ? strcat(itemName, commands[i].name) : commands[i].name, selectedItem == i ? highlightColor : color);
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_Rect rect = {20, 80 + (i - (selectedPage * ITEMS_PER_PAGE)) * 40, surface->w, surface->h};
+            SDL_RenderCopy(renderer, texture, NULL, &rect);
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
+    }
+    // pages
+    unsigned int totalPages = (numCommands - 1) / ITEMS_PER_PAGE + 1;
+    sprintf(pagesDisplayString, "Page %d / %d", selectedPage + 1, totalPages);
+    SDL_Surface *pagesSurface = TTF_RenderText_Blended(xsFont, pagesDisplayString, color);
+    SDL_Texture *pagesTexture = SDL_CreateTextureFromSurface(renderer, pagesSurface);
+    SDL_Rect pagesRect = {20, windowHeight - pagesSurface->h - 40, pagesSurface->w, pagesSurface->h};
+    SDL_RenderCopy(renderer, pagesTexture, NULL, &pagesRect);
+    SDL_FreeSurface(pagesSurface);
+    SDL_DestroyTexture(pagesTexture);
 
-	// title
-	SDL_Surface *titleSurface = TTF_RenderText_Blended(titleFont, title, color);
-	SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
-	SDL_Rect titleText_rect = { 20, 10, titleSurface->w, titleSurface->h };
-	SDL_RenderCopy(renderer, titleTexture, NULL, &titleText_rect);
-	SDL_FreeSurface(titleSurface);
-	SDL_DestroyTexture(titleTexture);
-	// battery
-	if (strlen(batteryCapacityDisplayString) > 0) {
-		SDL_Surface *batterySurface = TTF_RenderText_Blended(sFont, batteryCapacityDisplayString, color);
-		SDL_Texture *batteryTexture = SDL_CreateTextureFromSurface(renderer, batterySurface);
-		SDL_Rect batteryRect = { windowWidth - batterySurface->w - 10, 5, batterySurface->w, batterySurface->h };
-		SDL_RenderCopy(renderer, batteryTexture, NULL, &batteryRect);
-		SDL_FreeSurface(batterySurface);
-		SDL_DestroyTexture(batteryTexture);
-	}
+    // title
+    SDL_Surface *titleSurface = TTF_RenderText_Blended(titleFont, title, color);
+    SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
+    SDL_Rect titleText_rect = {20, 10, titleSurface->w, titleSurface->h};
+    SDL_RenderCopy(renderer, titleTexture, NULL, &titleText_rect);
+    SDL_FreeSurface(titleSurface);
+    SDL_DestroyTexture(titleTexture);
+    // battery
+    if (strlen(batteryCapacityDisplayString) > 0) {
+        SDL_Surface *batterySurface = TTF_RenderText_Blended(sFont, batteryCapacityDisplayString, color);
+        SDL_Texture *batteryTexture = SDL_CreateTextureFromSurface(renderer, batterySurface);
+        SDL_Rect batteryRect = {windowWidth - batterySurface->w - 10, 5, batterySurface->w, batterySurface->h};
+        SDL_RenderCopy(renderer, batteryTexture, NULL, &batteryRect);
+        SDL_FreeSurface(batterySurface);
+        SDL_DestroyTexture(batteryTexture);
+    }
 
-	// Credit
-	SDL_Surface *creditSurface = TTF_RenderText_Blended(xsFont, creditDisplayString, color);
-	SDL_Texture *creditTexture = SDL_CreateTextureFromSurface(renderer, creditSurface);
-	SDL_Rect creditRect = { 20, windowHeight - creditSurface->h - 10, creditSurface->w, creditSurface->h };
-	SDL_RenderCopy(renderer, creditTexture, NULL, &creditRect);
-	SDL_FreeSurface(creditSurface);
-	SDL_DestroyTexture(creditTexture);
+    // Credit
+    SDL_Surface *creditSurface = TTF_RenderText_Blended(xsFont, creditDisplayString, color);
+    SDL_Texture *creditTexture = SDL_CreateTextureFromSurface(renderer, creditSurface);
+    SDL_Rect creditRect = {20, windowHeight - creditSurface->h - 10, creditSurface->w, creditSurface->h};
+    SDL_RenderCopy(renderer, creditTexture, NULL, &creditRect);
+    SDL_FreeSurface(creditSurface);
+    SDL_DestroyTexture(creditTexture);
 
-	// Dialog box
-	if (showDialogBox) {
-		
-		// grayout background but let it visible
-		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-		SDL_SetRenderDrawColor(renderer, 100, 100, 100, 150); // semi-transparent black
-		SDL_Rect fullRect = { 0, 0, windowWidth, windowHeight };
-		SDL_RenderFillRect(renderer, &fullRect);
+    // Dialog box
+    if (showDialogBox) {
+        // grayout background but let it visible
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 150);  // semi-transparent black
+        SDL_Rect fullRect = {0, 0, windowWidth, windowHeight};
+        SDL_RenderFillRect(renderer, &fullRect);
 
-		// create a simple dialog box with Ok & cancel button
-		double dialogWidthRatio = 0.4;
-		double dialogHeightRatio = 0.3;
-		if (isShowingSystemInfo) {
-			dialogWidthRatio = 0.5;
-			dialogHeightRatio = 0.5;
-		}
-		#if defined(H700)
-		if (isShowingSystemInfo) {
-			dialogWidthRatio = 0.55;
-			dialogHeightRatio = 0.7;
-		}
-		#endif
-		SDL_Rect dialogRect = { windowWidth * (1-dialogWidthRatio)/2, windowHeight * (1-dialogHeightRatio)/2, windowWidth * dialogWidthRatio, windowHeight * dialogHeightRatio };
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // black
-		SDL_RenderFillRect(renderer, &dialogRect);
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
-		SDL_RenderDrawRect(renderer, &dialogRect);
-		// Draw Ok button
-		int buttonWidth = 100;
-		int buttonHeight = 40;
-		int buttonSpacing = 20;
-		int buttonsTotalWidth = buttonWidth * 2 + buttonSpacing;
-		int startX = dialogRect.x + (dialogRect.w - buttonsTotalWidth) / 2;
-		int buttonsY = dialogRect.y + dialogRect.h - 60;
-		SDL_Rect okButtonRect = { startX, buttonsY, buttonWidth, buttonHeight };
-		if (dialogSelectedButton == 0) {
-			SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255); // highlighted gray
-			SDL_RenderFillRect(renderer, &okButtonRect);
-			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
-			SDL_RenderDrawRect(renderer, &okButtonRect);
-		} else {
-			SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); // gray
-			SDL_RenderFillRect(renderer, &okButtonRect);
-			SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // white border
-			SDL_RenderDrawRect(renderer, &okButtonRect);
-		}
-		SDL_Surface *okSurface = TTF_RenderText_Blended(sFont, "OK", color);
-		SDL_Texture *okTexture = SDL_CreateTextureFromSurface(renderer, okSurface);
-		SDL_Rect okTextRect = { okButtonRect.x + (okButtonRect.w - okSurface->w) / 2,
-					okButtonRect.y + (okButtonRect.h - okSurface->h) / 2,
-					okSurface->w, okSurface->h };
-		SDL_RenderCopy(renderer, okTexture, NULL, &okTextRect);
-		SDL_FreeSurface(okSurface);
-		SDL_DestroyTexture(okTexture);
-		// Draw Cancel button
-		SDL_Rect cancelButtonRect = { startX + buttonWidth + buttonSpacing, buttonsY, buttonWidth, buttonHeight };
-		if (dialogSelectedButton == 1) {
-			SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255); // highlighted gray
-			SDL_RenderFillRect(renderer, &cancelButtonRect);
-			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white border
-			SDL_RenderDrawRect(renderer, &cancelButtonRect);
-		} else {
-			SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); // gray
-			SDL_RenderFillRect(renderer, &cancelButtonRect);
-			SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255); // white border
-			SDL_RenderDrawRect(renderer, &cancelButtonRect);
-		}
-		SDL_Surface *cancelSurface = TTF_RenderText_Blended(sFont, "Cancel", color);
-		SDL_Texture *cancelTexture = SDL_CreateTextureFromSurface(renderer, cancelSurface);
-		SDL_Rect cancelTextRect = { cancelButtonRect.x + (cancelButtonRect.w - cancelSurface->w) / 2,
-						cancelButtonRect.y + (cancelButtonRect.h - cancelSurface->h) / 2,
-						cancelSurface->w, cancelSurface->h };
-		SDL_RenderCopy(renderer, cancelTexture, NULL, &cancelTextRect);
-		SDL_FreeSurface(cancelSurface);
-		SDL_DestroyTexture(cancelTexture);
+        // create a simple dialog box with Ok & cancel button
+        double dialogWidthRatio = 0.4;
+        double dialogHeightRatio = 0.3;
+        if (isShowingSystemInfo) {
+            dialogWidthRatio = 0.5;
+            dialogHeightRatio = 0.5;
+        }
+#if defined(H700)
+        if (isShowingSystemInfo) {
+            dialogWidthRatio = 0.55;
+            dialogHeightRatio = 0.7;
+        }
+#endif
+        SDL_Rect dialogRect = {windowWidth * (1 - dialogWidthRatio) / 2, windowHeight * (1 - dialogHeightRatio) / 2, windowWidth * dialogWidthRatio, windowHeight * dialogHeightRatio};
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);  // black
+        SDL_RenderFillRect(renderer, &dialogRect);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // white border
+        SDL_RenderDrawRect(renderer, &dialogRect);
+        // Draw Ok button
+        int buttonWidth = 100;
+        int buttonHeight = 40;
+        int buttonSpacing = 20;
+        int buttonsTotalWidth = buttonWidth * 2 + buttonSpacing;
+        int startX = dialogRect.x + (dialogRect.w - buttonsTotalWidth) / 2;
+        int buttonsY = dialogRect.y + dialogRect.h - 60;
+        SDL_Rect okButtonRect = {startX, buttonsY, buttonWidth, buttonHeight};
+        if (dialogSelectedButton == 0) {
+            SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);  // highlighted gray
+            SDL_RenderFillRect(renderer, &okButtonRect);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // white border
+            SDL_RenderDrawRect(renderer, &okButtonRect);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);  // gray
+            SDL_RenderFillRect(renderer, &okButtonRect);
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);  // white border
+            SDL_RenderDrawRect(renderer, &okButtonRect);
+        }
+        SDL_Surface *okSurface = TTF_RenderText_Blended(sFont, "OK", color);
+        SDL_Texture *okTexture = SDL_CreateTextureFromSurface(renderer, okSurface);
+        SDL_Rect okTextRect = {okButtonRect.x + (okButtonRect.w - okSurface->w) / 2, okButtonRect.y + (okButtonRect.h - okSurface->h) / 2, okSurface->w, okSurface->h};
+        SDL_RenderCopy(renderer, okTexture, NULL, &okTextRect);
+        SDL_FreeSurface(okSurface);
+        SDL_DestroyTexture(okTexture);
+        // Draw Cancel button
+        SDL_Rect cancelButtonRect = {startX + buttonWidth + buttonSpacing, buttonsY, buttonWidth, buttonHeight};
+        if (dialogSelectedButton == 1) {
+            SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);  // highlighted gray
+            SDL_RenderFillRect(renderer, &cancelButtonRect);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // white border
+            SDL_RenderDrawRect(renderer, &cancelButtonRect);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);  // gray
+            SDL_RenderFillRect(renderer, &cancelButtonRect);
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);  // white border
+            SDL_RenderDrawRect(renderer, &cancelButtonRect);
+        }
+        SDL_Surface *cancelSurface = TTF_RenderText_Blended(sFont, "Cancel", color);
+        SDL_Texture *cancelTexture = SDL_CreateTextureFromSurface(renderer, cancelSurface);
+        SDL_Rect cancelTextRect = {cancelButtonRect.x + (cancelButtonRect.w - cancelSurface->w) / 2, cancelButtonRect.y + (cancelButtonRect.h - cancelSurface->h) / 2, cancelSurface->w, cancelSurface->h};
+        SDL_RenderCopy(renderer, cancelTexture, NULL, &cancelTextRect);
+        SDL_FreeSurface(cancelSurface);
+        SDL_DestroyTexture(cancelTexture);
 
-		// Draw dialogBoxString
-		SDL_Surface *infoSurface = TTF_RenderText_Blended_Wrapped(sFont, dialogBoxString, color, dialogRect.w - 40);
-		SDL_Texture *infoTexture = SDL_CreateTextureFromSurface(renderer, infoSurface);
-		SDL_Rect infoRect = { dialogRect.x + 20, dialogRect.y + 20, infoSurface->w, infoSurface->h };
-		SDL_RenderCopy(renderer, infoTexture, NULL, &infoRect);
-		SDL_FreeSurface(infoSurface);
-		SDL_DestroyTexture(infoTexture);
+        // Draw dialogBoxString
+        SDL_Surface *infoSurface = TTF_RenderText_Blended_Wrapped(sFont, dialogBoxString, color, dialogRect.w - 40);
+        SDL_Texture *infoTexture = SDL_CreateTextureFromSurface(renderer, infoSurface);
+        SDL_Rect infoRect = {dialogRect.x + 20, dialogRect.y + 20, infoSurface->w, infoSurface->h};
+        SDL_RenderCopy(renderer, infoTexture, NULL, &infoRect);
+        SDL_FreeSurface(infoSurface);
+        SDL_DestroyTexture(infoTexture);
 
-		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-	}
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    }
 
-	// render all
-	SDL_RenderPresent(renderer);
+    // render all
+    SDL_RenderPresent(renderer);
 }
 
 // Function to execute a shell script
 void executeShellScript(const char *script) {
-	// Close SDL window
-	SDL_JoystickClose(joystick);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+    // Close SDL window
+    SDL_JoystickClose(joystick);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
-	// Execute shell script
-	system("printf \"\\033c\" > /dev/tty1");
-	system(script);
+    // Execute shell script
+    system("printf \"\\033c\" > /dev/tty1");
+    system(script);
 
-	updateHwInfo();
+    updateHwInfo();
 
-	// Recreate SDL window
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_FULLSCREEN);
-	renderer = SDL_CreateRenderer(window, -1, 0);
-	joystick = SDL_JoystickOpen(0);
+    // Recreate SDL window
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    joystick = SDL_JoystickOpen(0);
 }
 
 int main(int argc, char *argv[]) {
-	SDL_Color color = { 255, 255, 255, 80 }; // Low White color
-	SDL_Color highlightColor = { 255, 255, 255, 255 }; // White color
+    SDL_Color color = {255, 255, 255, 80};            // Low White color
+    SDL_Color highlightColor = {255, 255, 255, 255};  // White color
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-	TTF_Init();
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    TTF_Init();
 
-	int displayIndex = 0; // usually 0 unless you have multiple screens
-	SDL_DisplayMode mode;
-	if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
-		printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
-		windowWidth = FALLBACK_SCREEN_WIDTH;
-		windowHeight = FALLBACK_SCREEN_HEIGHT;
-	} else {
-		printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
-		windowWidth = mode.w;
-		windowHeight = mode.h;
-	}
-#if defined(X64)
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, FALLBACK_SCREEN_WIDTH, FALLBACK_SCREEN_HEIGHT, 0);
-#else
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
+    int displayIndex = 0;  // usually 0 unless you have multiple screens
+    SDL_DisplayMode mode;
+    if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
+        printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
+        windowWidth = FALLBACK_SCREEN_WIDTH;
+        windowHeight = FALLBACK_SCREEN_HEIGHT;
+    } else {
+        printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
+        windowWidth = mode.w;
+        windowHeight = mode.h;
+#ifndef BR2
+        windowWidth = FALLBACK_SCREEN_WIDTH;
+        windowHeight = FALLBACK_SCREEN_HEIGHT;
 #endif
-	if (window == NULL) {
-		printf("Could not create window: %s\n", SDL_GetError());
-		return 1;
-	}
+    }
 
-	renderer = SDL_CreateRenderer(window, -1, 0);
-	// #if defined(TRIMUISP) || defined(RGB30)
-	// 	SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
-	// #endif
-	if (access(FONT_PATH, F_OK) == -1) {
-		printf("Font file %s not found, fallback to %s\n", FONT_PATH, FONT_PATH_FALLBACK);
-		FONT_PATH = FONT_PATH_FALLBACK;
-	}
-	xsFont = TTF_OpenFont(FONT_PATH, 16);
-	sFont = TTF_OpenFont(FONT_PATH, 20);
-	mFont = TTF_OpenFont(FONT_PATH, 24);
-	lFont = TTF_OpenFont(FONT_PATH, 28);
-	xlFont = TTF_OpenFont(FONT_PATH, 32);
-	titleFont = TTF_OpenFont(FONT_PATH, 44);
-	if (xsFont == NULL || sFont == NULL || mFont == NULL || lFont == NULL || xlFont == NULL || titleFont == NULL) {
-		printf("Failed to load font: %s\n", TTF_GetError());
-		return 1;
-	}
+    window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
+    if (window == NULL) {
+        printf("Could not create window: %s\n", SDL_GetError());
+        return 1;
+    }
 
-	joystick = SDL_JoystickOpen(0);
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    // SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
 
-	loadCommands();
+    if (access(FONT_PATH, F_OK) == -1) {
+        printf("Font file %s not found, fallback to %s\n", FONT_PATH, FONT_PATH_FALLBACK);
+        FONT_PATH = FONT_PATH_FALLBACK;
+    }
+    xsFont = TTF_OpenFont(FONT_PATH, 16);
+    sFont = TTF_OpenFont(FONT_PATH, 20);
+    mFont = TTF_OpenFont(FONT_PATH, 24);
+    lFont = TTF_OpenFont(FONT_PATH, 28);
+    xlFont = TTF_OpenFont(FONT_PATH, 32);
+    titleFont = TTF_OpenFont(FONT_PATH, 44);
+    if (xsFont == NULL || sFont == NULL || mFont == NULL || lFont == NULL || xlFont == NULL || titleFont == NULL) {
+        printf("Failed to load font: %s\n", TTF_GetError());
+        return 1;
+    }
 
-	int running = 1;
-	int suspend = 0;
-	int selectedItem = 0;
+    joystick = SDL_JoystickOpen(0);
 
-	int buttonUpHeld = 0;
-	int buttonDownHeld = 0;
-	Uint32 lastScrollTime = 0;
-	const Uint32 SCROLL_DELAY = 150; // milliseconds between auto-scroll
+    loadCommands();
 
-	Uint32 lastHwUpdate = 0;
-	const Uint32 HW_UPDATE_INTERVAL = 5000; // 5000 ms = 5 seconds
+    int running = 1;
+    int suspend = 0;
+    int selectedItem = 0;
 
-	updateHwInfo();
+    int buttonUpHeld = 0;
+    int buttonDownHeld = 0;
+    Uint32 lastScrollTime = 0;
+    const Uint32 SCROLL_DELAY = 150;  // milliseconds between auto-scroll
 
-	updateRender(selectedItem, color, highlightColor);
+    Uint32 lastHwUpdate = 0;
+    const Uint32 HW_UPDATE_INTERVAL = 5000;  // 5000 ms = 5 seconds
 
-	// main loop
-	while (running) {
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-		// if (SDL_WaitEvent(&event) != 0) {
-			if (event.type == SDL_JOYAXISMOTION || event.type == SDL_MOUSEMOTION || event.type == SDL_WINDOWEVENT) {
-				continue;
-			}
-#if defined(DEBUG)
-			printf("Event type: %d\n", event.type);
-#endif
+    updateHwInfo();
 
-			switch (event.type) {
-			case SDL_QUIT:
-				running = 0;
-				break;
-			case SDL_KEYDOWN:
-#if defined(DEBUG)
-				printf("Key pressed: %d | %d\n", event.key.keysym.sym, event.key.keysym.scancode);
-#endif
-				// PC Keyboard
-				switch (event.key.keysym.sym) {
-				case SDLK_UP:
-					if (selectedItem > 0)
-						selectedItem--;
-					else
-						selectedItem = numCommands - 1;
-					break;
-				case SDLK_DOWN:
-					if (selectedItem < numCommands - 1)
-						selectedItem++;
-					else
-						selectedItem = 0;
-					break;
-				case SDLK_LEFT:
-					selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
-					break;
-				case SDLK_RIGHT:
-					selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
-					break;
-				case SDLK_RETURN:
-					executeShellScript(commands[selectedItem].command);
-					break;
-				}
-				// R36S Special keys
-				switch (event.key.keysym.scancode) {
-				case 128: // volume up
-				case 129: // volume down
-					SDL_Delay(200);
-					updateHwInfo();
-					break;
-				case 102: // power
-					if (!suspend) {
-						suspend = 1;
-						system("systemctl suspend");
-					} else {
-						suspend = 0;
-					}
-					break;
-				}
-				break;
-				/*
-			case SDL_JOYAXISMOTION:
-				if (event.jaxis.axis == 1) { // Y axis
-					if (event.jaxis.value < -10000) { // Up
-						if (selectedItem > 0)
-							selectedItem--;
-						else
-							selectedItem = numCommands - 1;
-					} else if (event.jaxis.value > 10000) { // Down
-						if (selectedItem < numCommands - 1)
-							selectedItem++;
-						else
-							selectedItem = 0;
-					}
-				}
-				break;
-			*/
+    updateRender(selectedItem, color, highlightColor);
+
+    // main loop
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            // if (SDL_WaitEvent(&event) != 0) {
+            if (event.type == SDL_JOYAXISMOTION || event.type == SDL_MOUSEMOTION || event.type == SDL_WINDOWEVENT) {
+                continue;
+            }
+            // printf("Event type: %d\n", event.type);
+
+            switch (event.type) {
+                case SDL_QUIT:
+                    running = 0;
+                    break;
+                case SDL_KEYDOWN:  // PC Keyboard
+                    // printf("Key pressed: %d | %d\n", event.key.keysym.sym, event.key.keysym.scancode);
+                    switch (event.key.keysym.sym) {
+                        case SDLK_UP:
+                            if (selectedItem > 0)
+                                selectedItem--;
+                            else
+                                selectedItem = numCommands - 1;
+                            break;
+                        case SDLK_DOWN:
+                            if (selectedItem < numCommands - 1)
+                                selectedItem++;
+                            else
+                                selectedItem = 0;
+                            break;
+                        case SDLK_LEFT:
+                            selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                            break;
+                        case SDLK_RIGHT:
+                            selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                            break;
+                        case SDLK_RETURN:
+                            executeShellScript(commands[selectedItem].command);
+                            break;
+                        default:
+                            break;
+                    }
+                    // R36S Special keys
+                    switch (event.key.keysym.scancode) {
+                        case 128:  // volume up
+                        case 129:  // volume down
+                            SDL_Delay(200);
+                            updateHwInfo();
+                            break;
+                        case 102:  // power
+                            if (!suspend) {
+                                suspend = 1;
+                                system("systemctl suspend");
+                            } else {
+                                suspend = 0;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+
 #if defined(RG35XXP) || defined(TRIMUISP)
-			case SDL_JOYHATMOTION:
-				if (event.jhat.value == SDL_HAT_UP) {
-					if (selectedItem > 0)
-						selectedItem--;
-					else
-						selectedItem = numCommands - 1;
-				} else if (event.jhat.value == SDL_HAT_DOWN) {
-					if (selectedItem < numCommands - 1)
-						selectedItem++;
-					else
-						selectedItem = 0;
-				} else if (event.jhat.value == SDL_HAT_LEFT) {
-					selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
-				} else if (event.jhat.value == SDL_HAT_RIGHT) {
-					selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
-				}
-				break;
+                /*
+                case SDL_JOYAXISMOTION: // Analog stick motion
+                    if (event.jaxis.axis == 1) { // Y axis
+                        if (event.jaxis.value < -10000) { // Up
+                            if (selectedItem > 0)
+                                selectedItem--;
+                            else
+                                selectedItem = numCommands - 1;
+                        } else if (event.jaxis.value > 10000) { // Down
+                            if (selectedItem < numCommands - 1)
+                                selectedItem++;
+                            else
+                                selectedItem = 0;
+                        }
+                    }
+                    break;
+                */
+                case SDL_JOYHATMOTION:  // D-Pad motion
+                    if (event.jhat.value == SDL_HAT_UP) {
+                        if (selectedItem > 0)
+                            selectedItem--;
+                        else
+                            selectedItem = numCommands - 1;
+                    } else if (event.jhat.value == SDL_HAT_DOWN) {
+                        if (selectedItem < numCommands - 1)
+                            selectedItem++;
+                        else
+                            selectedItem = 0;
+                    } else if (event.jhat.value == SDL_HAT_LEFT) {
+                        selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                    } else if (event.jhat.value == SDL_HAT_RIGHT) {
+                        selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                    }
+                    break;
 #endif
-			case SDL_JOYBUTTONDOWN:
 
-				SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Joy button pressed: %d\n", event.jbutton.button);
+#if defined(BR2)
+                case SDL_JOYBUTTONDOWN:
+                    printf("Button pressed: %d\n", event.jbutton.button);
+                    switch (event.jbutton.button) {
+                        case BTN_A:
+                            if (showDialogBox) {
+                                if (isShowingSystemInfo) {
+                                    // just close the dialog box
+                                    showDialogBox = 0;
+                                    isShowingSystemInfo = 0;
+                                    break;
+                                }
+                                if (dialogSelectedButton == 0) {
+                                    printf("Ok button pressed\n");
+                                    executeShellScript(commands[selectedItem].command);
+                                    showDialogBox = 0;
+                                } else {
+                                    printf("Cancel button pressed\n");
+                                    showDialogBox = 0;
+                                }
+                                break;
+                            }
+                            if (commands[selectedItem].needsConfirmation) {
+                                showDialogBox = 1;
+                                strcpy(dialogBoxString, "Are you sure?");
+                                dialogSelectedButton = 0;  // reset to Ok button
+                                break;
+                            } else {
+                                executeShellScript(commands[selectedItem].command);
+                            }
+                            break;
+                        case BTN_B:
+                            if (showDialogBox) {
+                                break;
+                            }
+                            selectedItem = 0;
+                            break;
+                        case BTN_UP:
+                            if (showDialogBox) {
+                                break;
+                            }
+                            buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
+                            buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
+                            break;
+                        case BTN_DOWN:
+                            if (showDialogBox) {
+                                break;
+                            }
+                            buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
+                            buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
+                            break;
+                        case BTN_LEFT:
+                            if (showDialogBox) {
+                                dialogSelectedButton = !dialogSelectedButton;
+                                break;
+                            }
+                            selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                            break;
+                        case BTN_RIGHT:
+                            if (showDialogBox) {
+                                dialogSelectedButton = !dialogSelectedButton;
+                                break;
+                            }
+                            selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                            break;
+                        case BTN_SELECT:
+                            if (!showDialogBox) {
+                                const char *systemInfoString = loadSystemInfo();
+                                strcpy(dialogBoxString, systemInfoString);
+                                isShowingSystemInfo = 1;
+                                dialogSelectedButton = 0;  // reset to Ok button
+                                showDialogBox = 1;
+                            }
+                            break;
+                    }
+                    break;
+                case SDL_JOYBUTTONUP:
+                    buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
+                    buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
+                    break;
+#endif
 
-				switch (event.jbutton.button) {
-				case BTN_A:
-					if (showDialogBox) {
-						if (isShowingSystemInfo) {
-							// just close the dialog box
-							showDialogBox = 0;
-							isShowingSystemInfo = 0;
-							break;
-						}
-						if (dialogSelectedButton == 0) {
-							printf("Ok button pressed\n");
-							executeShellScript(commands[selectedItem].command);
-							showDialogBox = 0;
-						} else {
-							printf("Cancel button pressed\n");
-							showDialogBox = 0;
-						}
-						break;
-					}
-					if (commands[selectedItem].needsConfirmation) {
-						showDialogBox = 1;
-						strcpy(dialogBoxString, "Are you sure?");
-						dialogSelectedButton = 0; // reset to Ok button
-						break;
-					} else {
-						executeShellScript(commands[selectedItem].command);
-					}
-					break;
-				case BTN_B:
-					if (showDialogBox) {
-						break;
-					}
-					selectedItem = 0;
-					break;
-				case BTN_UP:
-					if (showDialogBox) {
-						break;
-					}
-					buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
-					buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
-					break;
-				case BTN_DOWN:
-					if (showDialogBox) {
-						break;
-					}
-					buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
-					buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
-					break;
-				case BTN_LEFT:
-					if (showDialogBox) {
-						dialogSelectedButton = !dialogSelectedButton;
-						break;
-					}
-					selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
-					break;
-				case BTN_RIGHT:
-					if (showDialogBox) {
-						dialogSelectedButton = !dialogSelectedButton;
-						break;
-					}
-					selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
-					break;
-				case BTN_SELECT:
-					if (!showDialogBox) {
-						const char *systemInfoString = loadSystemInfo();
-						strcpy(dialogBoxString, systemInfoString);
-						isShowingSystemInfo = 1;
-						dialogSelectedButton = 0; // reset to Ok button
-						showDialogBox = 1;
-					}
-					break;
-				}
+                default:
+                    continue;
+            }
+        }
 
-				break;
-			case SDL_JOYBUTTONUP:
+        // Handle auto-scroll when button is held
+        Uint32 now = SDL_GetTicks();
+        if (buttonUpHeld && now - lastScrollTime > SCROLL_DELAY) {
+            if (selectedItem > 0)
+                selectedItem--;
+            else
+                selectedItem = numCommands - 1;
+            lastScrollTime = now;
+        }
+        if (buttonDownHeld && now - lastScrollTime > SCROLL_DELAY) {
+            if (selectedItem < numCommands - 1)
+                selectedItem++;
+            else
+                selectedItem = 0;
+            lastScrollTime = now;
+        }
 
-				buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
-				buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
+        // Update hardware info
+        if (now - lastHwUpdate >= HW_UPDATE_INTERVAL) {
+            updateHwInfo();
+            lastHwUpdate = now;
+        }
 
-				break;
+        // Update render
+        updateRender(selectedItem, color, highlightColor);
+        SDL_Delay(16);  // ~60 FPS
+    }
 
-			default:
-				continue;
-			}
-		}
+    free(commands);
 
-		// Handle auto-scroll when button is held
-		Uint32 now = SDL_GetTicks();
-		if (buttonUpHeld && now - lastScrollTime > SCROLL_DELAY) {
-			if (selectedItem > 0)
-				selectedItem--;
-			else
-				selectedItem = numCommands - 1;
-			lastScrollTime = now;
-		} 
-		if (buttonDownHeld && now - lastScrollTime > SCROLL_DELAY) {
-			if (selectedItem < numCommands - 1)
-				selectedItem++;
-			else
-				selectedItem = 0;
-			lastScrollTime = now;
-		}
-		
-		// Update hardware info
-		if (now - lastHwUpdate >= HW_UPDATE_INTERVAL) {
-			updateHwInfo();
-			lastHwUpdate = now;
-		}
-		
-		// Update render
-		updateRender(selectedItem, color, highlightColor);
-		SDL_Delay(16); // ~60 FPS
-	}
+    TTF_CloseFont(xsFont);
+    TTF_CloseFont(sFont);
+    TTF_CloseFont(mFont);
+    TTF_CloseFont(lFont);
+    TTF_CloseFont(xlFont);
+    TTF_CloseFont(titleFont);
+    SDL_JoystickClose(joystick);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    TTF_Quit();
+    SDL_Quit();
 
-	free(commands);
-
-	TTF_CloseFont(xsFont);
-	TTF_CloseFont(sFont);
-	TTF_CloseFont(mFont);
-	TTF_CloseFont(lFont);
-	TTF_CloseFont(xlFont);
-	TTF_CloseFont(titleFont);
-	SDL_JoystickClose(joystick);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	TTF_Quit();
-	SDL_Quit();
-
-	return 0;
+    return 0;
 }

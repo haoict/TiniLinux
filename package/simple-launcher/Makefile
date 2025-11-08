@@ -1,19 +1,18 @@
-include makefiles/config.mk
+VERSION ?= 1.0.0
+# compiler and linker
+CROSS_COMPILE ?= 
+CC = ${CROSS_COMPILE}gcc
+SYSROOT ?= $(shell ${CC} --print-sysroot)
+# flags
+CFLAGS = -Wall -I. -I${SYSROOT}/usr/include -DVERSION=\"${VERSION}\"
+LDFLAGS = -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -s
 
-ifeq ($(UNION_PLATFORM),rg35xxplus)
-include makefiles/config-rg35xxplus.mk
-else ifeq ($(UNION_PLATFORM),r36s)
-include makefiles/config-r36s.mk
-else ifeq ($(UNION_PLATFORM),trimuisp)
-include makefiles/config-trimuisp.mk
-else ifeq ($(UNION_PLATFORM),buildroot_rgb30)
-include makefiles/config-buildroot-rgb30.mk
-else ifeq ($(UNION_PLATFORM),buildroot_h700)
-include makefiles/config-buildroot-h700.mk
-else ifeq ($(UNION_PLATFORM),buildroot_raspberrypi)
-include makefiles/config-buildroot-raspberrypi.mk
-else ifeq ($(UNION_PLATFORM),x64)
-include makefiles/config-x64.mk
+ifeq ($(PLATFORM),rgb30)
+CFLAGS += -DBR2 -DRGB30
+else ifeq ($(PLATFORM),h700)
+CFLAGS += -DBR2 -DH700
+else ifeq ($(PLATFORM),raspberrypi)
+CFLAGS += -DBR2 -DRPI
 endif
 
 .PHONY: clean
@@ -22,8 +21,5 @@ endif
 simple-launcher: simple-launcher.c
 	$(CC) -o '$@' '$<' ${CFLAGS} ${LDFLAGS}
 
-check-available-videodriver: check-available-videodriver.c
-	$(CC) -o '$@' '$<' ${CFLAGS} ${LDFLAGS}
-
 clean:
-	-rm simple-launcher check-available-videodriver
+	-rm simple-launcher
