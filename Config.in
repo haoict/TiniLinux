@@ -9,7 +9,6 @@ endmenu
 menu "TiniLinux Graphic Packages"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/dingux-commander/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/retroarch/Config.in"
-	source "$BR2_EXTERNAL_TiniLinux_PATH/package/sdl12-compat/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/simple-launcher/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/simple-terminal/Config.in"
 endmenu
