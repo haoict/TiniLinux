@@ -1,19 +1,18 @@
-VERSION = 2.0.0
-PREFIX = /usr
+VERSION ?= 2.0.0
 # compiler and linker
 CROSS_COMPILE ?= 
 CC = ${CROSS_COMPILE}gcc
 SYSROOT ?= $(shell ${CC} --print-sysroot)
 # flags
-CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include/SDL2 -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT  -fPIC -std=gnu11 -flto -Wno-unused-result
-LDFLAGS = -lc -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -Wl,-Bstatic,-lutil,-Bdynamic -s
+CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT -std=gnu11 -flto -Wno-unused-result
+LDFLAGS = -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -lutil -s
 
 
-ifeq ($(PLATFORM),buildroot_rgb30)
+ifeq ($(PLATFORM),rgb30)
 CFLAGS += -DBR2 -DRGB30
-else ifeq ($(PLATFORM),buildroot_h700)
+else ifeq ($(PLATFORM),h700)
 CFLAGS += -DBR2 -DH700
-else ifeq ($(PLATFORM),buildroot_raspberrypi)
+else ifeq ($(PLATFORM),raspberrypi)
 CFLAGS += -DBR2 -DRPI
 endif
 
@@ -22,7 +21,6 @@ SRC = $(wildcard src/*.c)
 build:
 	@echo st build options:
 	@echo "PLATFORM       = ${PLATFORM}"
-	@echo "PREFIX         = ${PREFIX}"
 	@echo "CROSS_COMPILE  = ${CROSS_COMPILE}"
 	@echo "SYSROOT        = ${SYSROOT}"
 	@echo "CFLAGS         = ${CFLAGS}"
