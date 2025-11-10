@@ -3,6 +3,18 @@
 # Tinilinux
 "Tini" Linux distro for H700, RK3326 & RK3566 SOC devices
 
+# Boards & defconfig
+
+| Board Name                        | CPU/Arch                      | Kernel  | Init    | Notes                                                                                                    |
+| --------------------------------- | ----------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| rgb30                             | aarch64 (Cortex-A55)          | 6.12.43 | systemd | Panfrost GPU, EGL/ES, Rockchip, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                               |
+| h700                              | aarch64 (Cortex-A53)          | 6.16.9  | systemd | Panfrost GPU, EGL/ES, Sun50i  , U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                               |
+| h700_sway                         | aarch64 (Cortex-A53)          | 6.16.9  | systemd | same as h700 but with sway compositor instead of KMSDRM                                                  |
+| xxx_consoleonly                   | -                             | -       | -       | include only base components for console, no GPU and GUI apps                                            |
+| xxx_external_toolchain            | -                             | -       | -       | same as rgb30, h700,... (with GUI) but uses external toolchain to save build time                        |
+| toolchain_x86_64_arm64_defconfig  | host: x86_64, target: aarch64 | -       | -       | download and install external toolchain only to build separated packages purpose, not a full board build |
+| toolchain_x86_64_x86_64_defconfig | host: x86_64, target: x86_64  | -       | -       | download and install external toolchain only to build separated packages purpose, not a full board build |
+
 # Build
 Clone TiniLinux and buildroot repo and setup environments
 ```bash
@@ -10,10 +22,10 @@ git clone https://github.com/haoict/TiniLinux.git
 git clone --depth=1 -b 2025.08.1 https://github.com/buildroot/buildroot.git
 
 # Install required packages
-sudo apt install build-essential libncurses-dev parted dosfstools mtools swig
+sudo apt install build-essential libncurses-dev dosfstools mtools
 
 cd buildroot
-make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig # boardname can be: rgb30, h700, rgb30_defconfig, h700_defconfig. Check configs dir for more...
+make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig
 cd ..
 ```
 

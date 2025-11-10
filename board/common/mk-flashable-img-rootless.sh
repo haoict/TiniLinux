@@ -42,7 +42,7 @@ parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOO
 
 # mkflashableimg: Making rootfs partitions
 echo "mkflashableimg: Making rootfs partitions"
-parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_END}
+parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_INIT_END}
 
 # mkflashableimg: Set boot flag on the first partition
 echo "mkflashableimg: Set boot flag on the first partition"
@@ -80,7 +80,7 @@ rm -f ${P1_IMG}
 # mkflashableimg: Create part2 (rootfs partition)
 P2_IMG=output.${BOARD}/images/p2.img
 rm -f ${P2_IMG}
-truncate -s ${ROOTFS_SIZE}M ${P2_IMG}
+truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
 mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
 rootfstmp=$(mktemp -d)
 tar -xf output.${BOARD}/images/rootfs.tar -C $rootfstmp

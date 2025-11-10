@@ -7,6 +7,7 @@ menu "TiniLinux Common Packages"
 endmenu
 
 menu "TiniLinux Graphic Packages"
+	source "$BR2_EXTERNAL_TiniLinux_PATH/package/mesa3d-no-llvm/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/dingux-commander/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/retroarch/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/simple-launcher/Config.in"

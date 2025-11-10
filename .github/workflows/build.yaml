@@ -10,7 +10,9 @@ on:
           - h700
           - h700_consoleonly
           - h700_sway
+          - h700_sway_external_toolchain
           - rgb30
+          - rgb30_external_toolchain
           - rgb30_consoleonly
           - raspberrypi3_64
       runner:
@@ -60,8 +62,8 @@ jobs:
           ls -la . && cd buildroot
           make O=../TiniLinux/output.${{ inputs.board }} BR2_EXTERNAL=../TiniLinux ${{ inputs.board }}_defconfig
           cd ../TiniLinux/output.${{ inputs.board }}
-          make source
-          time make -j$(nproc)
+          make source -s
+          time make -j$(nproc) -s
           cd ..
       - name: Make flashable image
         run: |

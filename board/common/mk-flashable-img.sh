@@ -41,7 +41,7 @@ parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOO
 
 # mkflashableimg: Making rootfs partitions
 echo "mkflashableimg: Making rootfs partitions"
-parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_END}
+parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_INIT_END}
 
 # mkflashableimg: Set boot flag on the first partition
 echo "mkflashableimg: Set boot flag on the first partition"
