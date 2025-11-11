@@ -7,20 +7,21 @@ on:
         required: true
         type: choice
         options:
-          - h700
+          - h700_buildroot_toolchain_sway
           - h700_consoleonly
+          - h700
           - h700_sway
-          - h700_sway_external_toolchain
-          - rgb30
-          - rgb30_external_toolchain
-          - rgb30_consoleonly
           - raspberrypi3_64
+          - rgb30_buildroot_toolchain
+          - rgb30_consoleonly
+          - rgb30
       runner:
         description: 'Select runner type'
         required: true
         type: choice
         options:
           - github-hosted_ubuntu-24.04
+          - github-hosted_ubuntu-24.04-arm
           - self-hosted_debian12-sachchat2
           - self-hosted_ubuntu-24.04
           - self-hosted_ubuntu-25.04-arm
@@ -29,7 +30,7 @@ run-name: (Dry run) Build for ${{ inputs.board }} on ${{ inputs.runner }}
 
 jobs:
   build:
-    runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
+    runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'github-hosted_ubuntu-24.04-arm' && 'ubuntu-24.04-arm') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
     steps:
       - name: Checkout main repo
         uses: actions/checkout@v4
