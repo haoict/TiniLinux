@@ -18,22 +18,20 @@
 # Build
 Clone TiniLinux and buildroot repo and setup environments
 ```bash
+# Clone sources
 git clone https://github.com/haoict/TiniLinux.git
 git clone --depth=1 -b 2025.08.1 https://github.com/buildroot/buildroot.git
 
 # Install required packages
-sudo apt install build-essential libncurses-dev dosfstools mtools
+sudo apt install build-essential libncurses-dev dosfstools parted mtools
 
+# Create board config
 cd buildroot
 make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig
-cd ..
-```
 
-To build and use the buildroot stuff, do the following:
-```bash
 # Build
-cd output.<boardname>
-make menuconfig # adjust anything if you want, other wise just exit
+cd ../TiniLinux/output.<boardname>
+make menuconfig # adjust anything if you want, otherwise just exit
 make -j$(nproc)
 # The kernel, bootloader, root filesystem, etc. are in output images directory
 ```
@@ -70,6 +68,36 @@ sudo eject /dev/sdb
 ```
 
 # Notes
+
+## Build from docker container
+
+If it's inconvernient to build directly in host machine, you can build TiniLinux inside a docker container
+```bash
+# Clone sources
+git clone https://github.com/haoict/TiniLinux.git
+git clone --depth=1 -b 2025.08.1 https://github.com/buildroot/buildroot.git
+
+# First build the image
+cd TiniLinux
+docker build -t ghcr.io/haoict/tinilinux-builder:latest .
+cd ..
+docker run --name tinilinux-builder -d -v $(pwd):/home/ubuntu ghcr.io/haoict/tinilinux-builder:latest
+docker exec -it tinilinux-builder bash
+
+# Commands from here are executed inside docker container
+# Create board config
+cd buildroot
+make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig
+
+# Build
+cd ../TiniLinux/output.<boardname>
+make menuconfig # adjust anything if you want, otherwise just exit
+make -j$(nproc)
+# The kernel, bootloader, root filesystem, etc. are in output images directory
+cd ..
+BOARD=<boardname> board/common/mk-flashable-img-rootless.sh
+```
+
 ## Clean target build without rebuild all binaries and libraries
 Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-buildroot
 
