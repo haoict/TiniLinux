@@ -5,15 +5,14 @@
 
 # Boards & defconfig
 
-| Board Name                        | CPU/Arch                      | Kernel  | Init    | Notes                                                                                                    |
-| --------------------------------- | ----------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| rgb30                             | aarch64 (Cortex-A55)          | 6.12.43 | systemd | Panfrost GPU, EGL/ES, Rockchip, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                               |
-| h700                              | aarch64 (Cortex-A53)          | 6.16.9  | systemd | Panfrost GPU, EGL/ES, Sun50i  , U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                               |
-| h700_sway                         | aarch64 (Cortex-A53)          | 6.16.9  | systemd | same as h700 but with sway compositor instead of KMSDRM                                                  |
-| xxx_consoleonly                   | -                             | -       | -       | include only base components for console, no GPU and GUI apps                                            |
-| xxx_external_toolchain            | -                             | -       | -       | same as rgb30, h700,... (with GUI) but uses external toolchain to save build time                        |
-| toolchain_x86_64_arm64_defconfig  | host: x86_64, target: aarch64 | -       | -       | download and install external toolchain only to build separated packages purpose, not a full board build |
-| toolchain_x86_64_x86_64_defconfig | host: x86_64, target: x86_64  | -       | -       | download and install external toolchain only to build separated packages purpose, not a full board build |
+| Board Name                      | CPU/Arch             | GPU      | Kernel  | Init    | Notes                                                                              |
+| ------------------------------- | -------------------- | -------- | ------- | ------- | ---------------------------------------------------------------------------------- |
+| rgb30                           | aarch64 (Cortex-A55) | Panfrost | 6.12.43 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
+| h700                            | aarch64 (Cortex-A53) | Panfrost | 6.16.9  | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
+| h700_sway                       | aarch64 (Cortex-A53) | Panfrost | 6.16.9  | systemd | same as h700 but with sway compositor instead of KMSDRM                            |
+| xxx_consoleonly                 | aarch64              | N/A      | -       | systemd | include only base components for console, no GPU and GUI apps                      |
+| xxx_buildroot_toolchain         | aarch64              | Panfrost | -       | systemd | same as rgb30, h700,... (with GUI) but uses buildroot toolchain                    |
+| toolchain_$hostarch_$targetarch | N/A                  | N/A      | N/A     | N/A     | install toolchain only to build separated packages purpose, not a full board build |
 
 # Build
 Clone TiniLinux and buildroot repo and setup environments
@@ -62,7 +61,7 @@ sudo udisksctl power-off -b /dev/sdb
 ```bash
 sudo mount -t ext4 /dev/sdb /mnt/rootfs
 sudo rm -rf /mnt/rootfs/*
-sudo tar -xvf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs && sync 
+sudo tar -xvf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs && sync
 sudo umount /dev/sdb
 sudo eject /dev/sdb
 ```
@@ -113,17 +112,17 @@ make alsa-lib-dirclean alsa-plugins-dirclean alsa-utils-dirclean btop-dirclean d
 rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
 ```
 
-## Unpack/Repack uInitrd
+## Unpack/Repack initramfs
 Unpack
 ```bash
-mkdir uInitrd-root
-cd uInitrd-root
-zcat ../uInitrd | cpio -id
+mkdir initramfs-files
+cd initramfs-files
+zcat ../initramfs | cpio -id
 ```
 
 Repack
 ```bash
-find . | cpio -o -H newc | gzip > ../uInitrd-modified
+find . | cpio -o -H newc | gzip > ../initramfs-modified.cpio.gz
 ```
 
 ## Run Docker
