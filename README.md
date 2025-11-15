@@ -127,9 +127,10 @@ find . | cpio -o -H newc | gzip > ../initramfs-modified.cpio.gz
 
 ## Run Docker
 ```bash
-wget https://download.docker.com/linux/static/stable/aarch64/docker-26.1.4.tgz
-tar -xzvf docker-26.1.4.tgz
-cp docker/* /usr/bin/
+# All versions can be found here: https://download.docker.com/linux/static/stable/aarch64/
+wget https://download.docker.com/linux/static/stable/aarch64/docker-29.0.1.tgz
+tar -xzvf docker-29.0.1.tgz
+mv docker/* /usr/bin/
 dockerd &
 docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
 docker ps -a

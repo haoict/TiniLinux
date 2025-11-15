@@ -1,0 +1,5 @@
+# <device>        <dir>        <type>        <options>        <dump> <fsck>
+# https://wiki.archlinux.org/title/fstab
+/dev/mmcblk0p2 / auto defaults,noatime 0 1
+/dev/mmcblk0p1 /boot vfat defaults 0 2
+#/dev/mmcblk0p3 /roms exfat umask=0000,iocharset=utf8,noatime 0 0
