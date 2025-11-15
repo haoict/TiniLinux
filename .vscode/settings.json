@@ -2,5 +2,6 @@
     "C_Cpp.intelliSenseEngine": "disabled",
     "files.watcherExclude": {
         "**/output.*/**": true
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }
