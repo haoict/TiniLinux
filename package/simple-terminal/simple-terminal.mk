@@ -15,8 +15,8 @@ ifeq ($(findstring h700,$(BR2_DEFCONFIG)),h700)
 	SIMPLE_TERMINAL_MAKE_OPTS += PLATFORM=h700
 else ifeq ($(findstring rgb30,$(BR2_DEFCONFIG)),rgb30)
 	SIMPLE_TERMINAL_MAKE_OPTS += PLATFORM=rgb30
-else ifeq ($(findstring raspberrypi,$(BR2_DEFCONFIG)),raspberrypi)
-	SIMPLE_TERMINAL_MAKE_OPTS += PLATFORM=raspberrypi
+else ifeq ($(findstring pi,$(BR2_DEFCONFIG)),pi)
+	SIMPLE_TERMINAL_MAKE_OPTS += PLATFORM=pi
 endif
 
 define SIMPLE_TERMINAL_BUILD_CMDS

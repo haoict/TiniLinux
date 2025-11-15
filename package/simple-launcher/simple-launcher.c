@@ -554,25 +554,65 @@ int main(int argc, char *argv[]) {
                     // printf("Key pressed: %d | %d\n", event.key.keysym.sym, event.key.keysym.scancode);
                     switch (event.key.keysym.sym) {
                         case SDLK_UP:
+                            if (showDialogBox) {
+                                break;
+                            }
                             if (selectedItem > 0)
                                 selectedItem--;
                             else
                                 selectedItem = numCommands - 1;
                             break;
                         case SDLK_DOWN:
+                            if (showDialogBox) {
+                                break;
+                            }
                             if (selectedItem < numCommands - 1)
                                 selectedItem++;
                             else
                                 selectedItem = 0;
                             break;
                         case SDLK_LEFT:
+                            if (showDialogBox) {
+                                dialogSelectedButton = !dialogSelectedButton;
+                                break;
+                            }
                             selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
                             break;
                         case SDLK_RIGHT:
+                            if (showDialogBox) {
+                                dialogSelectedButton = !dialogSelectedButton;
+                                break;
+                            }
                             selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
                             break;
                         case SDLK_RETURN:
+                            if (showDialogBox) {
+                                if (isShowingSystemInfo) {
+                                    // just close the dialog box
+                                    showDialogBox = 0;
+                                    isShowingSystemInfo = 0;
+                                    break;
+                                }
+                                if (dialogSelectedButton == 0) {
+                                    printf("Ok button pressed\n");
+                                    executeShellScript(commands[selectedItem].command);
+                                    showDialogBox = 0;
+                                } else {
+                                    printf("Cancel button pressed\n");
+                                    showDialogBox = 0;
+                                }
+                                break;
+                            }
                             executeShellScript(commands[selectedItem].command);
+                            break;
+                        case SDLK_ESCAPE:
+                            if (!showDialogBox) {
+                                const char *systemInfoString = loadSystemInfo();
+                                strcpy(dialogBoxString, systemInfoString);
+                                isShowingSystemInfo = 1;
+                                dialogSelectedButton = 0;  // reset to Ok button
+                                showDialogBox = 1;
+                            }
                             break;
                         default:
                             break;

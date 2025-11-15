@@ -372,7 +372,7 @@ int handle_keyboard_event(SDL_Event *event) {
     }
 
     if (!active) {
-#if defined(BR2)
+#if defined(BR2) && !defined(RPI)
         // handle joystick button directly when OSK is inactive
         if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
             if (event->key.keysym.sym == JOYBUTTON_UP) {

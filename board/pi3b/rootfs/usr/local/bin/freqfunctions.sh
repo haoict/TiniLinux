@@ -69,6 +69,7 @@ set_gpu_gov() {
 }
 
 onlinethreads() {
+  echo "temporary skipped"
   # set_online_threads ${1} ${2}
 }
 

@@ -11,7 +11,7 @@ ifeq ($(PLATFORM),rgb30)
 CFLAGS += -DBR2 -DRGB30
 else ifeq ($(PLATFORM),h700)
 CFLAGS += -DBR2 -DH700
-else ifeq ($(PLATFORM),raspberrypi)
+else ifeq ($(PLATFORM),pi)
 CFLAGS += -DBR2 -DRPI
 endif
 
