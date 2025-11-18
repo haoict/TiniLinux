@@ -33,13 +33,9 @@ cd ../TiniLinux/output.<boardname>
 make menuconfig # adjust anything if you want, otherwise just exit
 make -j$(nproc)
 # The kernel, bootloader, root filesystem, etc. are in output images directory
-```
-
 # Make flashable img file
-```bash
-sudo BOARD=<boardname> board/common/mk-flashable-img.sh
-# or rootless version (but slower)
-BOARD=<boardname> board/common/mk-flashable-img-rootless.sh
+make img
+# or: sudo BOARD=<boardname> board/common/mk-flashable-img.sh
 ```
 
 # Install
@@ -83,18 +79,15 @@ cd ..
 docker run --name tinilinux-builder -d -v $(pwd):/home/ubuntu ghcr.io/haoict/tinilinux-builder:latest
 docker exec -it tinilinux-builder bash
 
-# Commands from here are executed inside docker container
+# NOTE: Commands from here are executed inside docker container
 # Create board config
 cd buildroot
 make O=../TiniLinux/output.<boardname> BR2_EXTERNAL=../TiniLinux <boardname>_defconfig
 
 # Build
 cd ../TiniLinux/output.<boardname>
-make menuconfig # adjust anything if you want, otherwise just exit
 make -j$(nproc)
-# The kernel, bootloader, root filesystem, etc. are in output images directory
-cd ..
-BOARD=<boardname> board/common/mk-flashable-img-rootless.sh
+make img
 ```
 
 ## Clean target build without rebuild all binaries and libraries

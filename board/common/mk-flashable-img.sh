@@ -60,6 +60,7 @@ losetup --detach-all || true
 # Format partitions and mount
 echo "mkflashableimg: Format partitions and mount"
 DEV_LOOP=$(losetup --show --find --partscan ${OUT_IMG})
+sync
 mkfs.fat -F32 -n BOOT ${DEV_LOOP}p1
 mkfs.ext4 -O ^orphan_file -L rootfs ${DEV_LOOP}p2
 

@@ -7,11 +7,11 @@ on:
         required: true
         type: choice
         options:
-          - h700_buildroot_toolchain_sway
           - h700_consoleonly
           - h700
           - h700_sway
-          - raspberrypi3_64
+          - h700_sway_buildroot_toolchain
+          - pi3b
           - rgb30_buildroot_toolchain
           - rgb30_consoleonly
           - rgb30
@@ -32,6 +32,15 @@ jobs:
   build:
     runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'github-hosted_ubuntu-24.04-arm' && 'ubuntu-24.04-arm') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
     steps:
+      - name: Install deps
+        if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
+        run: |
+          # disable mandb to save build time
+          sudo mv /usr/bin/mandb /usr/bin/mandb-OFF
+          sudo cp -p /bin/true /usr/bin/mandb 
+          sudo rm -r /var/cache/man
+          # install packages
+          sudo apt update && sudo apt install -y mtools
       - name: Checkout main repo
         uses: actions/checkout@v4
         with:
@@ -71,15 +80,12 @@ jobs:
       - name: Make flashable image
         run: |
           set -x
-          cd TiniLinux
-          if [ "${{ inputs.board }}" = "raspberrypi3_64" ]; then
-            mv output.${{ inputs.board }}/images/sdcard.img output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
-          elif sudo -n true &> /dev/null; then
-            echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo BOARD=${{ inputs.board }} board/common/mk-flashable-img.sh
+          cd TiniLinux/output.${{ inputs.board }}
+          if [ "${{ inputs.board }}" = "pi3b" ]; then
+            mv images/sdcard.img images/tinilinux-${{ inputs.board }}.img
           else
-            echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            BOARD=${{ inputs.board }} board/common/mk-flashable-img-rootless.sh
+          
+            make img
           fi
       - name: Archive build output
         uses: actions/upload-artifact@v4

@@ -7,11 +7,11 @@ on:
         required: true
         type: choice
         options:
-          - h700_buildroot_toolchain_sway
           - h700_consoleonly
           - h700
           - h700_sway
-          - raspberrypi3_64
+          - h700_sway_buildroot_toolchain
+          - pi3b
           - rgb30_buildroot_toolchain
           - rgb30_consoleonly
           - rgb30
@@ -90,7 +90,7 @@ jobs:
       - name: Make flashable image
         run: |
           set -x
-          if [ "${{ inputs.board }}" = "raspberrypi3_64" ]; then
+          if [ "${{ inputs.board }}" = "pi3b" ]; then
             mv output.${{ inputs.board }}/images/sdcard.img output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           elif sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
