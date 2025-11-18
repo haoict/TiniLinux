@@ -1,8 +1,0 @@
-BasedOnStyle: Google
-IndentWidth: 4
-TabWidth: 4
-UseTab: Never
-ColumnLimit: 240
-BreakBeforeBraces: Attach
-AccessModifierOffset: -4
-PointerAlignment: Right

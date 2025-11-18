@@ -5,8 +5,8 @@
 ################################################################################
 
 SIMPLE_TERMINAL_VERSION = 2.0.0
-SIMPLE_TERMINAL_SITE = $(BR2_EXTERNAL_TiniLinux_PATH)/package/simple-terminal
-SIMPLE_TERMINAL_SITE_METHOD = local
+SIMPLE_TERMINAL_SITE = https://github.com/haoict/SimpleTerminal.git
+SIMPLE_TERMINAL_SITE_METHOD = git
 SIMPLE_TERMINAL_DEPENDENCIES = sdl2 sdl2_ttf
 
 # $(info BR2_DEFCONFIG: $(BR2_DEFCONFIG))
