@@ -84,14 +84,15 @@ rm -f ${P2_IMG}
 truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
 mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
 rootfstmp=$(mktemp -d)
-cp -r board/${BOARD}/overlay/* $rootfstmp
+mkdir -p $rootfstmp/upper
+cp -r board/${BOARD}/overlay/* $rootfstmp/upper
 # Update build info: replace BUILD_ID=buildroot with BUILD_ID=yyyyMMdd-hhmmJST in /etc/os-release
-sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/etc/os-release
+sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/upper/etc/os-release
 # Create roms.tar.xz to /root to be used in firstboot
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/
 if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
-tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+tar -Jcf $rootfstmp/upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 if [[ "$(uname -m)" == "x86_64" ]]; then
     ./board/common/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
