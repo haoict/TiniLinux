@@ -7,14 +7,14 @@ on:
         required: true
         type: choice
         options:
-          - h700_consoleonly
           - h700
+          - h700_consoleonly
+          - h700_squashfs
           - h700_sway
-          - h700_sway_buildroot_toolchain
-          - pi3b
-          - rgb30_buildroot_toolchain
-          - rgb30_consoleonly
           - rgb30
+          - rgb30_consoleonly
+          - rgb30_squashfs
+          - pi3b
       runner:
         description: 'Select runner type'
         required: true
