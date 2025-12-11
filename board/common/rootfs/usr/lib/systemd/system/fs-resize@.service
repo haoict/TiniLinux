@@ -1,0 +1,10 @@
+[Unit]
+Description=FS Resize (%i)
+DefaultDependencies=no
+
+[Service]
+Type=idle
+ExecStart=/usr/local/bin/fs-resize.sh %i
+StandardInput=tty-force
+StandardOutput=inherit
+StandardError=inherit

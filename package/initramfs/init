@@ -35,6 +35,7 @@ for param in $(cat /proc/cmdline); do
 done
 
 mkdir -p /newroot
+INIT_UNIT=""
 
 # if overlayfs is specified, set up OverlayFS
 if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
@@ -43,13 +44,34 @@ if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
     mount -o ro "$squashfspart" /mnt/boot || exec sh
     mount -t squashfs -o loop,ro "/mnt/boot/$squashfsroot" /mnt/lower || exec sh
     mount -o rw "$overlayfs" /mnt/rw || exec sh
-    mkdir -p /mnt/rw/upper
-    mkdir -p /mnt/rw/work
-    mount -t overlay overlay -o lowerdir=/mnt/lower,upperdir=/mnt/rw/upper,workdir=/mnt/rw/work /newroot || exec sh
-    mount --move /mnt/boot /newroot/boot
-else
+
+    # Check for rootfs resize flags
+    if [ -f /mnt/rw/upper/root/.resize-rootfs ]; then
+        mv /mnt/rw/upper/root/.resize-rootfs /mnt/rw/upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
+        INIT_UNIT="--unit=fs-resize@rootfs.service"
+        umount $overlayfs || exec sh
+        mount --move /mnt/lower /newroot || exec sh
+    else
+        mkdir -p /mnt/rw/upper /mnt/rw/work
+        mount -t overlay overlay -o lowerdir=/mnt/lower,upperdir=/mnt/rw/upper,workdir=/mnt/rw/work /newroot || exec sh
+        if [ -f /newroot/root/.resize-romsfs ]; then
+            # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
+            INIT_UNIT="--unit=fs-resize@romsfs.service"
+        fi
+    fi
+    mount --move /mnt/boot /newroot/boot || exec sh
+else # no OverlayFS, just mount root directly
     echo "[initramfs] No OverlayFS specified, using root=$root directly."
     mount -o rw "$root" /newroot || exec sh
+
+    # Check for rootfs resize flags
+    if [ -f /newroot/root/.resize-rootfs ]; then
+        mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
+        INIT_UNIT="--unit=fs-resize@rootfs.service"
+    elif [ -f /newroot/root/.resize-romsfs ]; then
+        # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
+        INIT_UNIT="--unit=fs-resize@romsfs.service"
+    fi
 fi
 
 # Mount runtime dirs for systemd
@@ -59,4 +81,4 @@ mount --move /dev /newroot/dev
 mount --move /run /newroot/run
 
 echo "[initramfs] Switching to real root..."
-exec switch_root /newroot ${init:-/sbin/init}
+exec switch_root /newroot ${init:-/sbin/init} $INIT_UNIT || exec sh
