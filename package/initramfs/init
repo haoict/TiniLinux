@@ -40,20 +40,20 @@ INIT_UNIT=""
 # if overlayfs is specified, set up OverlayFS
 if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
     echo "[initramfs] Setting up OverlayFS: lower from $squashfspart/$squashfsroot, upper on $overlayfs"
-    mkdir -p /mnt/boot /mnt/lower /mnt/rw
+    mkdir -p /mnt/boot /mnt/overlay_lower /mnt/rw
     mount -o ro "$squashfspart" /mnt/boot || exec sh
-    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsroot" /mnt/lower || exec sh
+    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsroot" /mnt/overlay_lower || exec sh
     mount -o rw "$overlayfs" /mnt/rw || exec sh
 
     # Check for rootfs resize flags
-    if [ -f /mnt/rw/upper/root/.resize-rootfs ]; then
-        mv /mnt/rw/upper/root/.resize-rootfs /mnt/rw/upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
+    if [ -f /mnt/rw/overlay_upper/root/.resize-rootfs ]; then
+        mv /mnt/rw/overlay_upper/root/.resize-rootfs /mnt/rw/overlay_upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
         INIT_UNIT="--unit=fs-resize@rootfs.service"
         umount $overlayfs || exec sh
-        mount --move /mnt/lower /newroot || exec sh
+        mount --move /mnt/overlay_lower /newroot || exec sh
     else
-        mkdir -p /mnt/rw/upper /mnt/rw/work
-        mount -t overlay overlay -o lowerdir=/mnt/lower,upperdir=/mnt/rw/upper,workdir=/mnt/rw/work /newroot || exec sh
+        mkdir -p /mnt/rw/overlay_upper /mnt/rw/overlay_workdir
+        mount -t overlay overlay -o lowerdir=/mnt/overlay_lower,upperdir=/mnt/rw/overlay_upper,workdir=/mnt/rw/overlay_workdir /newroot || exec sh
         if [ -f /newroot/root/.resize-romsfs ]; then
             # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
             INIT_UNIT="--unit=fs-resize@romsfs.service"
