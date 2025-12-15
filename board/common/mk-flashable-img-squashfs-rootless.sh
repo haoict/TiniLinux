@@ -5,60 +5,55 @@ set -euo pipefail
 # SETUP ENV
 #####################################################
 
+echo "=========================================="
+echo "  Creating Flashable Image for ${BOARD}"
+echo "  (SquashFS variant)"
+echo "=========================================="
+echo ""
+
 # Load partition info variables
 source board/${BOARD}/rootfs/root/partition-info.sh
 OUT_IMG=output.${BOARD}/images/tinilinux-${BOARD}.img
 rm -f ${OUT_IMG}
 
-
-#####################################################
-# CREATE SKELEON OUPUT DISK IMAGE (PARTITIONING)
-#####################################################
-
-# mkflashableimg: Create an empty img file
-echo "mkflashableimg: Create an empty img file"
+echo "[1/5] Setting up disk image (${DISK_SIZE}M)..."
+echo "  ✓ Creating empty disk image"
 truncate -s ${DISK_SIZE}M ${OUT_IMG}
 
-# mkflashableimg: Make the disk MBR type (msdos)
-echo "mkflashableimg: Make the disk MBR type (msdos)"
+echo "  ✓ Initializing MBR partition table"
 parted ${OUT_IMG} mktable msdos
 
 if [[ "${BOARD}" == "rgb30"* ]]; then
-    # mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)
-    echo "mkflashableimg: Write the u-boot to the img (offset 64 sectors = 32KiB)"
+    echo "  ✓ Writing U-Boot bootloader (offset: 32KiB)"
     dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
 elif [[ "${BOARD}" == "h700"* ]]; then
-    # mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)
-    echo "mkflashableimg: Write the u-boot to the img (offset 16 sectors = 8KiB)"
+    echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
     dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
 else
-    echo "u-boot writing not implemented for board ${BOARD}"
+    echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
     exit 1
 fi
 
-# mkflashableimg: Making BOOT partitions
-echo "mkflashableimg: Making BOOT partitions"
+echo ""
+echo "[2/5] Creating partitions..."
+echo "  ✓ Creating BOOT partition (${BOOT_SIZE}M, FAT32)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOOT_PART_END}
 
-# mkflashableimg: Making rootfs partitions
-echo "mkflashableimg: Making rootfs partitions"
+echo "  ✓ Creating rootfs overlay partition (${ROOTFS_INIT_SIZE}M, ext4)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_INIT_END}
 
-# mkflashableimg: Set boot flag on the first partition
-echo "mkflashableimg: Set boot flag on the first partition"
+echo "  ✓ Setting boot flag"
 parted -s ${OUT_IMG} set 1 boot on
 sync
 
 
-#####################################################
-# FORMAT PARTITIONS AND COPY DATA
-#####################################################
-
-# mkflashableimg: Create part1 (BOOT partition)
+echo "\n[3/5] Formatting BOOT partition..."
 P1_IMG=output.${BOARD}/images/p1.img
 rm -f ${P1_IMG}
 truncate -s ${BOOT_SIZE}M ${P1_IMG}
+echo "  ✓ Formatting as FAT32"
 mkfs.fat -F32 -n BOOT ${P1_IMG}
+echo "  ✓ Copying boot files (including squashfs)"
 mcopy -i ${P1_IMG} -o board/${BOARD}/BOOT/* ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/Image ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/initramfs ::/
@@ -69,45 +64,53 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
 elif [[ "${BOARD}" == "h700"* ]]; then
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/allwinner/ ::/dtb
 fi
-# mkflashableimg: Verify part1
+echo "  ✓ Verifying BOOT partition"
 mdir -i output.${BOARD}/images/p1.img ::/
 sync
 fsck.fat -n ${P1_IMG}
-# mkflashableimg: Merge part1 to output img
+echo "  ✓ Writing BOOT partition to image"
 dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notrunc
 rm -f ${P1_IMG}
 
-
-# mkflashableimg: Create part2 (rootfs overlay partition)
+echo ""
+echo "[4/5] Creating rootfs overlay partition..."
 P2_IMG=output.${BOARD}/images/p2.img
 rm -f ${P2_IMG}
 truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
+echo "  ✓ Formatting as ext4"
 mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
 rootfstmp=$(mktemp -d)
+echo "  ✓ Copying overlay files"
 cp -r board/${BOARD}/overlay_upper $rootfstmp/
-# Update build info: replace BUILD_ID=buildroot with BUILD_ID=yyyyMMdd-hhmmJST in /etc/os-release
+echo "  ✓ Updating build info"
 sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/overlay_upper/etc/os-release
-# Create roms.tar.xz to /root to be used in firstboot
+echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/
 if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
 tar -Jcf $rootfstmp/overlay_upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
+echo "  ✓ Populating filesystem"
 if [[ "$(uname -m)" == "x86_64" ]]; then
     ./board/common/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
 elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
     ./board/common/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
 fi
 sync
-# mkflashableimg: Verify part2
+echo "  ✓ Verifying overlay"
 e2fsck -n ${P2_IMG}
 rm -rf ${rootfstmp}
-# mkflashableimg: Merge part12 to output img
+echo "  ✓ Writing overlay partition to image"
 dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START}" conv=fsync,notrunc
 rm -f ${P2_IMG}
 
-# mkflashableimg: Verify
-echo "mkflashableimg: Verify"
+echo ""
+echo "[5/5] Finalizing..."
 parted ${OUT_IMG} unit MiB print
 
-echo "Done."
+echo ""
+echo "=========================================="
+echo "  ✓ Image created successfully!"
+echo "  Location: ${OUT_IMG}"
+echo "  Size: $(du -h ${OUT_IMG} | cut -f1)"
+echo "=========================================="
