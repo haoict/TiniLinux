@@ -29,6 +29,8 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
 elif [[ "${BOARD}" == "h700"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
     dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+elif [[ "${BOARD}" == *"qemu"* ]]; then
+    echo "  ✓ Skipping U-Boot for board ${BOARD}"
 else
     echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
     exit 1
