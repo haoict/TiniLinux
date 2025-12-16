@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-ROCKNIX_JOYPAD_VERSION = b4f05d047244ea755cbdc050742ee2d6c68fe21d
-ROCKNIX_JOYPAD_SITE = https://github.com/haoict/tinilinux-joypad.git
+ROCKNIX_JOYPAD_VERSION = 15b5a29b6b24c0fc59dd6f61602dacf34cbb7eae
+ROCKNIX_JOYPAD_SITE = https://github.com/ROCKNIX/rocknix-joypad.git
 ROCKNIX_JOYPAD_SITE_METHOD = git
 ROCKNIX_JOYPAD_LICENSE = GPL
 
