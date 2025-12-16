@@ -20,7 +20,7 @@ echo "Board name: $BOARDNAME"
 # Check if ../buildroot exists, if not clone it
 if [ ! -d "../buildroot" ]; then
     echo "Cloning buildroot repository..."
-    git clone --depth=1 -b 2025.08.2 https://github.com/buildroot/buildroot.git ../buildroot
+    git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git ../buildroot
 fi
 
 # Go to buildroot and execute make command

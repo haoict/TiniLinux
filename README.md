@@ -19,7 +19,7 @@ Clone TiniLinux and buildroot repo and setup environments
 ```bash
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
-git clone --depth=1 -b 2025.08.2 https://github.com/buildroot/buildroot.git
+git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git
 
 # Install required packages
 sudo apt install build-essential libncurses-dev dosfstools parted mtools
@@ -70,7 +70,7 @@ If it's inconvernient to build directly in host machine, you can build TiniLinux
 ```bash
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
-git clone --depth=1 -b 2025.08.2 https://github.com/buildroot/buildroot.git
+git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git
 
 # First build the image
 cd TiniLinux
