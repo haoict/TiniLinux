@@ -2,12 +2,13 @@
 
 #####
 #
-# /init for BusyBox initramfs -> real root
+# TiniLinux initramfs init script
 #
 #####
 echo "[initramfs] Booting..."
 
 # Mount pseudo filesystems
+echo "[initramfs] Mounting pseudo filesystems..."
 mount -t proc proc /proc
 mount -t sysfs sys /sys
 mount -t devtmpfs dev /dev
@@ -41,44 +42,69 @@ INIT_UNIT=""
 if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
     echo "[initramfs] Setting up OverlayFS: lower from $squashfspart/$squashfsroot, upper on $overlayfs"
     mkdir -p /mnt/boot /mnt/overlay_lower /mnt/rw
+    echo "[initramfs] Mounting boot partition $squashfspart (read-only)..."
     mount -o ro "$squashfspart" /mnt/boot || exec sh
+    echo "[initramfs] Mounting squashfs image /mnt/boot/$squashfsroot (read-only)..."
     mount -t squashfs -o loop,ro "/mnt/boot/$squashfsroot" /mnt/overlay_lower || exec sh
+    echo "[initramfs] Mounting overlay partition $overlayfs (read-write)..."
     mount -o rw "$overlayfs" /mnt/rw || exec sh
 
     # Check for rootfs resize flags
     if [ -f /mnt/rw/overlay_upper/root/.resize-rootfs ]; then
+        echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
         mv /mnt/rw/overlay_upper/root/.resize-rootfs /mnt/rw/overlay_upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
         INIT_UNIT="--unit=fs-resize@rootfs.service"
+        echo "[initramfs] Unmounting overlay partition for resize..."
         umount $overlayfs || exec sh
+        echo "[initramfs] Moving squashfs mount to /newroot..."
         mount --move /mnt/overlay_lower /newroot || exec sh
     else
         mkdir -p /mnt/rw/overlay_upper /mnt/rw/overlay_workdir
+        echo "[initramfs] Mounting overlay filesystem to /newroot..."
         mount -t overlay overlay -o lowerdir=/mnt/overlay_lower,upperdir=/mnt/rw/overlay_upper,workdir=/mnt/rw/overlay_workdir /newroot || exec sh
+
+        # Check for romsfs resize flag
         if [ -f /newroot/root/.resize-romsfs ]; then
+            echo "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
             # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
             INIT_UNIT="--unit=fs-resize@romsfs.service"
+        else
+            echo "[initramfs] No resize flags found - proceeding with normal boot"
+            mkdir -p /newroot/mnt/squashfsroot /newroot/mnt/overlayfs
+            echo "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsroot..."
+            mount --move /mnt/overlay_lower /newroot/mnt/squashfsroot || exec sh
+            echo "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
+            mount --move /mnt/rw /newroot/mnt/overlayfs || exec sh
+            INIT_UNIT="" # normal boot
         fi
     fi
+    echo "[initramfs] Moving boot partition mount to /newroot/boot..."
     mount --move /mnt/boot /newroot/boot || exec sh
 else # no OverlayFS, just mount root directly
-    echo "[initramfs] No OverlayFS specified, using root=$root directly."
+    echo "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
     mount -o rw "$root" /newroot || exec sh
 
     # Check for rootfs resize flags
     if [ -f /newroot/root/.resize-rootfs ]; then
+        echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
         mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
         INIT_UNIT="--unit=fs-resize@rootfs.service"
     elif [ -f /newroot/root/.resize-romsfs ]; then
+        echo "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
         # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
         INIT_UNIT="--unit=fs-resize@romsfs.service"
+    else
+        echo "[initramfs] No resize flags found - proceeding with normal boot"
+        INIT_UNIT="" # normal boot
     fi
 fi
 
 # Mount runtime dirs for systemd
+echo "[initramfs] Moving runtime directories mount to /newroot..."
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 mount --move /dev /newroot/dev
 mount --move /run /newroot/run
 
-echo "[initramfs] Switching to real root..."
+echo "[initramfs] Init: ${init:-/sbin/init} $INIT_UNIT. Switching to real root..."
 exec switch_root /newroot ${init:-/sbin/init} $INIT_UNIT || exec sh
