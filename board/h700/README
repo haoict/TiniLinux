@@ -13,3 +13,51 @@ More info about u-boot:
 | rootfs    | 135168         | 66.0MiB       | 1024MiB       | 2097152      | /dev/mmcblk1p2 |                               |
 | ROMS      | 2232320        | 1091MiB       | start - 100%  | start - 100% | /dev/mmcblk1p3 | will be created at first boot |
 
+
+# Update linux.conf and linux patches from ROCKNIX
+
+Rocknix documentation: https://rocknix.org/contribute/build, https://rocknix.org/contribute/modify/#building-a-single-package
+
+linux.conf: https://github.com/ROCKNIX/distribution/blob/next/projects/ROCKNIX/devices/H700/linux/linux.aarch64.conf
+
+## install docker and build rocknix image
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+docker ps
+
+cd ~
+git clone https://github.com/ROCKNIX/distribution.git
+make docker-image-build
+```
+
+## build single package linux to get patched source code
+```bash
+make docker-shell
+export PROJECT=ROCKNIX DEVICE=H700 ARCH=aarch64
+./scripts/build linux
+# after it downloaded and patched the linux source, you can cancel the build
+exit
+```
+
+## create .patch file
+```bash
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.11.tar.xz
+tar -xvf linux-6.17.11.tar.xz
+cd linux-6.17.11
+git init
+git add -A
+git commit -m "init"
+
+cp -r ~/rocknix-distribution/build.ROCKNIX-H700.aarch64/build/linux-6.17.11/* .
+rm -rf dest
+find . -type f -name '*.orig' -delete
+
+git add -A
+git diff --staged > ~/TiniLinux/board/h700/linux/patches/from-rocknix.patch
+```
