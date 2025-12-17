@@ -35,8 +35,8 @@
 #define FALLBACK_SCREEN_WIDTH 720
 #define FALLBACK_SCREEN_HEIGHT 720
 #define ITEMS_PER_PAGE 15
-#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/rk817-battery/capacity"
-#define BATTERY_STATUS_FILE "/sys/class/power_supply/rk817-battery/status"
+#define BATTERY_CAPACITY_FILE "/sys/class/power_supply/battery/capacity"
+#define BATTERY_STATUS_FILE "/sys/class/power_supply/battery/status"
 #define BRIGHTNESS_FILE "/sys/devices/platform/backlight/backlight/backlight/brightness"
 #define VOLUME_COMMAND "amixer get -c 1 Master | awk -F'[][]' '/Front Left:/ { print $2 }'"
 #define CREDIT "TiniLinux " VERSION " (RGB30)"
