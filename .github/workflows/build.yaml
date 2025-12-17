@@ -52,18 +52,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: TiniLinux
-      - name: Checkout buildroot repo
-        uses: actions/checkout@v4
-        with:
-          repository: buildroot/buildroot
-          ref: 2025.11
-          path: buildroot
       - name: Build
         run: |
           set -x
-          ls -la . && cd buildroot
-          make O=../TiniLinux/output.${{ inputs.board }} BR2_EXTERNAL=../TiniLinux ${{ inputs.board }}_defconfig
-          cd ../TiniLinux/output.${{ inputs.board }}
+          cd TiniLinux
+          ./make-board-build.sh configs/${{ inputs.board }}_defconfig
+          cd output.${{ inputs.board }}
           make source -s
           time make -j$(nproc) -s
           cd ..
