@@ -26,7 +26,6 @@ sudo apt install build-essential libncurses-dev dosfstools parted mtools
 
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
-git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git
 
 # Create board config
 cd TiniLinux
@@ -72,7 +71,6 @@ If it's inconvernient to build directly in host machine, you can build TiniLinux
 ```bash
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
-git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git
 
 # First build the image
 cd TiniLinux
