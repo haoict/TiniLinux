@@ -1,131 +1,3 @@
-diff --git a/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi b/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi
-new file mode 100644
-index 000000000..304ef1ef4
---- /dev/null
-+++ b/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi
-@@ -0,0 +1,122 @@
-+/* 
-+  This is a skeleton of joypad with 2 sticks and FN (MODE) button.
-+  Fits devices with 1 stick and 2 extra face buttons too.
-+  By including this ans setting I/O properties only,
-+  devices should get consistent controller id and mapping
-+  thus reusing non-game configs:
-+    * SDL gamecontrollerdb.txt
-+    * ES es_input.cfg
-+    * Retroarch gamepad
-+*/
-+
-+/ {
-+    joypad: retrogame_joypad_s2_f1 {
-+        /* These drivers emit the same button set which makes this skeleton ADC-agnostic */
-+        /* compatible = "rocknix-joypad"; */
-+        /* compatible = "rocknix-singleadc-joypad"; */
-+
-+        /* These are constants making Joystick Guid the same */
-+        joypad-name = "retrogame_joypad_s2_f1";
-+        joypad-vendor = <0x484B>;
-+        joypad-product = <0x1121>;  /* 11 inherited, 2 for number of sticks, 1 for number of FN */
-+        joypad-revision = <0x0100>;
-+
-+        /* require explicit status = "okay"; */
-+        status = "disabled";
-+
-+        /* adc calculate scale */
-+        button-adc-scale = <2>;
-+
-+        /* adc deadzone range  */
-+        button-adc-deadzone = <64>;
-+
-+        /*
-+          specifies fuzz value that is used to filter noise from
-+          the event stream.
-+        */
-+        button-adc-fuzz = <32>;
-+        button-adc-flat = <32>;
-+
-+        /* poll device interval (ms), adc read interval */
-+        poll-interval = <10>;
-+
-+        /* gpio button auto repeat set value : default disable */
-+        /*
-+            autorepeat;
-+        */
-+
-+        /* meaningful node names for easier use */
-+        up {
-+            label = "GPIO DPAD-UP";
-+            linux,code = <BTN_DPAD_UP>;
-+        };
-+        down {
-+            label = "GPIO DPAD-DOWN";
-+            linux,code = <BTN_DPAD_DOWN>;
-+        };
-+        left {
-+            label = "GPIO DPAD-LEFT";
-+            linux,code = <BTN_DPAD_LEFT>;
-+        };
-+        right {
-+            label = "GPIO DPAD-RIGHT";
-+            linux,code = <BTN_DPAD_RIGHT>;
-+        };
-+
-+        a {
-+            label = "GPIO BTN-A";
-+            linux,code = <BTN_EAST>;
-+        };
-+        b {
-+            label = "GPIO BTN-B";
-+            linux,code = <BTN_SOUTH>;
-+        };
-+        x {
-+            label = "GPIO BTN-X";
-+            linux,code = <BTN_NORTH>;
-+        };
-+        y {
-+            label = "GPIO BTN-Y";
-+            linux,code = <BTN_WEST>;
-+        };
-+
-+        select {
-+            label = "GPIO BTN_SELECT";
-+            linux,code = <BTN_SELECT>;
-+        };
-+        start {
-+            label = "GPIO BTN_START";
-+            linux,code = <BTN_START>;
-+        };
-+        mode {
-+            label = "GPIO BTN_F";
-+            linux,code = <BTN_MODE>;
-+        };
-+
-+        tl {
-+            label = "GPIO BTN_TL";
-+            linux,code = <BTN_TL>;
-+        };
-+        tr {
-+            label = "GPIO BTN_TR";
-+            linux,code = <BTN_TR>;
-+        };
-+        tl2 {
-+            label = "GPIO BTN_TL2";
-+            linux,code = <BTN_TL2>;
-+        };
-+        tr2 {
-+            label = "GPIO BTN_TR2";
-+            linux,code = <BTN_TR2>;
-+        };
-+
-+        thumbl {
-+            label = "GPIO BTN_THUMBL";
-+            linux,code = <BTN_THUMBL>;
-+        };
-+        thumbr {
-+            label = "GPIO BTN_THUMBR";
-+            linux,code = <BTN_THUMBR>;
-+        };
-+    };
-+};
 diff --git a/arch/arm64/boot/dts/rockchip/rk3566-anbernic-rg-arc-d.dts b/arch/arm64/boot/dts/rockchip/rk3566-anbernic-rg-arc-d.dts
 index ab83e8a61..74efd941b 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3566-anbernic-rg-arc-d.dts
@@ -3363,7 +3235,7 @@ index fd2214b6f..017891827 100644
  		pinctrl-names = "default";
  		reg-io-width = <4>;
 diff --git a/drivers/bluetooth/btrtl.c b/drivers/bluetooth/btrtl.c
-index 1d4a7887a..aaefb912a 100644
+index 52794db27..26430c225 100644
 --- a/drivers/bluetooth/btrtl.c
 +++ b/drivers/bluetooth/btrtl.c
 @@ -179,6 +179,14 @@ static const struct id_table ic_id_table[] = {
@@ -3381,7 +3253,7 @@ index 1d4a7887a..aaefb912a 100644
  	/* 8821A */
  	{ IC_INFO(RTL_ROM_LMP_8821A, 0xa, 0x6, HCI_USB),
  	  .config_needed = false,
-@@ -665,6 +673,7 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
+@@ -657,6 +665,7 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
  		{ RTL_ROM_LMP_8822B, 13 },	/* 8822C */
  		{ RTL_ROM_LMP_8761A, 14 },	/* 8761B */
  		{ RTL_ROM_LMP_8852A, 18 },	/* 8852A */
@@ -3389,7 +3261,7 @@ index 1d4a7887a..aaefb912a 100644
  		{ RTL_ROM_LMP_8852A, 20 },	/* 8852B */
  		{ RTL_ROM_LMP_8852A, 25 },	/* 8852C */
  		{ RTL_ROM_LMP_8851B, 36 },	/* 8851B */
-@@ -1516,6 +1525,8 @@ MODULE_FIRMWARE("rtl_bt/rtl8723d_fw.bin");
+@@ -1518,6 +1527,8 @@ MODULE_FIRMWARE("rtl_bt/rtl8723d_fw.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723d_config.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723ds_fw.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723ds_config.bin");
@@ -3413,7 +3285,7 @@ index fa683bb7f..31fdf4200 100644
  	{ USB_DEVICE(0x2357, 0x0604), .driver_info = BTUSB_REALTEK |
  						     BTUSB_WIDEBAND_SPEECH },
 diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 37ab78243..13fbd2fb7 100644
+index fad4edf9c..9b68a7d44 100644
 --- a/drivers/gpio/gpiolib-of.c
 +++ b/drivers/gpio/gpiolib-of.c
 @@ -25,21 +25,6 @@
@@ -3460,10 +3332,10 @@ index 37ab78243..13fbd2fb7 100644
   * of_get_named_gpio() - Get a GPIO number to use with GPIO API
   * @np:		device node to get GPIO from
 diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
-index 957555b49..b1bc402b7 100644
+index 3615a761b..392647225 100644
 --- a/drivers/gpu/drm/panel/Makefile
 +++ b/drivers/gpu/drm/panel/Makefile
-@@ -114,3 +114,4 @@ obj-$(CONFIG_DRM_PANEL_VISIONOX_VTDR6130) += panel-visionox-vtdr6130.o
+@@ -116,3 +116,4 @@ obj-$(CONFIG_DRM_PANEL_VISIONOX_VTDR6130) += panel-visionox-vtdr6130.o
  obj-$(CONFIG_DRM_PANEL_VISIONOX_R66451) += panel-visionox-r66451.o
  obj-$(CONFIG_DRM_PANEL_WIDECHIPS_WS2401) += panel-widechips-ws2401.o
  obj-$(CONFIG_DRM_PANEL_XINPENG_XPP055C272) += panel-xinpeng-xpp055c272.o
@@ -4208,7 +4080,7 @@ index 2f79ec4a2..e2feb6ce5 100644
  	.width_mm	= 63,
  	.height_mm	= 84,
 diff --git a/drivers/gpu/drm/panel/panel-sitronix-st7703.c b/drivers/gpu/drm/panel/panel-sitronix-st7703.c
-index 1a007a244..68f8ed6ca 100644
+index 6c348fe28..91014315b 100644
 --- a/drivers/gpu/drm/panel/panel-sitronix-st7703.c
 +++ b/drivers/gpu/drm/panel/panel-sitronix-st7703.c
 @@ -347,8 +347,8 @@ static void rg353v2_init_sequence(struct mipi_dsi_multi_context *dsi_ctx)
@@ -4817,7 +4689,7 @@ index d88f12c53..29192f340 100644
  		.compatible = "rockchip,rk3576-otp",
  		.data = &rk3576_data,
 diff --git a/drivers/power/supply/rk817_charger.c b/drivers/power/supply/rk817_charger.c
-index 1251022eb..38def7306 100644
+index 9436c6bbf..5a2cba345 100644
 --- a/drivers/power/supply/rk817_charger.c
 +++ b/drivers/power/supply/rk817_charger.c
 @@ -681,7 +681,7 @@ static int rk817_bat_prop_writeable(struct power_supply *psy,
@@ -5276,10 +5148,10 @@ index 000000000..ce58afecb
 +
 +#endif /* __LINUX_OF_GPIO_H */
 diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 8cafc483d..5ca7c9d8d 100644
+index 549ac4aaa..60964c0e7 100644
 --- a/include/linux/pwm.h
 +++ b/include/linux/pwm.h
-@@ -140,6 +140,12 @@ static inline bool pwm_is_enabled(const struct pwm_device *pwm)
+@@ -141,6 +141,12 @@ static inline bool pwm_is_enabled(const struct pwm_device *pwm)
  	return state.enabled;
  }
  
@@ -5293,10 +5165,10 @@ index 8cafc483d..5ca7c9d8d 100644
  {
  	struct pwm_state state;
 diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 5846b4bae..8e38fd57b 100644
+index 6fc0692ab..7813128d3 100644
 --- a/net/bluetooth/hci_conn.c
 +++ b/net/bluetooth/hci_conn.c
-@@ -2392,8 +2392,13 @@ int hci_conn_check_link_mode(struct hci_conn *conn)
+@@ -2391,8 +2391,13 @@ int hci_conn_check_link_mode(struct hci_conn *conn)
  		return 0;
  	}
  

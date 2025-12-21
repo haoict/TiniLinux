@@ -8,8 +8,8 @@
 
 | Board Name                    | CPU/Arch             | GPU      | Kernel  | Init    | Notes                                                                              |
 | ----------------------------- | -------------------- | -------- | ------- | ------- | ---------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.17.11 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.17.11 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
+| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
+| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
 | xxx_squashfs                  | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but uses squashfs for rootfs                             |
 | xxx_consoleonly               | aarch64              | N/A      | -       | systemd | include only base components for console, no GPU and GUI apps                      |
 | xxx_sway                      | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but with sway compositor instead of KMSDRM               |

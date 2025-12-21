@@ -1,5 +1,5 @@
 diff --git a/Documentation/devicetree/bindings/bus/allwinner,sun50i-a64-de2.yaml b/Documentation/devicetree/bindings/bus/allwinner,sun50i-a64-de2.yaml
-index 9845a187b..9d9418c40 100644
+index 232252e88..1161e058f 100644
 --- a/Documentation/devicetree/bindings/bus/allwinner,sun50i-a64-de2.yaml
 +++ b/Documentation/devicetree/bindings/bus/allwinner,sun50i-a64-de2.yaml
 @@ -24,7 +24,9 @@ properties:
@@ -14,7 +14,7 @@ index 9845a187b..9d9418c40 100644
  
    reg:
 @@ -47,9 +49,6 @@ patternProperties:
-   "^[a-zA-Z][a-zA-Z0-9,+\\-._]{0,63}@[0-9a-fA-F]+$":
+   "@[0-9a-f]+$":
      type: object
      additionalProperties: true
 -    properties:
@@ -258,10 +258,10 @@ index e7f7cf727..cdb664d1e 100644
  
  required:
 diff --git a/Documentation/devicetree/bindings/vendor-prefixes.yaml b/Documentation/devicetree/bindings/vendor-prefixes.yaml
-index ed7fec614..3d9fc5c01 100644
+index f1d188200..c7fc8bbfe 100644
 --- a/Documentation/devicetree/bindings/vendor-prefixes.yaml
 +++ b/Documentation/devicetree/bindings/vendor-prefixes.yaml
-@@ -693,6 +693,8 @@ patternProperties:
+@@ -703,6 +703,8 @@ patternProperties:
      description: Shenzhen Hope Microelectronics Co., Ltd.
    "^hoperun,.*":
      description: Jiangsu HopeRun Software Co., Ltd.
@@ -2130,139 +2130,11 @@ index 000000000..6a91b73c2
 +&panel {
 +	compatible = "anbernic,rgcubexx-panel", "panel-mipi-dpi-spi";
 +};
-diff --git a/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi b/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi
-new file mode 100644
-index 000000000..304ef1ef4
---- /dev/null
-+++ b/arch/arm64/boot/dts/rockchip/retrogame_joypad_s2_f1.dtsi
-@@ -0,0 +1,122 @@
-+/* 
-+  This is a skeleton of joypad with 2 sticks and FN (MODE) button.
-+  Fits devices with 1 stick and 2 extra face buttons too.
-+  By including this ans setting I/O properties only,
-+  devices should get consistent controller id and mapping
-+  thus reusing non-game configs:
-+    * SDL gamecontrollerdb.txt
-+    * ES es_input.cfg
-+    * Retroarch gamepad
-+*/
-+
-+/ {
-+    joypad: retrogame_joypad_s2_f1 {
-+        /* These drivers emit the same button set which makes this skeleton ADC-agnostic */
-+        /* compatible = "rocknix-joypad"; */
-+        /* compatible = "rocknix-singleadc-joypad"; */
-+
-+        /* These are constants making Joystick Guid the same */
-+        joypad-name = "retrogame_joypad_s2_f1";
-+        joypad-vendor = <0x484B>;
-+        joypad-product = <0x1121>;  /* 11 inherited, 2 for number of sticks, 1 for number of FN */
-+        joypad-revision = <0x0100>;
-+
-+        /* require explicit status = "okay"; */
-+        status = "disabled";
-+
-+        /* adc calculate scale */
-+        button-adc-scale = <2>;
-+
-+        /* adc deadzone range  */
-+        button-adc-deadzone = <64>;
-+
-+        /*
-+          specifies fuzz value that is used to filter noise from
-+          the event stream.
-+        */
-+        button-adc-fuzz = <32>;
-+        button-adc-flat = <32>;
-+
-+        /* poll device interval (ms), adc read interval */
-+        poll-interval = <10>;
-+
-+        /* gpio button auto repeat set value : default disable */
-+        /*
-+            autorepeat;
-+        */
-+
-+        /* meaningful node names for easier use */
-+        up {
-+            label = "GPIO DPAD-UP";
-+            linux,code = <BTN_DPAD_UP>;
-+        };
-+        down {
-+            label = "GPIO DPAD-DOWN";
-+            linux,code = <BTN_DPAD_DOWN>;
-+        };
-+        left {
-+            label = "GPIO DPAD-LEFT";
-+            linux,code = <BTN_DPAD_LEFT>;
-+        };
-+        right {
-+            label = "GPIO DPAD-RIGHT";
-+            linux,code = <BTN_DPAD_RIGHT>;
-+        };
-+
-+        a {
-+            label = "GPIO BTN-A";
-+            linux,code = <BTN_EAST>;
-+        };
-+        b {
-+            label = "GPIO BTN-B";
-+            linux,code = <BTN_SOUTH>;
-+        };
-+        x {
-+            label = "GPIO BTN-X";
-+            linux,code = <BTN_NORTH>;
-+        };
-+        y {
-+            label = "GPIO BTN-Y";
-+            linux,code = <BTN_WEST>;
-+        };
-+
-+        select {
-+            label = "GPIO BTN_SELECT";
-+            linux,code = <BTN_SELECT>;
-+        };
-+        start {
-+            label = "GPIO BTN_START";
-+            linux,code = <BTN_START>;
-+        };
-+        mode {
-+            label = "GPIO BTN_F";
-+            linux,code = <BTN_MODE>;
-+        };
-+
-+        tl {
-+            label = "GPIO BTN_TL";
-+            linux,code = <BTN_TL>;
-+        };
-+        tr {
-+            label = "GPIO BTN_TR";
-+            linux,code = <BTN_TR>;
-+        };
-+        tl2 {
-+            label = "GPIO BTN_TL2";
-+            linux,code = <BTN_TL2>;
-+        };
-+        tr2 {
-+            label = "GPIO BTN_TR2";
-+            linux,code = <BTN_TR2>;
-+        };
-+
-+        thumbl {
-+            label = "GPIO BTN_THUMBL";
-+            linux,code = <BTN_THUMBL>;
-+        };
-+        thumbr {
-+            label = "GPIO BTN_THUMBR";
-+            linux,code = <BTN_THUMBR>;
-+        };
-+    };
-+};
 diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
-index 58f87d093..c0eb5b355 100644
+index 1a48faad2..4ff018da1 100644
 --- a/arch/arm64/configs/defconfig
 +++ b/arch/arm64/configs/defconfig
-@@ -1585,6 +1585,7 @@ CONFIG_PWM_SAMSUNG=y
+@@ -1598,6 +1598,7 @@ CONFIG_PWM_SAMSUNG=y
  CONFIG_PWM_SL28CPLD=m
  CONFIG_PWM_STM32=m
  CONFIG_PWM_SUN4I=m
@@ -2271,7 +2143,7 @@ index 58f87d093..c0eb5b355 100644
  CONFIG_PWM_TIECAP=m
  CONFIG_PWM_TIEHRPWM=m
 diff --git a/drivers/bluetooth/btrtl.c b/drivers/bluetooth/btrtl.c
-index 1d4a7887a..aaefb912a 100644
+index 52794db27..26430c225 100644
 --- a/drivers/bluetooth/btrtl.c
 +++ b/drivers/bluetooth/btrtl.c
 @@ -179,6 +179,14 @@ static const struct id_table ic_id_table[] = {
@@ -2289,7 +2161,7 @@ index 1d4a7887a..aaefb912a 100644
  	/* 8821A */
  	{ IC_INFO(RTL_ROM_LMP_8821A, 0xa, 0x6, HCI_USB),
  	  .config_needed = false,
-@@ -665,6 +673,7 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
+@@ -657,6 +665,7 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
  		{ RTL_ROM_LMP_8822B, 13 },	/* 8822C */
  		{ RTL_ROM_LMP_8761A, 14 },	/* 8761B */
  		{ RTL_ROM_LMP_8852A, 18 },	/* 8852A */
@@ -2297,7 +2169,7 @@ index 1d4a7887a..aaefb912a 100644
  		{ RTL_ROM_LMP_8852A, 20 },	/* 8852B */
  		{ RTL_ROM_LMP_8852A, 25 },	/* 8852C */
  		{ RTL_ROM_LMP_8851B, 36 },	/* 8851B */
-@@ -1516,6 +1525,8 @@ MODULE_FIRMWARE("rtl_bt/rtl8723d_fw.bin");
+@@ -1518,6 +1527,8 @@ MODULE_FIRMWARE("rtl_bt/rtl8723d_fw.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723d_config.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723ds_fw.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8723ds_config.bin");
@@ -2405,7 +2277,7 @@ index a6cd0f988..11c019295 100644
  
  	ret = devm_sunxi_ccu_probe(&pdev->dev, reg, ccu_desc);
 diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 37ab78243..13fbd2fb7 100644
+index fad4edf9c..9b68a7d44 100644
 --- a/drivers/gpio/gpiolib-of.c
 +++ b/drivers/gpio/gpiolib-of.c
 @@ -25,21 +25,6 @@
@@ -2452,10 +2324,10 @@ index 37ab78243..13fbd2fb7 100644
   * of_get_named_gpio() - Get a GPIO number to use with GPIO API
   * @np:		device node to get GPIO from
 diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
-index 09b9f7ff9..f6de35f1d 100644
+index 407c5f6a2..c2d825282 100644
 --- a/drivers/gpu/drm/panel/Kconfig
 +++ b/drivers/gpu/drm/panel/Kconfig
-@@ -438,6 +438,16 @@ config DRM_PANEL_MANTIX_MLAF057WE51
+@@ -451,6 +451,16 @@ config DRM_PANEL_MANTIX_MLAF057WE51
  	  has a resolution of 720x1440 pixels, a built in backlight and touch
  	  controller.
  
@@ -2473,10 +2345,10 @@ index 09b9f7ff9..f6de35f1d 100644
  	tristate "NEC NL8048HL11 RGB panel"
  	depends on GPIOLIB && OF && SPI
 diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
-index 957555b49..bfe4a86f7 100644
+index 3615a761b..10a79c062 100644
 --- a/drivers/gpu/drm/panel/Makefile
 +++ b/drivers/gpu/drm/panel/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_DRM_PANEL_LG_LB035Q02) += panel-lg-lb035q02.o
+@@ -44,6 +44,7 @@ obj-$(CONFIG_DRM_PANEL_LG_LB035Q02) += panel-lg-lb035q02.o
  obj-$(CONFIG_DRM_PANEL_LG_LG4573) += panel-lg-lg4573.o
  obj-$(CONFIG_DRM_PANEL_LG_SW43408) += panel-lg-sw43408.o
  obj-$(CONFIG_DRM_PANEL_MAGNACHIP_D53E6EA8966) += panel-magnachip-d53e6ea8966.o
@@ -6656,7 +6528,7 @@ index f17532074..f86f0b3ac 100644
  	input_sync(input);
  	st->last_key = keycode;
 diff --git a/drivers/phy/allwinner/phy-sun4i-usb.c b/drivers/phy/allwinner/phy-sun4i-usb.c
-index 8873aed3a..ed7a73bb6 100644
+index 59d38d88e..957bf5243 100644
 --- a/drivers/phy/allwinner/phy-sun4i-usb.c
 +++ b/drivers/phy/allwinner/phy-sun4i-usb.c
 @@ -464,6 +464,10 @@ static int sun4i_usb_phy_power_on(struct phy *_phy)
@@ -6770,10 +6642,10 @@ index 50ca8e110..d75725cee 100644
  	.properties = axp717_battery_props,
  	.num_properties = ARRAY_SIZE(axp717_battery_props),
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index f00ce973d..fad0b9b5a 100644
+index c2fd3f4b6..b4fcae1e9 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
-@@ -707,6 +707,16 @@ config PWM_SUN4I
+@@ -726,6 +726,16 @@ config PWM_SUN4I
  	  To compile this driver as a module, choose M here: the module
  	  will be called pwm-sun4i.
  
@@ -6791,10 +6663,10 @@ index f00ce973d..fad0b9b5a 100644
  	tristate "Sunplus PWM support"
  	depends on ARCH_SUNPLUS || COMPILE_TEST
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index ff4f47e5f..7bf77f0d7 100644
+index dfa8b4966..9e62ce0e0 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_PWM_STM32)		+= pwm-stm32.o
+@@ -66,6 +66,7 @@ obj-$(CONFIG_PWM_STM32)		+= pwm-stm32.o
  obj-$(CONFIG_PWM_STM32_LP)	+= pwm-stm32-lp.o
  obj-$(CONFIG_PWM_STMPE)		+= pwm-stmpe.o
  obj-$(CONFIG_PWM_SUN4I)		+= pwm-sun4i.o
@@ -7713,10 +7585,10 @@ index 000000000..ce58afecb
 +
 +#endif /* __LINUX_OF_GPIO_H */
 diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 8cafc483d..5ca7c9d8d 100644
+index 549ac4aaa..60964c0e7 100644
 --- a/include/linux/pwm.h
 +++ b/include/linux/pwm.h
-@@ -140,6 +140,12 @@ static inline bool pwm_is_enabled(const struct pwm_device *pwm)
+@@ -141,6 +141,12 @@ static inline bool pwm_is_enabled(const struct pwm_device *pwm)
  	return state.enabled;
  }
  
