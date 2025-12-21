@@ -87,7 +87,7 @@ echo "  ✓ Unmounting partitions"
 sudo umount /dev/${DEVICE}* 2>/dev/null || true
 
 echo "  ✓ Writing image to /dev/$DEVICE"
-sudo dd if="$IMG_FILE" of="/dev/$DEVICE" bs=4M conv=fsync iflag=fullblock oflag=direct status=progress 2>&1 | cat
+sudo dd if="$IMG_FILE" of="/dev/$DEVICE" bs=4M iflag=fullblock oflag=sync status=progress
 
 echo ""
 echo "[3/3] Finalizing..."
