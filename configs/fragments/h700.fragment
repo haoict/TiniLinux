@@ -1,0 +1,24 @@
+# H700 board-specific settings
+BR2_TARGET_GENERIC_HOSTNAME="h700"
+BR2_LINUX_KERNEL_PATCH="$(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/linux/patches"
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/linux/linux.conf"
+BR2_LINUX_KERNEL_INTREE_DTS_NAME="allwinner/sun50i-h700-anbernic-rg35xx-plus allwinner/sun50i-h700-anbernic-rg35xx-plus-rev6-panel allwinner/sun50i-h700-anbernic-rg35xx-pro allwinner/sun50i-h700-anbernic-rg35xx-h allwinner/sun50i-h700-anbernic-rg35xx-h-rev6-panel allwinner/sun50i-h700-anbernic-rg35xx-sp allwinner/sun50i-h700-anbernic-rg35xx-sp-v2-panel allwinner/sun50i-h700-anbernic-rg35xx-2024 allwinner/sun50i-h700-anbernic-rg35xx-2024-rev6-panel allwinner/sun50i-h700-anbernic-rg40xx-h allwinner/sun50i-h700-anbernic-rg40xx-v allwinner/sun50i-h700-anbernic-rgcubexx allwinner/sun50i-h700-anbernic-rg28xx allwinner/sun50i-h700-anbernic-rg34xx allwinner/sun50i-h700-anbernic-rg34xx-sp"
+BR2_PACKAGE_LINUX_FIRMWARE=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_88XX_BT=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_81XX=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_88XX=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_RTW88=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_815X=y
+BR2_PACKAGE_LINUX_FIRMWARE_RTL_8169=y
+BR2_PACKAGE_RTL8188EU=y
+BR2_TARGET_ARM_TRUSTED_FIRMWARE=y
+BR2_TARGET_ARM_TRUSTED_FIRMWARE_PLATFORM="sun50i_h616"
+BR2_TARGET_ARM_TRUSTED_FIRMWARE_BL31_UBOOT=y
+BR2_TARGET_UBOOT=y
+BR2_TARGET_UBOOT_PATCH="$(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/u-boot-anbernic_rg35xx_h700_defconfig.patch"
+BR2_TARGET_UBOOT_BOARD_DEFCONFIG="anbernic_rg35xx_h700"
+BR2_TARGET_UBOOT_NEEDS_GNUTLS=y
+BR2_TARGET_UBOOT_NEEDS_ATF_BL31=y
+# BR2_TARGET_UBOOT_FORMAT_BIN is not set
+BR2_TARGET_UBOOT_SPL=y
+BR2_TARGET_UBOOT_SPL_NAME="u-boot-sunxi-with-spl.bin"

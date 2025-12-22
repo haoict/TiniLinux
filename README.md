@@ -33,7 +33,7 @@ cd TiniLinux
 
 # Build
 cd output.<boardname>
-make menuconfig # adjust anything if you want, otherwise just exit
+make menuconfig # adjust anything if you want, otherwise just exit. If you add/remove packages, you can save changes with "make savefragmentdefconfig" command to update board's defconfig file.
 make -j$(nproc)
 ## The kernel, bootloader, root filesystem, etc. are in output images directory
 
@@ -95,7 +95,7 @@ With pc_qemu_targetArch_virt build, we can test kernel, initramfs, rootfs disk w
 cd output.pc_qemu_aarch64_virt
 make -j$(nproc)
 make img
-make run-qemu
+make runqemu
 ```
 
 ## Clean target build without rebuild all binaries and libraries

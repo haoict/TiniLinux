@@ -15,7 +15,10 @@ flash:
 clean-target:
 	rm -rf $(BASE_TARGET_DIR) && find $(BUILD_DIR) -name ".stamp_target_installed" -delete && rm -f $(BUILD_DIR)/host-gcc-final-*/.stamp_host_installed
 
-run-qemu:
+savefragmentdefconfig:
+	cd $(CONFIG_DIR) && $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/save-fragment-defconfig.sh
+
+runqemu:
 	BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig); \
 	ARCH=$${BOARD#*_}; ARCH=$${ARCH#*_}; ARCH=$${ARCH%%_*}; \
 	echo -e "\n\nStarting QEMU for board $$BOARD | arch $$ARCH ..."; \
@@ -29,7 +32,7 @@ run-qemu:
 		-drive file=images/tinilinux-$$BOARD.img,if=none,format=raw,id=hd0 \
 		-device virtio-blk-device,drive=hd0
 
-run-qemu-gui:
+runqemugui:
 	BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig); \
 	ARCH=$${BOARD#*_}; ARCH=$${ARCH#*_}; ARCH=$${ARCH%%_*}; \
 	echo -e "\n\nStarting QEMU for board $$BOARD | arch $$ARCH ..."; \
