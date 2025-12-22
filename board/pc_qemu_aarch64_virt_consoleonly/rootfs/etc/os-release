@@ -1,0 +1,5 @@
+NAME="TiniLinux"
+VERSION="1.0.0"
+ID=tinilinux
+PRETTY_NAME="TiniLinux 1.0.0"
+BUILD_ID=buildroot

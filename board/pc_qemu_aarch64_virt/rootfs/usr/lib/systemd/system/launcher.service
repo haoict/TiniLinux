@@ -1,0 +1,18 @@
+[Unit]
+Description=Simple Launcher
+Requires=sway.service
+After=sway.service
+
+[Service]
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=SDL_VIDEODRIVER=wayland
+Environment=WAYLAND_DISPLAY=/run/user/0/wayland-1
+ExecStartPre=-/bin/killall swaynag
+ExecStart=/usr/local/bin/simple-launcher
+Restart=on-failure
+RestartSec=5
+#ExecStart=/bin/bash -c 'export WAYLAND_DISPLAY=$(find /run/user/$UID -regex ".*/wayland-[0-9]*"); /usr/local/bin/simple-launcher
+#ExecStopPost=/bin/sh -c '/usr/local/bin/show-swaynag.sh &'
+
+[Install]
+WantedBy=graphical.target

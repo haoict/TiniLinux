@@ -8,12 +8,12 @@
 
 | Board Name                    | CPU/Arch             | GPU      | Kernel  | Init    | Notes                                                                              |
 | ----------------------------- | -------------------- | -------- | ------- | ------- | ---------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
+| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2  | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
+| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2  | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
 | xxx_squashfs                  | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but uses squashfs for rootfs                             |
 | xxx_consoleonly               | aarch64              | N/A      | -       | systemd | include only base components for console, no GPU and GUI apps                      |
 | xxx_sway                      | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but with sway compositor instead of KMSDRM               |
-| pc_qemu_targetArch_virt       | x86_64/aarch64       | -        | -       | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                        |
+| pc_qemu_targetArch_virt       | x86_64/aarch64       | virgl    | -       | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                        |
 | toolchain_hostArch_targetArch | N/A                  | N/A      | N/A     | N/A     | install toolchain only to build separated packages purpose, not a full board build |
 
 # Build
@@ -22,6 +22,7 @@ Clone TiniLinux and buildroot repo and setup environments
 
 ```bash
 # Install required packages
+sudo apt update
 sudo apt install build-essential libncurses-dev dosfstools parted mtools
 
 # Clone sources
@@ -92,10 +93,11 @@ make img
 With pc_qemu_targetArch_virt build, we can test kernel, initramfs, rootfs disk with qemu
 
 ```bash
-cd output.pc_qemu_aarch64_virt
+sudo apt install qemu-system-aarch64
+cd output.pc_qemu_aarch64_virt (or _consoleonly variant)
 make -j$(nproc)
 make img
-make runqemu
+make runqemu (or make runqemugui)
 ```
 
 ## Clean target build without rebuild all binaries and libraries
@@ -108,7 +110,7 @@ cd output.${BOARD}
 make show-targets
 
 # clean some packages that usually change
-make alsa-lib-dirclean alsa-plugins-dirclean alsa-utils-dirclean btop-dirclean dingux-commander-dirclean gptokeyb2-dirclean retroarch-dirclean rocknix-joypad-dirclean sdl12-compat-dirclean sdl2-dirclean simple-launcher-dirclean simple-terminal-dirclean systemd-dirclean tinilinux-initramfs-dirclean wayland-dirclean wayland-protocols-dirclean wpa_supplicant-dirclean
+make alsa-lib-dirclean alsa-plugins-dirclean alsa-utils-dirclean btop-dirclean dingux-commander-dirclean gptokeyb2-dirclean retroarch-dirclean rocknix-joypad-dirclean sdl2-dirclean simple-launcher-dirclean simple-terminal-dirclean systemd-dirclean tinilinux-initramfs-dirclean wayland-dirclean wayland-protocols-dirclean wpa_supplicant-dirclean
 
 # clean target without rebuild: make clean-target
 rm -rf target && find  -name ".stamp_target_installed" -delete && rm -f build/host-gcc-final-*/.stamp_host_installed
