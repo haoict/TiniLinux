@@ -58,6 +58,7 @@ jobs:
           cd TiniLinux
           ./make-board-build.sh configs/${{ inputs.board }}_defconfig
           cd output.${{ inputs.board }}
+          sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
           make source -s
           time make -j$(nproc) -s
           cd ..
