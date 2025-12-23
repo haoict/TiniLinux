@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-SIMPLE_TERMINAL_VERSION = bc7ea8e
+SIMPLE_TERMINAL_VERSION = 2.0.0
 SIMPLE_TERMINAL_SITE = https://github.com/haoict/SimpleTerminal.git
 SIMPLE_TERMINAL_SITE_METHOD = git
 SIMPLE_TERMINAL_DEPENDENCIES = sdl2 sdl2_ttf
