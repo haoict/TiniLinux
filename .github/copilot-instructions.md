@@ -9,9 +9,9 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Init System + Kernel:** Systemd-based images with board-specific kernels and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](configs/h700_sway_defconfig).
 
 **Repo Layout**
-- **Boards:** [board/h700](board/h700), [board/rgb30](board/rgb30), [board/pc_qemu_aarch64_virt](board/pc_qemu_aarch64_virt), plus `_squashfs`, `_sway`, `_consoleonly` variants. Each has `BOOT/`, `rootfs/`, and sometimes `overlay_upper/` (for squashfs root).
+- **Boards:** [board/h700](board/h700), [board/rgb30](board/rgb30), [board/pc_qemu_aarch64_virt](board/pc_qemu_aarch64_virt), plus `_rootrw`, `_sway`, `_consoleonly` variants. Default configs (h700, rgb30) use squashfs rootfs. Each has `BOOT/`, `rootfs/`, and sometimes `overlay_upper/` (for squashfs root).
 - **Configs:** [configs/](configs) holds all `<board>_defconfig` and toolchain-only defconfigs. Most defconfigs use fragments via `BR2_DEFCONFIG_FRAGMENT` to reduce duplication.
-- **Config Fragments:** [configs/fragments/](configs/fragments) contains reusable config fragments: `common.fragment` (shared by all), `h700.fragment`/`rgb30.fragment` (board-specific), `with-graphics.fragment` (GUI packages), `squashfs.fragment`, `sway.fragment`.
+- **Config Fragments:** [configs/fragments/](configs/fragments) contains reusable config fragments: `common.fragment` (shared by all), `h700.fragment`/`rgb30.fragment` (board-specific), `with-graphics.fragment` (GUI packages), `rootrw.fragment`, `sway.fragment`.
 - **Packages:** Examples: [package/initramfs](package/initramfs), [package/simple-launcher](package/simple-launcher), [package/mesa3d-no-llvm](package/mesa3d-no-llvm), [package/rk3566-dtbo](package/rk3566-dtbo).
 - **Tooling:** [make-board-build.sh](make-board-build.sh) bootstraps an out-of-tree Buildroot output; [Dockerfile](Dockerfile) provides a reproducible build environment.
 - **Docs:** Start with [README.md](README.md). QEMU notes in [board/pc_qemu_aarch64_virt/README.md](board/pc_qemu_aarch64_virt/README.md).
@@ -24,7 +24,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Save config changes:**
   - `make savefragmentdefconfig` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs.
 - **Image creation:**
-  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootless.sh](board/common/mk-flashable-img-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](board/common/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
+  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](board/common/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](board/common/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
 - **Flash to SD:**
   - `make flash` runs [board/common/flash-to-sdcard.sh](board/common/flash-to-sdcard.sh) with the current board.
 - **QEMU (virt boards):**
@@ -34,8 +34,8 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Partition metadata:** Per-board sizing is defined in `rootfs/root/partition-info.sh` (e.g., [pc_qemu_aarch64_virt](board/pc_qemu_aarch64_virt/rootfs/root/partition-info.sh)).
 - **BOOT content:** `Image`, `initramfs`, device trees, and `extlinux.conf` (e.g., [board/h700/BOOT/extlinux/extlinux.conf](board/h700/BOOT/extlinux/extlinux.conf)).
 - **Rootfs:**
-  - ext4 flow: `rootfs.tar` extracted into partition by `populatefs-*` binaries.
-  - squashfs flow: BOOT includes `rootfs.squashfs`; writeable overlay comes from `overlay_upper/`.
+  - squashfs flow (default): BOOT includes `rootfs.squashfs`; writeable overlay comes from `overlay_upper/`.
+  - ext4 flow (rootrw variants): `rootfs.tar` extracted into partition by `populatefs-*` binaries.
 
 **Custom Package Patterns**
 - **Structure:** Each package has `Config.in` and `<name>.mk`. Register in the top-level [Config.in](Config.in) to appear in menuconfig.
@@ -45,7 +45,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 
 **Conventions and Gotchas**
 - **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output.<board>` directory name.
-- **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` (ext4) or `overlay_upper` (squashfs overlay).
+- **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
 - **Phony helpers:** `img`, `flash`, `clean-target`, `savefragmentdefconfig`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
 - **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_x86_64_aarch64_defconfig`) for building SDKs without a full image.
 - **Docker builds:** See [README.md](README.md) for container usage.

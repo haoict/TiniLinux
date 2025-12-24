@@ -9,11 +9,11 @@ on:
         options:
           - h700
           - h700_consoleonly
-          - h700_squashfs
+          - h700_rootrw
           - h700_sway
           - rgb30
           - rgb30_consoleonly
-          - rgb30_squashfs
+          - rgb30_rootrw
           - pi3b
       runner:
         description: 'Select runner type'
@@ -40,7 +40,7 @@ jobs:
           sudo cp -p /bin/true /usr/bin/mandb 
           sudo rm -r /var/cache/man
           # install packages
-          sudo apt update && sudo apt install -y build-essential mtools
+          sudo apt update && sudo apt install -y build-essential cmake mtools
       - name: Maximize build space
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
         uses: easimon/maximize-build-space@master

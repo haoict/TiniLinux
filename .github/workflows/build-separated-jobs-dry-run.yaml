@@ -9,11 +9,11 @@ on:
         options:
           - h700
           - h700_consoleonly
-          - h700_squashfs
+          - h700_rootrw
           - h700_sway
           - rgb30
           - rgb30_consoleonly
-          - rgb30_squashfs
+          - rgb30_rootrw
           - pi3b
       runner:
         description: 'Select runner type'

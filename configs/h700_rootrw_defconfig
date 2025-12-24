@@ -1,0 +1,2 @@
+BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/h700.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/with-graphics.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/rootrw.fragment"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/h700_rootrw/rootfs"

@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # Check if we're in an output directory
 if [[ ! "$PWD" =~ output\. ]]; then
     echo "Error: This script must be run from an output.<board> directory"
-    echo "Example: cd output.h700_squashfs && ../save-fragment-defconfig.sh"
+    echo "Example: cd output.h700 && ../save-fragment-defconfig.sh"
     exit 1
 fi
 

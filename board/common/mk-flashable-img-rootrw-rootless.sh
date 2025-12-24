@@ -5,9 +5,9 @@ set -euo pipefail
 # SETUP ENV
 #####################################################
 
-echo "=================================================="
-echo "  Creating Flashable Image for ${BOARD} (SquashFS)"
-echo "=================================================="
+echo "================================================"
+echo "  Creating Flashable Image for ${BOARD} (RootRW)"
+echo "================================================"
 echo ""
 
 # Load partition info variables
@@ -40,7 +40,7 @@ echo "[2/5] Creating partitions..."
 echo "  ✓ Creating BOOT partition (${BOOT_SIZE}M, FAT32)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOOT_PART_END}
 
-echo "  ✓ Creating rootfs overlay partition (${ROOTFS_INIT_SIZE}M, ext4)"
+echo "  ✓ Creating rootfs partition (${ROOTFS_INIT_SIZE}M, ext4)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_INIT_END}
 
 echo "  ✓ Setting boot flag"
@@ -54,11 +54,10 @@ rm -f ${P1_IMG}
 truncate -s ${BOOT_SIZE}M ${P1_IMG}
 echo "  ✓ Formatting as FAT32"
 mkfs.fat -F32 -n BOOT ${P1_IMG}
-echo "  ✓ Copying boot files (including squashfs)"
+echo "  ✓ Copying boot files"
 mcopy -i ${P1_IMG} -o board/${BOARD}/BOOT/* ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/Image ::/
 mcopy -i ${P1_IMG} -o output.${BOARD}/images/initramfs ::/
-mcopy -i ${P1_IMG} -o output.${BOARD}/images/rootfs.squashfs ::/
 if [[ "${BOARD}" == "rgb30"* ]]; then
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/rockchip/ ::/dtb
     mcopy -i ${P1_IMG} -o output.${BOARD}/images/rk3566-dtbo/*.dtbo ::/dtb
@@ -74,24 +73,23 @@ dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notr
 rm -f ${P1_IMG}
 
 echo ""
-echo "[4/5] Creating rootfs overlay partition..."
+echo "[4/5] Creating rootfs partition..."
 P2_IMG=output.${BOARD}/images/p2.img
 rm -f ${P2_IMG}
 truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
 echo "  ✓ Formatting as ext4"
 mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
 rootfstmp=$(mktemp -d)
-echo "  ✓ Copying overlay files"
-cp -r board/common/overlay_upper $rootfstmp/
-if [ -d board/${BOARD}/overlay_upper/ ]; then cp -r board/${BOARD}/overlay_upper/ $rootfstmp/; fi
+echo "  ✓ Extracting rootfs"
+tar -xf output.${BOARD}/images/rootfs.tar -C $rootfstmp
 echo "  ✓ Updating build info"
-sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/overlay_upper/etc/os-release
+sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/etc/os-release
 echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/
 if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
 if [ -d board/common/private-ROMS/ ]; then cp -r board/common/private-ROMS/* ${romtmp}/ROMS/; fi
-tar -Jcf $rootfstmp/overlay_upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 echo "  ✓ Populating filesystem"
 if [[ "$(uname -m)" == "x86_64" ]]; then
@@ -100,10 +98,10 @@ elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
     ./board/common/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
 fi
 sync
-echo "  ✓ Verifying overlay"
+echo "  ✓ Verifying rootfs"
 e2fsck -n ${P2_IMG}
 rm -rf ${rootfstmp}
-echo "  ✓ Writing overlay partition to image"
+echo "  ✓ Writing rootfs partition to image"
 dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START}" conv=fsync,notrunc
 rm -f ${P2_IMG}
 

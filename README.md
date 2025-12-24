@@ -6,15 +6,15 @@
 
 # Boards & defconfig
 
-| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Notes                                                                              |
-| ----------------------------- | -------------------- | -------- | ------ | ------- | ---------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
-| xxx_squashfs                  | aarch64              | Panfrost | -      | systemd | same as rgb30, h700 (GUI) but uses squashfs for rootfs                             |
-| xxx_consoleonly               | aarch64              | N/A      | -      | systemd | include only base components for console, no GPU and GUI apps                      |
-| xxx_sway                      | aarch64              | Panfrost | -      | systemd | same as rgb30, h700 (GUI) but with sway compositor instead of KMSDRM               |
-| pc_qemu_targetArch_virt       | x86_64/aarch64       | virgl    | -      | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                        |
-| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | install toolchain only to build separated packages purpose, not a full board build |
+| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Notes                                                                                   |
+| ----------------------------- | -------------------- | -------- | ------ | ------- | --------------------------------------------------------------------------------------- |
+| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, squashfs rootfs           |
+| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, squashfs rootfs             |
+| xxx_rootrw                    | -                    | Panfrost | -      | systemd | uses ext4 read-write rootfs instead of squashfs                                         |
+| xxx_consoleonly               | -                    | N/A      | -      | systemd | include only base components for console, no GPU and GUI apps                           |
+| xxx_sway                      | -                    | Panfrost | -      | systemd | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
+| pc_qemu_targetArch_virt       | -                    | virgl    | -      | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                             |
+| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | install toolchain only to build separated packages purpose, not a full board build      |
 
 # Build
 
@@ -23,7 +23,7 @@ Clone TiniLinux and buildroot repo and setup environments
 ```bash
 # Install required packages
 sudo apt update
-sudo apt install build-essential libncurses-dev dosfstools parted mtools
+sudo apt install build-essential cmake mtools libncurses-dev dosfstools parted
 
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git

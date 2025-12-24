@@ -1,4 +1,4 @@
-BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pc_qemu_aarch64_virt_common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/squashfs.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/sway.fragment"
+BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pc_qemu_aarch64_virt_common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/sway.fragment"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_qemu_aarch64_virt/rootfs"
 BR2_PACKAGE_ALSA_UTILS=y
 BR2_PACKAGE_ALSA_UTILS_ALSACONF=y

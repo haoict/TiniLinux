@@ -5,7 +5,7 @@ set -euo pipefail
 # Check if defconfig path is provided
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <defconfig_path>"
-    echo "Example: $0 configs/h700_squashfs_defconfig"
+    echo "Example: $0 configs/h700_defconfig"
     exit 1
 fi
 
@@ -18,7 +18,7 @@ if [ ! -f "$DEFCONFIG_PATH" ]; then
 fi
 
 # Extract boardname from defconfig path
-# e.g., configs/h700_squashfs_defconfig -> h700_squashfs
+# e.g., configs/h700_defconfig -> h700
 BOARDNAME=$(basename "$DEFCONFIG_PATH" _defconfig)
 
 echo "Board name: $BOARDNAME"

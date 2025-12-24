@@ -2,10 +2,10 @@ include $(sort $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk))
 
 img:
 	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
-	if [ -f $(BINARIES_DIR)/rootfs.squashfs ]; then \
-		BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-squashfs-rootless.sh; \
+	if [ -f $(BINARIES_DIR)/rootfs.tar ]; then \
+		BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-rootrw-rootless.sh; \
 	else \
-		BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-rootless.sh; \
+		BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-squashfs-rootless.sh; \
 	fi
 
 flash:

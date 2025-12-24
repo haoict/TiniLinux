@@ -1,7 +1,0 @@
-TiniLinux
-Sleep
-CONFIRM::systemctl suspend
-Reboot
-CONFIRM::echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
-Poweroff
-CONFIRM::echo "Powering off..." >> /dev/tty1 && systemctl poweroff
