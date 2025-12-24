@@ -90,11 +90,12 @@ tar -xf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs --no-same-owner
 echo "  ✓ Updating build info"
 sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" /mnt/rootfs/etc/os-release
 echo "  ✓ Preparing ROMs archive"
-mktempdir=$(mktemp -d)
-cp -r board/common/ROMS/ ${mktempdir}/
-if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${mktempdir}/; fi
-tar -Jcf /mnt/rootfs/root/roms.tar.xz -C ${mktempdir}/ROMS/ .
-rm -rf ${mktempdir}
+romtmp=$(mktemp -d)
+cp -r board/common/ROMS/ ${romtmp}/
+if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
+if [ -d board/common/private-ROMS/ ]; then cp -r board/common/private-ROMS/* ${romtmp}/ROMS/; fi
+tar -Jcf /mnt/rootfs/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+rm -rf ${romtmp}
 
 sync
 

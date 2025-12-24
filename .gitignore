@@ -4,18 +4,4 @@ package/simple-terminal/simple-terminal
 package/simple-launcher/simple-launcher
 
 # Ignore all rom files & pico-8 binaries
-**/pico8_64
-**/pico8.dat
-**/pico8_dyn
-**/*.gba
-**/*.gbc
-**/*.gb
-**/*.nes
-**/*.snes
-**/*.smc
-**/*.sfc
-**/*.n64
-**/*.nds
-**/*.cue
-**/*.chd
-**/roms.tar.xz
+board/common/private-ROMS/*

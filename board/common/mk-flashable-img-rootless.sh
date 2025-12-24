@@ -88,6 +88,7 @@ echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
 cp -r board/common/ROMS/ ${romtmp}/
 if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
+if [ -d board/common/private-ROMS/ ]; then cp -r board/common/private-ROMS/* ${romtmp}/ROMS/; fi
 tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 echo "  ✓ Populating filesystem"

@@ -6,15 +6,15 @@
 
 # Boards & defconfig
 
-| Board Name                    | CPU/Arch             | GPU      | Kernel  | Init    | Notes                                                                              |
-| ----------------------------- | -------------------- | -------- | ------- | ------- | ---------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2  | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2  | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
-| xxx_squashfs                  | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but uses squashfs for rootfs                             |
-| xxx_consoleonly               | aarch64              | N/A      | -       | systemd | include only base components for console, no GPU and GUI apps                      |
-| xxx_sway                      | aarch64              | Panfrost | -       | systemd | same as rgb30, h700 (GUI) but with sway compositor instead of KMSDRM               |
-| pc_qemu_targetArch_virt       | x86_64/aarch64       | virgl    | -       | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                        |
-| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A     | N/A     | install toolchain only to build separated packages purpose, not a full board build |
+| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Notes                                                                              |
+| ----------------------------- | -------------------- | -------- | ------ | ------- | ---------------------------------------------------------------------------------- |
+| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                       |
+| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH                         |
+| xxx_squashfs                  | aarch64              | Panfrost | -      | systemd | same as rgb30, h700 (GUI) but uses squashfs for rootfs                             |
+| xxx_consoleonly               | aarch64              | N/A      | -      | systemd | include only base components for console, no GPU and GUI apps                      |
+| xxx_sway                      | aarch64              | Panfrost | -      | systemd | same as rgb30, h700 (GUI) but with sway compositor instead of KMSDRM               |
+| pc_qemu_targetArch_virt       | x86_64/aarch64       | virgl    | -      | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                        |
+| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | install toolchain only to build separated packages purpose, not a full board build |
 
 # Build
 
@@ -67,7 +67,7 @@ sudo eject /dev/sdb
 
 ## Build from docker container
 
-If it's inconvernient to build directly in host machine, you can build TiniLinux inside a docker container
+If it's inconvernient to build directly in host machine, for example MacOS host, you can build TiniLinux inside a docker container
 
 ```bash
 # Clone sources
@@ -136,8 +136,8 @@ find . | cpio -o -H newc | gzip > ../initramfs-modified.cpio.gz
 
 ```bash
 # All versions can be found here: https://download.docker.com/linux/static/stable/aarch64/
-wget https://download.docker.com/linux/static/stable/aarch64/docker-29.0.1.tgz
-tar -xzvf docker-29.0.1.tgz
+wget https://download.docker.com/linux/static/stable/aarch64/docker-29.1.3.tgz
+tar -xzvf docker-29.1.3.tgz
 mv docker/* /usr/bin/
 dockerd &
 docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
