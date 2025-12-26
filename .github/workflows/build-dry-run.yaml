@@ -13,7 +13,6 @@ on:
           - h700_sway
           - rgb30
           - rgb30_consoleonly
-          - rgb30_rootrw
           - pi3b
       runner:
         description: 'Select runner type'
