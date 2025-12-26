@@ -6,15 +6,15 @@
 
 # Boards & defconfig
 
-| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Notes                                                                                   |
-| ----------------------------- | -------------------- | -------- | ------ | ------- | --------------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, squashfs rootfs           |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, squashfs rootfs             |
-| xxx_rootrw                    | -                    | Panfrost | -      | systemd | uses ext4 read-write rootfs instead of squashfs                                         |
-| xxx_consoleonly               | -                    | N/A      | -      | systemd | include only base components for console, no GPU and GUI apps                           |
-| xxx_sway                      | -                    | Panfrost | -      | systemd | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
-| pc_qemu_targetArch_virt       | -                    | virgl    | -      | systemd | build kernel, initramfs, rootfs (squashfs) to test wit qemu                             |
-| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | install toolchain only to build separated packages purpose, not a full board build      |
+| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Rootfs           | Notes                                                                                   |
+| ----------------------------- | -------------------- | -------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
+| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
+| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
+| xxx_rootrw                    | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
+| xxx_consoleonly               | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
+| xxx_sway                      | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
+| pc_qemu_aarch64_virt          | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
+| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | N/A              | install toolchain only to build separated packages purpose, not a full board build      |
 
 # Build
 
