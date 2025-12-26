@@ -50,3 +50,21 @@ runqemugui:
 		-device virtio-keyboard-pci \
 		-device virtio-mouse-pci \
 		-serial mon:stdio
+
+# unused
+runqemux64:
+	BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig); \
+	ARCH=$${BOARD#*_}; ARCH=$${ARCH#*_}; ARCH=$${ARCH%%_*}; \
+	if [ "$$ARCH" = "x64" ]; then ARCH="x86_64"; fi; \
+	echo -e "\n\nStarting QEMU for board $$BOARD | arch $$ARCH ..."; \
+	cd $(CONFIG_DIR); \
+	qemu-system-$$ARCH -M q35 -smp 1 -m 1G \
+		-kernel images/bzImage \
+		-initrd images/initramfs \
+		-append "rootwait squashfspart=/dev/vda1 squashfsroot=rootfs.squashfs overlayfs=/dev/vda2 console=ttyS0" \
+		-netdev user,id=eth0 \
+		-device virtio-net-pci,netdev=eth0 \
+		-drive file=images/tinilinux-$$BOARD.img,if=none,format=raw,id=hd0 \
+		-device virtio-blk-pci,drive=hd0 \
+		-nographic \
+		-serial mon:stdio
