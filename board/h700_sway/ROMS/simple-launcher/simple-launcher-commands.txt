@@ -2,7 +2,7 @@ TiniLinux
 Retroarch
 /usr/local/bin/freqfunctions.sh performance && HOME=/roms /usr/local/bin/retroarch && /usr/local/bin/freqfunctions.sh powersave
 Pico-8 (native)
-if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8_64" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >> /dev/tty1; sleep 5; else /roms/pico-8/pico8_64 -pixel_perfect 0 -splore -home /roms/pico-8; fi
+if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8.dat" ]; then /usr/bin/swaynag -m "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" -t warning & PID=$!; sleep 5; kill "$PID"; else chmod +x /roms/pico-8/pico8_64; /roms/pico-8/pico8_64 -pixel_perfect 0 -splore -home /roms/pico-8; fi
 File Commander
 HOME=/root /usr/local/bin/commander >/dev/tty1 2>&1
 Simple Terminal
