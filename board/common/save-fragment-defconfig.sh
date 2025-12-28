@@ -47,7 +47,6 @@ echo "Defconfig uses fragments, preserving fragment structure..."
 
 # Extract fragment line and rootfs overlay from original defconfig
 FRAGMENT_LINE=$(grep "BR2_DEFCONFIG_FRAGMENT=" "$DEFCONFIG_PATH")
-OVERLAY_LINE=$(grep "BR2_ROOTFS_OVERLAY=" "$DEFCONFIG_PATH" || true)
 
 # Save current config to a temp file
 TEMP_SAVED=$(mktemp)
@@ -72,7 +71,7 @@ done
 
 echo "Merged all fragments"
 
-# Find settings that are in saved config but not in fragments
+# Find settings that are in saved config but differ from fragment values (overrides)
 # This will be our defconfig-specific settings
 TEMP_UNIQUE=$(mktemp)
 
@@ -82,13 +81,10 @@ while IFS= read -r line; do
         continue
     fi
     
-    # Extract the config key (e.g., BR2_PACKAGE_HTOP from BR2_PACKAGE_HTOP=y)
     if [[ "$line" =~ ^(BR2_[A-Z0-9_]+) ]]; then
-        CONFIG_KEY="${BASH_REMATCH[1]}"
-        
-        # Check if this key is in fragments
-        if ! grep -q "^$CONFIG_KEY" "$TEMP_FRAGMENTS"; then
-            # This is unique to this defconfig
+        key="${BASH_REMATCH[1]}"
+        fragment_value=$(grep "^$key=" "$TEMP_FRAGMENTS" || true)
+        if [ -z "$fragment_value" ] || [ "$fragment_value" != "$line" ]; then
             echo "$line" >> "$TEMP_UNIQUE"
         fi
     fi
@@ -99,7 +95,6 @@ echo "Identified unique settings"
 # Create the new defconfig
 {
     echo "$FRAGMENT_LINE"
-    echo "$OVERLAY_LINE"
     if [ -s "$TEMP_UNIQUE" ]; then
         cat "$TEMP_UNIQUE"
     fi

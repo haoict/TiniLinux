@@ -34,7 +34,7 @@ cd TiniLinux
 
 # Build
 cd output.<boardname>
-make menuconfig # adjust anything if you want, otherwise just exit. If you add/remove packages, you can save changes with "make savefragmentdefconfig" command to update board's defconfig file.
+make menuconfig # adjust anything if you want, otherwise just exit. If you add/remove packages, you can save changes with "make savefconf" command to update board's defconfig file.
 make -j$(nproc)
 ## The kernel, bootloader, root filesystem, etc. are in output images directory
 

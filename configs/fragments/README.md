@@ -26,7 +26,7 @@ When you run `./make-board-build.sh configs/<board>_defconfig`, it automatically
 
 After making changes via `make menuconfig`, use:
 ```bash
-make savefragmentdefconfig
+make savefconf
 ```
 
 This preserves the fragment structure and only saves board-specific settings to the defconfig, not the content already in fragments.

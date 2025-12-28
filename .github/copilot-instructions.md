@@ -22,7 +22,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Configure and build:**
   - `cd output.<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
 - **Save config changes:**
-  - `make savefragmentdefconfig` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs.
+  - `make savefconf` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs.
 - **Image creation:**
   - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](board/common/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](board/common/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
 - **Flash to SD:**
@@ -46,7 +46,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 **Conventions and Gotchas**
 - **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output.<board>` directory name.
 - **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
-- **Phony helpers:** `img`, `flash`, `clean-target`, `savefragmentdefconfig`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
+- **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
 - **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_x86_64_aarch64_defconfig`) for building SDKs without a full image.
 - **Docker builds:** See [README.md](README.md) for container usage.
 
@@ -54,7 +54,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Fragment-based defconfigs:** Most defconfigs use `BR2_DEFCONFIG_FRAGMENT` to reference multiple fragment files, dramatically reducing duplication.
 - **How it works:** [make-board-build.sh](make-board-build.sh) merges fragments at build setup time. [save-fragment-defconfig.sh](save-fragment-defconfig.sh) preserves fragment structure when saving.
 - **Fragment hierarchy:** Common settings → board-specific → variant-specific (graphics/squashfs/sway). Example: h700_sway uses `common.fragment + h700.fragment + with-graphics.fragment + sway.fragment`.
-- **Adding packages:** Edit the appropriate fragment (usually `common.fragment` or `with-graphics.fragment`) or add unique settings to board defconfig, then rebuild. Use `make savefragmentdefconfig` to save changes correctly.
+- **Adding packages:** Edit the appropriate fragment (usually `common.fragment` or `with-graphics.fragment`) or add unique settings to board defconfig, then rebuild. Use `make savefconf` to save changes correctly.
 - **Creating fragments:** Define in `configs/fragments/`, reference via `BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/name.fragment"` in defconfig.
 
 **Examples**

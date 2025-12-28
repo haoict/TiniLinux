@@ -12,10 +12,10 @@ flash:
 	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
 	BOARD=$$(basename $(BR2_DEFCONFIG) _defconfig) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/flash-to-sdcard.sh
 
-clean-target:
+cleantarget:
 	rm -rf $(BASE_TARGET_DIR) && find $(BUILD_DIR) -name ".stamp_target_installed" -delete && rm -f $(BUILD_DIR)/host-gcc-final-*/.stamp_host_installed
 
-savefragmentdefconfig:
+savefconf:
 	cd $(CONFIG_DIR) && $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/save-fragment-defconfig.sh
 
 runqemu:
