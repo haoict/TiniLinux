@@ -26,11 +26,11 @@ for param in $(cat /proc/cmdline); do
         overlayfs=*)
             overlayfs="${param#overlayfs=}"
             ;;
-        squashfspart=*)
-            squashfspart="${param#squashfspart=}"
+        bootpart=*)
+            bootpart="${param#bootpart=}"
             ;;
-        squashfsroot=*)
-            squashfsroot="${param#squashfsroot=}"
+        squashfsimg=*)
+            squashfsimg="${param#squashfsimg=}"
             ;;
     esac
 done
@@ -39,29 +39,29 @@ mkdir -p /newroot
 INIT_UNIT=""
 
 # if overlayfs is specified, set up OverlayFS
-if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
-    echo "[initramfs] Setting up OverlayFS: lower from $squashfspart/$squashfsroot, upper on $overlayfs"
-    mkdir -p /mnt/boot /mnt/overlay_lower /mnt/rw
-    echo "[initramfs] Mounting boot partition $squashfspart (read-only)..."
-    mount -o ro "$squashfspart" /mnt/boot || exec sh
-    echo "[initramfs] Mounting squashfs image /mnt/boot/$squashfsroot (read-only)..."
-    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsroot" /mnt/overlay_lower || exec sh
+if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
+    echo "[initramfs] Setting up OverlayFS: lower from $bootpart/$squashfsimg, upper on $overlayfs"
+    mkdir -p /mnt/boot /mnt/squashfsimg /mnt/overlayfs
+    echo "[initramfs] Mounting boot partition $bootpart (read-only)..."
+    mount -o ro "$bootpart" /mnt/boot || exec sh
+    echo "[initramfs] Mounting squashfs image /mnt/boot/$squashfsimg (read-only)..."
+    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsimg" /mnt/squashfsimg || exec sh
     echo "[initramfs] Mounting overlay partition $overlayfs (read-write)..."
-    mount -o rw "$overlayfs" /mnt/rw || exec sh
+    mount -o rw "$overlayfs" /mnt/overlayfs || exec sh
 
     # Check for rootfs resize flags
-    if [ -f /mnt/rw/overlay_upper/root/.resize-rootfs ]; then
+    if [ -f /mnt/overlayfs/overlay_upper/root/.resize-rootfs ]; then
         echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
-        mv /mnt/rw/overlay_upper/root/.resize-rootfs /mnt/rw/overlay_upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
+        mv /mnt/overlayfs/overlay_upper/root/.resize-rootfs /mnt/overlayfs/overlay_upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
         INIT_UNIT="--unit=fs-resize@rootfs.service"
         echo "[initramfs] Unmounting overlay partition for resize..."
         umount $overlayfs || exec sh
         echo "[initramfs] Moving squashfs mount to /newroot..."
-        mount --move /mnt/overlay_lower /newroot || exec sh
+        mount --move /mnt/squashfsimg /newroot || exec sh
     else
-        mkdir -p /mnt/rw/overlay_upper /mnt/rw/overlay_workdir
+        mkdir -p /mnt/overlayfs/overlay_upper /mnt/overlayfs/overlay_workdir
         echo "[initramfs] Mounting overlay filesystem to /newroot..."
-        mount -t overlay overlay -o lowerdir=/mnt/overlay_lower,upperdir=/mnt/rw/overlay_upper,workdir=/mnt/rw/overlay_workdir /newroot || exec sh
+        mount -t overlay overlay -o lowerdir=/mnt/squashfsimg,upperdir=/mnt/overlayfs/overlay_upper,workdir=/mnt/overlayfs/overlay_workdir /newroot || exec sh
 
         # Check for romsfs resize flag
         if [ -f /newroot/root/.resize-romsfs ]; then
@@ -70,16 +70,16 @@ if [ -n "$overlayfs" ] && [ -n "$squashfspart" ] && [ -n "$squashfsroot" ]; then
             INIT_UNIT="--unit=fs-resize@romsfs.service"
         else
             echo "[initramfs] No resize flags found - proceeding with normal boot"
-            mkdir -p /newroot/mnt/squashfsroot /newroot/mnt/overlayfs
-            echo "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsroot..."
-            mount --move /mnt/overlay_lower /newroot/mnt/squashfsroot || exec sh
+            mkdir -p /newroot/boot /newroot/mnt/squashfsimg /newroot/mnt/overlayfs
+            echo "[initramfs] Moving boot partition mount to /newroot/boot..."
+            mount --move /mnt/boot /newroot/boot || exec sh
+            echo "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsimg..."
+            mount --move /mnt/squashfsimg /newroot/mnt/squashfsimg || exec sh
             echo "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
-            mount --move /mnt/rw /newroot/mnt/overlayfs || exec sh
+            mount --move /mnt/overlayfs /newroot/mnt/overlayfs || exec sh
             INIT_UNIT="" # normal boot
         fi
     fi
-    echo "[initramfs] Moving boot partition mount to /newroot/boot..."
-    mount --move /mnt/boot /newroot/boot || exec sh
 else # no OverlayFS, just mount root directly
     echo "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
     mount -o rw "$root" /newroot || exec sh
