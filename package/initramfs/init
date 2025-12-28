@@ -51,9 +51,14 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
 
     # Check for rootfs resize flags
     if [ -f /mnt/overlayfs/overlay_upper/root/.resize-rootfs ]; then
-        echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
         mv /mnt/overlayfs/overlay_upper/root/.resize-rootfs /mnt/overlayfs/overlay_upper/root/.resize-rootfs-done # fs-resize.sh won't know the flag, so we remove it here
-        INIT_UNIT="--unit=fs-resize@rootfs.service"
+        if [ -f /mnt/overlayfs/overlay_upper/root/.resize-romsfs ]; then
+            echo "[initramfs] Found .resize-rootfs and .resize-romsfs flags - will boot into rootfs_romsfs resize mode"
+            INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
+        else
+            echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
+            INIT_UNIT="--unit=fs-resize@rootfs.service"
+        fi
         echo "[initramfs] Unmounting overlay partition for resize..."
         umount $overlayfs || exec sh
         echo "[initramfs] Moving squashfs mount to /newroot..."
@@ -63,6 +68,14 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
         echo "[initramfs] Mounting overlay filesystem to /newroot..."
         mount -t overlay overlay -o lowerdir=/mnt/squashfsimg,upperdir=/mnt/overlayfs/overlay_upper,workdir=/mnt/overlayfs/overlay_workdir /newroot || exec sh
 
+        mkdir -p /newroot/boot /newroot/mnt/squashfsimg /newroot/mnt/overlayfs
+        echo "[initramfs] Moving boot partition mount to /newroot/boot..."
+        mount --move /mnt/boot /newroot/boot || exec sh
+        echo "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsimg..."
+        mount --move /mnt/squashfsimg /newroot/mnt/squashfsimg || exec sh
+        echo "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
+        mount --move /mnt/overlayfs /newroot/mnt/overlayfs || exec sh
+
         # Check for romsfs resize flag
         if [ -f /newroot/root/.resize-romsfs ]; then
             echo "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
@@ -70,13 +83,6 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
             INIT_UNIT="--unit=fs-resize@romsfs.service"
         else
             echo "[initramfs] No resize flags found - proceeding with normal boot"
-            mkdir -p /newroot/boot /newroot/mnt/squashfsimg /newroot/mnt/overlayfs
-            echo "[initramfs] Moving boot partition mount to /newroot/boot..."
-            mount --move /mnt/boot /newroot/boot || exec sh
-            echo "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsimg..."
-            mount --move /mnt/squashfsimg /newroot/mnt/squashfsimg || exec sh
-            echo "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
-            mount --move /mnt/overlayfs /newroot/mnt/overlayfs || exec sh
             INIT_UNIT="" # normal boot
         fi
     fi
@@ -88,7 +94,11 @@ else # no OverlayFS, just mount root directly
     if [ -f /newroot/root/.resize-rootfs ]; then
         echo "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
         mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
-        INIT_UNIT="--unit=fs-resize@rootfs.service"
+        if [ -f /newroot/root/.resize-romsfs ]; then
+            INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
+        else
+            INIT_UNIT="--unit=fs-resize@rootfs.service"
+        fi
     elif [ -f /newroot/root/.resize-romsfs ]; then
         echo "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
         # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing

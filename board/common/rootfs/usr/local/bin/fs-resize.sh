@@ -5,7 +5,13 @@ source /root/partition-info.sh
 # Accept filesystem type as parameter
 FS_TYPE="$1"
 
-if [ "$FS_TYPE" = "rootfs" ]; then
+if [ -z "$FS_TYPE" ]; then
+    echo "Usage: $0 <filesystem-type>"
+    echo "Filesystem types: rootfs, romsfs, rootfs_romsfs (for both at the same time)"
+    exit 1
+fi
+
+if [ "$FS_TYPE" = "rootfs" ] || [ "$FS_TYPE" = "rootfs_romsfs" ]; then
     echo "Extending rootfs partition by ${ROOTFS_TO_EXTEND_SIZE}MB..."
 
     # Use parted to extend partition 2
@@ -26,13 +32,30 @@ if [ "$FS_TYPE" = "rootfs" ]; then
         exit 1
     fi
 
-    echo "Rootfs extension completed. Rebooting..."
-    sleep 3
-    systemctl reboot -f
-elif [ "$FS_TYPE" = "romsfs" ]; then
-    # Create, format and populate ROMS partition
-    if [ -e ${ROMS_PART_DEV_FILE} ]; then
-        # ${ROMS_PART_DEV_FILE} already created.
+    echo "Rootfs extension completed."
+    echo ""
+    need_reboot=1
+fi
+
+if [ "$FS_TYPE" = "romsfs" ] || [ "$FS_TYPE" = "rootfs_romsfs" ]; then
+    if [ ! -e ${ROMS_PART_DEV_FILE} ]; then
+        # romfs partition doesn't exist, create a new partition using the rest of the disk
+        echo "Creating ROMS partition starting at sector ${ROMS_PART_START}..."
+        echo -e "n\np\n3\n${ROMS_PART_START}\n\nw\n" | fdisk ${MMC_DEV_FILE}
+        sleep 3
+
+        # Changes the partition type of partition 3 on ${MMC_DEV_FILE} to type 7 (NTFS/exFAT/HPFS)
+        echo -e "t\n3\n7\nw\n" | fdisk ${MMC_DEV_FILE}
+        # sleep 3
+
+        # Refreshes the partition table information of the device ${MMC_DEV_FILE}
+        # partprobe ${MMC_DEV_FILE}
+
+        echo "Creating ${ROMS_PART_DEV_FILE} done."
+        echo ""
+        need_reboot=1
+    else # romsfs partition exists, format and populate it
+        # check if romsfs already mounted, just exit
         if grep -qs "${ROMS_PART_DEV_FILE}" /proc/mounts;
             then echo "${ROMS_PART_DEV_FILE} already created and mounted. Exiting...";
             # Cleanup
@@ -61,27 +84,17 @@ elif [ "$FS_TYPE" = "romsfs" ]; then
         # Cleanup
         mv /root/.resize-romsfs /root/.resize-romsfs-done
 
-        echo "Formatting ${ROMS_PART_DEV_FILE} done. Rebooting..."
-        sleep 3
-        systemctl reboot -f
-    else
-        # Create a new primary partition 3 on ${MMC_DEV_FILE} starting after the extended rootfs and using the rest of the disk
-        echo "Creating ROMS partition starting at sector ${ROMS_PART_START}..."
-        echo -e "n\np\n3\n${ROMS_PART_START}\n\nw\n" | fdisk ${MMC_DEV_FILE}
-        sleep 3
-
-        # Changes the partition type of partition 3 on ${MMC_DEV_FILE} to type 7 (NTFS/exFAT/HPFS)
-        echo -e "t\n3\n7\nw\n" | fdisk ${MMC_DEV_FILE}
-        # sleep 3
-
-        # Refreshes the partition table information of the device ${MMC_DEV_FILE}
-        # partprobe ${MMC_DEV_FILE}
-
-        echo "Creating ${ROMS_PART_DEV_FILE} done. Rebooting..."
-        sleep 3
-        systemctl reboot -f
+        echo "Formatting ${ROMS_PART_DEV_FILE} done."
+        echo ""
+        need_reboot=0
     fi
+fi
+
+if [ "$need_reboot" = "1" ]; then
+    echo "Rebooting..."
+    sleep 3
+    systemctl reboot -f
 else
-    echo "Usage: $0 {rootfs|romsfs}"
-    exit 1
+    echo "Continuing to normal boot..."
+    exec systemctl isolate default.target
 fi
