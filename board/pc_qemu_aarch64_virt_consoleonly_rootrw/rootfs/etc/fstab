@@ -1,0 +1,5 @@
+# <device>        <dir>        <type>        <options>        <dump> <fsck>
+# https://wiki.archlinux.org/title/fstab
+/dev/vda1	/boot	vfat	defaults,nofail								0	2
+/dev/vda2	/		auto	defaults,noatime,nofail						0	1
+#/dev/vda3	/roms	exfat	umask=0000,iocharset=utf8,noatime,nofail	0	0
