@@ -1,4 +1,5 @@
 /output*
+/dl
 **/.vscode
 package/simple-terminal/simple-terminal
 package/simple-launcher/simple-launcher
