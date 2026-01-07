@@ -58,7 +58,7 @@ make flash
 ```bash
 sudo mount -t ext4 /dev/sdb /mnt/rootfs
 sudo rm -rf /mnt/rootfs/*
-sudo tar -xvf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs && sync
+sudo tar -xvf images/rootfs.tar -C /mnt/rootfs && sync
 sudo umount /dev/sdb
 sudo eject /dev/sdb
 ```
@@ -73,19 +73,25 @@ If it's inconvernient to build directly in host machine, for example MacOS host,
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
 
-# First build the image
 cd TiniLinux
+
+# Build the image and run container (if the image already built and the container already ran, skip to the "docker exec..." command below)
 docker build -t ghcr.io/haoict/tinilinux-builder:latest .
-cd ..
-docker run --name tinilinux-builder -d -v $(pwd):/home/ubuntu ghcr.io/haoict/tinilinux-builder:latest
+docker run --name tinilinux-builder -d -v $(pwd):/home/ubuntu/TiniLinux -v tinilinux-builder-buildroot:/home/ubuntu/buildroot ghcr.io/haoict/tinilinux-builder:latest
+
 docker exec -it tinilinux-builder bash
 
 # NOTE: Commands from here are executed inside docker container
 cd TiniLinux
-./make-board-build.sh configs/<boardname>_defconfig
-cd output.<boardname>
+./make-board-build.sh configs/<boardname>_defconfig docker
+cd /home/ubuntu/buildroot/output.<boardname>
 make -j$(nproc)
 make img
+
+# copy output images dir to the TiniLinux folder
+cd /home/ubuntu/TiniLinux
+mkdir -p output.<boardname>
+cp -r /home/ubuntu/buildroot/output.<boardname>/images output.<boardname>
 ```
 
 ## Test with qemu

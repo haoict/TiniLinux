@@ -15,9 +15,9 @@ echo "======================================================="
 echo ""
 
 # Load partition info variables
-source board/${BOARD}/rootfs/root/partition-info.sh
+source ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/rootfs/root/partition-info.sh
 
-OUT_IMG=output.${BOARD}/images/tinilinux-${BOARD}.img
+OUT_IMG=images/tinilinux-${BOARD}.img
 rm -f ${OUT_IMG}
 
 echo "[1/5] Setting up disk image (${DISK_SIZE}M)..."
@@ -29,10 +29,10 @@ parted ${OUT_IMG} mktable msdos
 
 if [[ "${BOARD}" == "rgb30"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 32KiB)"
-    dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
+    dd if=images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
 elif [[ "${BOARD}" == "h700"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
-    dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+    dd if=images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
 elif [[ "${BOARD}" == *"qemu"* ]]; then
     echo "  ✓ Skipping U-Boot for board ${BOARD}"
 else
@@ -75,25 +75,25 @@ mkdir -p /mnt/rootfs && mount -t ext4 ${DEV_LOOP}p2 /mnt/rootfs
 echo ""
 echo "[4/5] Copying files..."
 echo "  ✓ Copying boot files"
-cp -r board/${BOARD}/BOOT/* /mnt/BOOT/
-cp output.${BOARD}/images/Image /mnt/BOOT/
-cp output.${BOARD}/images/initramfs /mnt/BOOT/
+cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* /mnt/BOOT/
+cp images/Image /mnt/BOOT/
+cp images/initramfs /mnt/BOOT/
 if [[ "${BOARD}" == "rgb30"* ]]; then
-    cp -r output.${BOARD}/images/rockchip /mnt/BOOT/dtb
-    cp output.${BOARD}/images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
+    cp -r images/rockchip /mnt/BOOT/dtb
+    cp images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
 elif [[ "${BOARD}" == "h700"* ]]; then
-    cp -r output.${BOARD}/images/allwinner /mnt/BOOT/dtb
+    cp -r images/allwinner /mnt/BOOT/dtb
 fi
 
 echo "  ✓ Extracting rootfs"
-tar -xf output.${BOARD}/images/rootfs.tar -C /mnt/rootfs --no-same-owner
+tar -xf images/rootfs.tar -C /mnt/rootfs --no-same-owner
 echo "  ✓ Updating build info"
 sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" /mnt/rootfs/etc/os-release
 echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
-cp -r board/common/ROMS/ ${romtmp}/
-if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
-if [ -d board/common/private-ROMS/ ]; then cp -r board/common/private-ROMS/* ${romtmp}/ROMS/; fi
+cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/ROMS/ ${romtmp}/
+if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ${romtmp}/; fi
+if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/* ${romtmp}/ROMS/; fi
 tar -Jcf /mnt/rootfs/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 

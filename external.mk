@@ -3,7 +3,7 @@ include $(sort $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk))
 BOARD=$(shell basename $(BR2_DEFCONFIG) _defconfig)
 
 img:
-	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
+	cd $(CONFIG_DIR); \
 	if [ -f $(BINARIES_DIR)/rootfs.tar ]; then \
 		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-rootrw-rootless.sh; \
 	else \
@@ -11,7 +11,7 @@ img:
 	fi
 
 flash:
-	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
+	cd $(CONFIG_DIR); \
 	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/flash-to-sdcard.sh
 
 cleantarget:
