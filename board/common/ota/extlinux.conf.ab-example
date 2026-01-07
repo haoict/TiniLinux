@@ -1,0 +1,27 @@
+# Sample extlinux.conf with A/B OTA support
+# 
+# To enable A/B boot, add 'ab_boot=1' to the APPEND line
+# The initramfs will automatically:
+# - Read A/B metadata from overlay partition
+# - Select active slot (a or b)
+# - Mount rootfs-a.squashfs or rootfs-b.squashfs
+# - Handle automatic fallback on boot failure
+#
+# For boards with A/B support, update your extlinux.conf:
+
+# QEMU virt example:
+LABEL Tinilinux A/B
+  LINUX /Image
+  APPEND initrd=/initramfs bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 ab_boot=1 rootwait rw console=ttyAMA0
+
+# H700 example:
+# LABEL Tinilinux A/B
+#   LINUX /Image
+#   FDT /dtb/sun50i-h700-anbernic-rg40xx-h.dtb
+#   APPEND initrd=/initramfs bootpart=/dev/mmcblk0p1 squashfsimg=rootfs.squashfs overlayfs=/dev/mmcblk0p2 ab_boot=1 rootwait rw fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0
+
+# RGB30 example:
+# LABEL Tinilinux A/B
+#   LINUX /Image
+#   FDT /dtb/rk3566-anbernic-rgb30.dtb
+#   APPEND initrd=/initramfs bootpart=/dev/mmcblk1p1 squashfsimg=rootfs.squashfs overlayfs=/dev/mmcblk1p2 ab_boot=1 rootwait rw fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0

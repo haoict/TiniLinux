@@ -1,0 +1,13 @@
+[Unit]
+Description=OTA Update Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# This service doesn't start automatically
+# Start it manually: systemctl start ota-update.service
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,163 @@
+#!/bin/bash
+set -euo pipefail
+
+#####################################################
+# SETUP ENV - A/B SquashFS Image Builder
+#####################################################
+
+echo "=========================================================="
+echo "  Creating A/B Flashable Image for ${BOARD} (SquashFS)"
+echo "=========================================================="
+echo ""
+
+# Load partition info variables
+source board/${BOARD}/rootfs/root/partition-info.sh
+OUT_IMG=output.${BOARD}/images/tinilinux-${BOARD}-ab.img
+rm -f ${OUT_IMG}
+
+# A/B partition layout:
+# - Partition 1: BOOT (FAT32) - contains both rootfs-a.squashfs and rootfs-b.squashfs
+# - Partition 2: Overlay (ext4) - persistent data + A/B metadata
+
+echo "[1/5] Setting up disk image (${DISK_SIZE}M)..."
+echo "  ✓ Creating empty disk image"
+truncate -s ${DISK_SIZE}M ${OUT_IMG}
+
+echo "  ✓ Initializing MBR partition table"
+parted ${OUT_IMG} mktable msdos
+
+if [[ "${BOARD}" == "rgb30"* ]]; then
+    echo "  ✓ Writing U-Boot bootloader (offset: 32KiB)"
+    dd if=output.${BOARD}/images/u-boot-rockchip.bin of=${OUT_IMG} bs=512 seek=64 conv=fsync,notrunc
+elif [[ "${BOARD}" == "h700"* ]]; then
+    echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
+    dd if=output.${BOARD}/images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
+elif [[ "${BOARD}" == *"qemu"* ]]; then
+    echo "  ✓ Skipping U-Boot for board ${BOARD}"
+else
+    echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
+    exit 1
+fi
+
+echo ""
+echo "[2/5] Creating partitions..."
+# Increase BOOT partition size to hold two squashfs images
+BOOT_SIZE_AB=$((${BOOT_SIZE} * 2))
+BOOT_PART_END_AB=$((${BOOT_PART_START} + (${BOOT_SIZE_AB} * 1024 * 1024 / 512) - 1))
+ROOTFS_PART_START_AB=$((${BOOT_PART_END_AB} + 1))
+
+echo "  ✓ Creating BOOT partition (${BOOT_SIZE_AB}M, FAT32) for A/B images"
+parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOOT_PART_END_AB}
+
+echo "  ✓ Creating rootfs overlay partition (${ROOTFS_INIT_SIZE}M, ext4)"
+parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START_AB} ${ROOTFS_PART_INIT_END}
+
+echo "  ✓ Setting boot flag"
+parted -s ${OUT_IMG} set 1 boot on
+sync
+
+echo ""
+echo "[3/5] Formatting BOOT partition..."
+P1_IMG=output.${BOARD}/images/p1-ab.img
+rm -f ${P1_IMG}
+truncate -s ${BOOT_SIZE_AB}M ${P1_IMG}
+echo "  ✓ Formatting as FAT32"
+mkfs.fat -F32 -n BOOT ${P1_IMG}
+
+echo "  ✓ Copying boot files..."
+mcopy -i ${P1_IMG} -o board/${BOARD}/BOOT/* ::/
+mcopy -i ${P1_IMG} -o output.${BOARD}/images/Image ::/
+mcopy -i ${P1_IMG} -o output.${BOARD}/images/initramfs ::/
+
+echo "  ✓ Copying rootfs-a.squashfs (Slot A)"
+mcopy -i ${P1_IMG} -o output.${BOARD}/images/rootfs.squashfs ::/rootfs-a.squashfs
+
+echo "  ✓ Copying rootfs-b.squashfs (Slot B - identical initially)"
+mcopy -i ${P1_IMG} -o output.${BOARD}/images/rootfs.squashfs ::/rootfs-b.squashfs
+
+# Copy device trees
+if [[ "${BOARD}" == "rgb30"* ]]; then
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/rockchip/ ::/dtb
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/rk3566-dtbo/*.dtbo ::/dtb
+elif [[ "${BOARD}" == "h700"* ]]; then
+    mcopy -i ${P1_IMG} -o output.${BOARD}/images/allwinner/ ::/dtb
+fi
+
+echo "  ✓ Verifying BOOT partition"
+mdir -i output.${BOARD}/images/p1-ab.img ::/
+sync
+fsck.fat -n ${P1_IMG}
+echo "  ✓ Writing BOOT partition to image"
+dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notrunc
+rm -f ${P1_IMG}
+
+echo ""
+echo "[4/5] Creating rootfs overlay partition..."
+P2_IMG=output.${BOARD}/images/p2-ab.img
+rm -f ${P2_IMG}
+truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
+echo "  ✓ Formatting as ext4"
+mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
+rootfstmp=$(mktemp -d)
+echo "  ✓ Copying overlay files"
+cp -r board/common/overlay_upper $rootfstmp/
+if [ -d board/${BOARD}/overlay_upper/ ]; then cp -r board/${BOARD}/overlay_upper/ $rootfstmp/; fi
+
+echo "  ✓ Installing A/B OTA scripts"
+mkdir -p $rootfstmp/overlay_upper/usr/local/bin
+cp board/common/ota/ab-slot-mgr.sh $rootfstmp/overlay_upper/usr/local/bin/
+cp board/common/ota/ota-update.sh $rootfstmp/overlay_upper/usr/local/bin/
+chmod +x $rootfstmp/overlay_upper/usr/local/bin/ab-slot-mgr.sh
+chmod +x $rootfstmp/overlay_upper/usr/local/bin/ota-update.sh
+
+echo "  ✓ Installing A/B systemd services"
+mkdir -p $rootfstmp/overlay_upper/etc/systemd/system
+cp board/common/ota/ab-boot-verify.service $rootfstmp/overlay_upper/etc/systemd/system/
+cp board/common/ota/ota-update.service $rootfstmp/overlay_upper/etc/systemd/system/
+
+echo "  ✓ Updating build info"
+sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST-AB/" $rootfstmp/overlay_upper/etc/os-release
+
+echo "  ✓ Preparing ROMs archive"
+romtmp=$(mktemp -d)
+cp -r board/common/ROMS/ ${romtmp}/
+if [ -d board/${BOARD}/ROMS/ ]; then cp -r board/${BOARD}/ROMS/ ${romtmp}/; fi
+if [ -d board/common/private-ROMS/ ]; then cp -r board/common/private-ROMS/* ${romtmp}/ROMS/; fi
+tar -Jcf $rootfstmp/overlay_upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+rm -rf ${romtmp}
+
+echo "  ✓ Populating filesystem"
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    ./board/common/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
+    ./board/common/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+else
+    echo "  ✗ Error: Unsupported architecture $(uname -m)"
+    exit 1
+fi
+rm -rf $rootfstmp
+
+echo "  ✓ Writing overlay partition to image"
+dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START_AB}" conv=fsync,notrunc
+rm -f ${P2_IMG}
+
+echo ""
+echo "[5/5] Finalizing image..."
+sync
+echo "  ✓ Image ready: ${OUT_IMG}"
+ls -lh ${OUT_IMG}
+
+echo ""
+echo "=========================================================="
+echo "  A/B Image Creation Complete!"
+echo "=========================================================="
+echo ""
+echo "This image includes:"
+echo "  • Slot A: rootfs-a.squashfs (active)"
+echo "  • Slot B: rootfs-b.squashfs (inactive)"
+echo "  • A/B boot management scripts"
+echo "  • Automatic fallback on boot failure"
+echo ""
+echo "To flash: make flash"
+echo "To enable A/B boot: add 'ab_boot=1' to kernel cmdline"
+echo ""

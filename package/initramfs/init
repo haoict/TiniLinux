@@ -2,7 +2,7 @@
 
 #####
 #
-# TiniLinux initramfs init script
+# TiniLinux initramfs init script (with A/B slot support)
 #
 #####
 echo "[initramfs] Booting..."
@@ -32,8 +32,113 @@ for param in $(cat /proc/cmdline); do
         squashfsimg=*)
             squashfsimg="${param#squashfsimg=}"
             ;;
+        ab_boot=*)
+            ab_boot="${param#ab_boot=}"
+            ;;
     esac
 done
+
+# A/B slot management functions
+AB_METADATA_PATH=""
+get_ab_active_slot() {
+    if [ -f "$AB_METADATA_PATH" ]; then
+        . "$AB_METADATA_PATH"
+        echo "$ACTIVE_SLOT"
+    else
+        echo "a"  # Default to slot A
+    fi
+}
+
+increment_boot_count() {
+    local slot=$1
+    if [ -f "$AB_METADATA_PATH" ]; then
+        . "$AB_METADATA_PATH"
+        if [ "$slot" = "a" ]; then
+            BOOT_COUNT_A=$((BOOT_COUNT_A + 1))
+        else
+            BOOT_COUNT_B=$((BOOT_COUNT_B + 1))
+        fi
+        # Write back metadata
+        cat > "$AB_METADATA_PATH" <<ABEOF
+# TiniLinux A/B Boot Slot Metadata
+ACTIVE_SLOT=${ACTIVE_SLOT}
+BOOT_COUNT_A=${BOOT_COUNT_A}
+BOOT_COUNT_B=${BOOT_COUNT_B}
+BOOT_SUCCESS_A=${BOOT_SUCCESS_A}
+BOOT_SUCCESS_B=${BOOT_SUCCESS_B}
+FALLBACK_ENABLED=${FALLBACK_ENABLED}
+PENDING_SLOT=${PENDING_SLOT}
+ABEOF
+        sync
+    fi
+}
+
+check_and_switch_slot() {
+    if [ -f "$AB_METADATA_PATH" ]; then
+        . "$AB_METADATA_PATH"
+        
+        # Check if there's a pending slot to switch to
+        if [ -n "$PENDING_SLOT" ]; then
+            echo "[initramfs] Switching to pending slot: $PENDING_SLOT"
+            ACTIVE_SLOT=$PENDING_SLOT
+            PENDING_SLOT=""
+            if [ "$ACTIVE_SLOT" = "a" ]; then
+                BOOT_COUNT_A=0
+                BOOT_SUCCESS_A=0
+            else
+                BOOT_COUNT_B=0
+                BOOT_SUCCESS_B=0
+            fi
+            # Save updated metadata
+            cat > "$AB_METADATA_PATH" <<ABEOF
+# TiniLinux A/B Boot Slot Metadata
+ACTIVE_SLOT=${ACTIVE_SLOT}
+BOOT_COUNT_A=${BOOT_COUNT_A}
+BOOT_COUNT_B=${BOOT_COUNT_B}
+BOOT_SUCCESS_A=${BOOT_SUCCESS_A}
+BOOT_SUCCESS_B=${BOOT_SUCCESS_B}
+FALLBACK_ENABLED=${FALLBACK_ENABLED}
+PENDING_SLOT=${PENDING_SLOT}
+ABEOF
+            sync
+        fi
+        
+        # Check for fallback condition (too many boot failures)
+        local boot_count
+        if [ "$ACTIVE_SLOT" = "a" ]; then
+            boot_count=$BOOT_COUNT_A
+        else
+            boot_count=$BOOT_COUNT_B
+        fi
+        
+        if [ "$FALLBACK_ENABLED" = "1" ] && [ "$boot_count" -ge "3" ]; then
+            echo "[initramfs] Boot failed 3 times, falling back to other slot"
+            if [ "$ACTIVE_SLOT" = "a" ]; then
+                ACTIVE_SLOT=b
+                BOOT_SUCCESS_A=0
+            else
+                ACTIVE_SLOT=a
+                BOOT_SUCCESS_B=0
+            fi
+            # Save fallback metadata
+            cat > "$AB_METADATA_PATH" <<ABEOF
+# TiniLinux A/B Boot Slot Metadata
+ACTIVE_SLOT=${ACTIVE_SLOT}
+BOOT_COUNT_A=${BOOT_COUNT_A}
+BOOT_COUNT_B=${BOOT_COUNT_B}
+BOOT_SUCCESS_A=${BOOT_SUCCESS_A}
+BOOT_SUCCESS_B=${BOOT_SUCCESS_B}
+FALLBACK_ENABLED=${FALLBACK_ENABLED}
+PENDING_SLOT=${PENDING_SLOT}
+ABEOF
+            sync
+        fi
+        
+        echo "$ACTIVE_SLOT"
+    else
+        echo "a"
+    fi
+}
 
 mkdir -p /newroot
 INIT_UNIT=""
@@ -44,8 +149,57 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
     mkdir -p /mnt/boot /mnt/squashfsimg /mnt/overlayfs
     echo "[initramfs] Mounting boot partition $bootpart (read-only)..."
     mount -o ro "$bootpart" /mnt/boot || exec sh
-    echo "[initramfs] Mounting squashfs image /mnt/boot/$squashfsimg (read-only)..."
-    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsimg" /mnt/squashfsimg || exec sh
+    
+    # Handle A/B slot selection if enabled
+    ACTUAL_SQUASHFS="$squashfsimg"
+    if [ "$ab_boot" = "1" ]; then
+        echo "[initramfs] A/B boot enabled"
+        # Mount overlay temporarily to access metadata
+        mount -o rw "$overlayfs" /mnt/overlayfs || exec sh
+        AB_METADATA_PATH="/mnt/overlayfs/ab-metadata"
+        
+        # Initialize metadata if it doesn't exist
+        if [ ! -f "$AB_METADATA_PATH" ]; then
+            echo "[initramfs] Initializing A/B metadata"
+            mkdir -p /mnt/overlayfs
+            cat > "$AB_METADATA_PATH" <<ABEOF
+# TiniLinux A/B Boot Slot Metadata
+ACTIVE_SLOT=a
+BOOT_COUNT_A=0
+BOOT_COUNT_B=0
+BOOT_SUCCESS_A=1
+BOOT_SUCCESS_B=0
+FALLBACK_ENABLED=1
+PENDING_SLOT=
+ABEOF
+            sync
+        fi
+        
+        # Check for slot switch and fallback
+        ACTIVE_SLOT=$(check_and_switch_slot)
+        echo "[initramfs] Active slot: $ACTIVE_SLOT"
+        
+        # Increment boot count
+        increment_boot_count "$ACTIVE_SLOT"
+        
+        # Determine which squashfs to use
+        if [ "$ACTIVE_SLOT" = "b" ]; then
+            ACTUAL_SQUASHFS="rootfs-b.squashfs"
+        else
+            ACTUAL_SQUASHFS="rootfs-a.squashfs"
+        fi
+        
+        # Check if slot-specific image exists, fallback to legacy single image
+        if [ ! -f "/mnt/boot/$ACTUAL_SQUASHFS" ]; then
+            echo "[initramfs] Slot-specific image not found, using legacy single image"
+            ACTUAL_SQUASHFS="$squashfsimg"
+        fi
+        
+        umount /mnt/overlayfs
+    fi
+    
+    echo "[initramfs] Mounting squashfs image /mnt/boot/$ACTUAL_SQUASHFS (read-only)..."
+    mount -t squashfs -o loop,ro "/mnt/boot/$ACTUAL_SQUASHFS" /mnt/squashfsimg || exec sh
     echo "[initramfs] Mounting overlay partition $overlayfs (read-write)..."
     mount -o rw "$overlayfs" /mnt/overlayfs || exec sh
 

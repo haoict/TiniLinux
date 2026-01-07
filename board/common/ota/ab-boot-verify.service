@@ -1,0 +1,14 @@
+[Unit]
+Description=A/B Boot Verification Service
+After=multi-user.target
+ConditionPathExists=/usr/local/bin/ab-slot-mgr.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ab-slot-mgr.sh mark-successful
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

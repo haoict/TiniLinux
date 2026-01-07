@@ -10,6 +10,10 @@ img:
 		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-squashfs-rootless.sh; \
 	fi
 
+imgab:
+	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
+	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-squashfs-ab.sh
+
 flash:
 	cd $(BR2_EXTERNAL_TiniLinux_PATH); \
 	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/flash-to-sdcard.sh
@@ -32,6 +36,18 @@ runqemu:
 		-device virtio-blk-device,drive=hd0 \
 		-nographic
 
+runqemuab:
+	cd $(BINARIES_DIR); \
+	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 1 -m 1G \
+		-kernel Image \
+		-initrd initramfs \
+		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 ab_boot=1 console=ttyAMA0" \
+		-netdev user,id=eth0 \
+		-device virtio-net-device,netdev=eth0 \
+		-drive file=tinilinux-$(BOARD)-ab.img,if=none,format=raw,id=hd0 \
+		-device virtio-blk-device,drive=hd0 \
+		-nographic
+
 runqemugui:
 	cd $(BINARIES_DIR); \
 	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 2 -m 1G \
@@ -41,6 +57,21 @@ runqemugui:
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
+		-device virtio-blk-device,drive=hd0 \
+		-device virtio-gpu-gl-pci,xres=640,yres=480 -display gtk,gl=on \
+		-device virtio-keyboard-pci \
+		-device virtio-mouse-pci \
+		-serial mon:stdio
+
+runqemuguiab:
+	cd $(BINARIES_DIR); \
+	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 2 -m 1G \
+		-kernel Image \
+		-initrd initramfs \
+		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 ab_boot=1 console=ttyAMA0" \
+		-netdev user,id=eth0 \
+		-device virtio-net-device,netdev=eth0 \
+		-drive file=tinilinux-$(BOARD)-ab.img,if=none,format=raw,id=hd0 \
 		-device virtio-blk-device,drive=hd0 \
 		-device virtio-gpu-gl-pci,xres=640,yres=480 -display gtk,gl=on \
 		-device virtio-keyboard-pci \
