@@ -40,27 +40,51 @@ jobs:
           sudo rm -r /var/cache/man
           # install packages
           sudo apt update && sudo apt install -y build-essential cmake mtools
+
       - name: Maximize build space
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 512
+          root-reserve-mb: 8192 # 8GB for cache
           swap-size-mb: 1024
-          remove-dotnet: 'true'
+          # remove-dotnet: 'true'
+          # remove-android: 'true'
+          # remove-haskell: 'true'
+          # remove-codeql: 'true'
+          # remove-docker-images: 'true'
+
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: TiniLinux
+
+      - name: Restore dl cache
+        uses: actions/cache@v4
+        with:
+          path: TiniLinux/dl
+          key: dl-cache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
+          restore-keys: |
+            dl-cache-${{ inputs.board }}-
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: TiniLinux/.buildroot-ccache
+          key: ccache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
+          restore-keys: |
+            ccache-${{ inputs.board }}-
+
       - name: Build
         run: |
           set -x
           cd TiniLinux
           ./make-board-build.sh configs/${{ inputs.board }}_defconfig
           cd output.${{ inputs.board }}
-          sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
+          # sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
           make source -s
           time make -j$(nproc) -s
           cd ..
+
       - name: Make flashable image
         run: |
           set -x
@@ -70,6 +94,7 @@ jobs:
           else
             make img
           fi
+
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:

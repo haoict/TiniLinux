@@ -93,7 +93,7 @@ fi
 if [ "$IS_DOCKER" == "true" ]; then
     echo "Adjusting download directory for Docker..."
     sed -i 's|BR2_DL_DIR="$(BR2_EXTERNAL_TiniLinux_PATH)/dl"|BR2_DL_DIR="$(TOPDIR)/dl"|g' "${OUTPUT_DIR}/.config"
-    sed -i 's|BR2_CCACHE_DIR="$(HOME)/.buildroot-ccache"|BR2_CCACHE_DIR="$(TOPDIR)/.buildroot-ccache""|g' "${OUTPUT_DIR}/.config"
+    sed -i 's|BR2_CCACHE_DIR="$(BR2_EXTERNAL_TiniLinux_PATH)/.buildroot-ccache"|BR2_CCACHE_DIR="$(TOPDIR)/.buildroot-ccache""|g' "${OUTPUT_DIR}/.config"
 fi
 
 echo "Board configuration created successfully!"
