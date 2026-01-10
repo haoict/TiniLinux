@@ -56,6 +56,8 @@ jobs:
           mkdir -p images/allwinner
           mkdir -p images/rockchip
           mkdir -p images/rk3566-dtbo/
+          mkdir -p images/rpi-firmware/
+          mkdir -p images/broadcom/
           touch images/Image
           touch images/initramfs
           touch images/allwinner/h700.dtb
@@ -63,23 +65,20 @@ jobs:
           touch images/rockchip/rk3566.dtb
           touch images/rk3566-dtbo/rk3566.dtbo
           touch images/u-boot-sunxi-with-spl.bin
+          touch images/rpi-firmware/config.txt
+          touch images/broadcom/bcm.dtb
           mkdir -p target/root
           mkdir -p target/etc
           touch target/root/init.sh
           echo "BUILD_ID=buildroot" > target/etc/os-release
           tar -cvf images/rootfs.tar -C target/ .
-          touch images/sdcard.img
 
           cd ..
       - name: Make flashable image
         run: |
           set -x
           cd TiniLinux/output.${{ inputs.board }}
-          if [ "${{ inputs.board }}" = "pi3b" ]; then
-            mv images/sdcard.img images/tinilinux-${{ inputs.board }}.img
-          else
-            make img
-          fi
+          ZIP=0 make img
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:
