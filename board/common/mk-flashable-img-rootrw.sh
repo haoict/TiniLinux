@@ -33,7 +33,7 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
 elif [[ "${BOARD}" == "h700"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
     dd if=images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
-elif [[ "${BOARD}" == *"qemu"* ]]; then
+elif [[ "${BOARD}" == *"qemu"* ]]  || [[ "${BOARD}" == *"pi3b"* ]]; then
     echo "  ✓ Skipping U-Boot for board ${BOARD}"
 else
     echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
@@ -83,6 +83,9 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
     cp images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
 elif [[ "${BOARD}" == "h700"* ]]; then
     cp -r images/allwinner /mnt/BOOT/dtb
+elif [[ "${BOARD}" == *"pi3b"* ]]; then
+    cp -r images/rpi-firmware/* /mnt/BOOT/
+    cp -r images/broadcom/* /mnt/BOOT/
 fi
 
 echo "  ✓ Extracting rootfs"
@@ -109,6 +112,14 @@ echo "  ✓ Detaching loop device"
 losetup --detach-all
 
 parted ${OUT_IMG} unit MiB print
+
+# if "ZIP=0 make img" then do not create zip archive
+if [[ "${ZIP:-1}" != "0" ]]; then
+    echo "  ✓ Creating zip archive"
+    zip -j ${OUT_IMG}.zip ${OUT_IMG}
+    rm -f ${OUT_IMG}
+    OUT_IMG=${OUT_IMG}.zip
+fi
 
 echo ""
 echo "=========================================="

@@ -47,6 +47,8 @@ jobs:
           mkdir -p images/allwinner
           mkdir -p images/rockchip
           mkdir -p images/rk3566-dtbo/
+          mkdir -p images/rpi-firmware/
+          mkdir -p images/broadcom/
           touch images/Image
           touch images/initramfs
           touch images/allwinner/h700.dtb
@@ -54,12 +56,13 @@ jobs:
           touch images/rockchip/rk3566.dtb
           touch images/rk3566-dtbo/rk3566.dtbo
           touch images/u-boot-sunxi-with-spl.bin
+          touch images/rpi-firmware/config.txt
+          touch images/broadcom/bcm.dtb
           mkdir -p target/root
           mkdir -p target/etc
           touch target/root/init.sh
           echo "BUILD_ID=buildroot" > target/etc/os-release
           tar -cvf images/rootfs.tar -C target/ .
-          touch images/sdcard.img
 
           cd ..
       - name: Upload result for next job
@@ -96,6 +99,6 @@ jobs:
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:
-          name: tinilinux-${{ inputs.board }}.img
+          name: tinilinux-${{ inputs.board }}.img.zip
           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2

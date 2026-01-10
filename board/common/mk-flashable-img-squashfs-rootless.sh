@@ -28,7 +28,7 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
 elif [[ "${BOARD}" == "h700"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
     dd if=images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
-elif [[ "${BOARD}" == *"qemu"* ]]; then
+elif [[ "${BOARD}" == *"qemu"* ]] || [[ "${BOARD}" == *"pi3b"* ]]; then
     echo "  ✓ Skipping U-Boot for board ${BOARD}"
 else
     echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
@@ -64,6 +64,9 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
     mcopy -i ${P1_IMG} -o images/rk3566-dtbo/*.dtbo ::/dtb
 elif [[ "${BOARD}" == "h700"* ]]; then
     mcopy -i ${P1_IMG} -o images/allwinner/ ::/dtb
+elif [[ "${BOARD}" == *"pi3b"* ]]; then
+    mcopy -i ${P1_IMG} -o images/rpi-firmware/* ::/
+    mcopy -i ${P1_IMG} -o images/broadcom/* ::/
 fi
 echo "  ✓ Verifying BOOT partition"
 mdir -i images/p1.img ::/
@@ -110,6 +113,14 @@ rm -f ${P2_IMG}
 echo ""
 echo "[5/5] Finalizing..."
 parted ${OUT_IMG} unit MiB print
+
+# if "ZIP=0 make img" then do not create zip archive
+if [[ "${ZIP:-1}" != "0" ]]; then
+    echo "  ✓ Creating zip archive"
+    zip -j ${OUT_IMG}.zip ${OUT_IMG}
+    rm -f ${OUT_IMG}
+    OUT_IMG=${OUT_IMG}.zip
+fi
 
 echo ""
 echo "=========================================="

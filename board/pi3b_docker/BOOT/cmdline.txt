@@ -1,0 +1,1 @@
+root=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0

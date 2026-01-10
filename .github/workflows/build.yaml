@@ -89,11 +89,7 @@ jobs:
         run: |
           set -x
           cd TiniLinux/output.${{ inputs.board }}
-          if [ "${{ inputs.board }}" = "pi3b" ]; then
-            mv images/sdcard.img images/tinilinux-${{ inputs.board }}.img
-          else
-            make img
-          fi
+          ZIP=0 make img
 
       - name: Archive build output
         uses: actions/upload-artifact@v4

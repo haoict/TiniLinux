@@ -12,7 +12,7 @@ fixup_file=fixup.dat
 kernel=Image
 
 # To use an external initramfs file
-#initramfs rootfs.cpio.gz
+initramfs initramfs
 
 # Disable overscan assuming the display supports displaying the full resolution
 # If the text shown on the screen disappears off the edge, comment this out
@@ -20,12 +20,7 @@ disable_overscan=1
 
 # How much memory in MB to assign to the GPU on Pi models having
 # 256, 512 or 1024 MB total memory
-gpu_mem_256=100
-gpu_mem_512=200
-gpu_mem_1024=300
-
-# Enable KMS
-dtoverlay=vc4-kms-v3d
+gpu_mem=16
 
 # enable 64bits support
 arm_64bit=1

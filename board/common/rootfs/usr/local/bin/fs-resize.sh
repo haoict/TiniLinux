@@ -15,10 +15,19 @@ if [ "$FS_TYPE" = "rootfs" ] || [ "$FS_TYPE" = "rootfs_romsfs" ]; then
     echo "Extending rootfs partition by ${ROOTFS_TO_EXTEND_SIZE}MB..."
 
     # Use parted to extend partition 2
-    echo -e "Yes\n" | parted ---pretend-input-tty ${MMC_DEV_FILE} unit s resizepart 2 $((${ROOTFS_PART_INIT_END} + (${ROOTFS_TO_EXTEND_SIZE} * 1024 * 1024 / 512)))
-    if [ $? -ne 0 ]; then
-        echo "Failed to extend rootfs partition"
-        exit 1
+    # if ROOTFS_TO_EXTEND_SIZE is -1, use all remaining space
+    if [ "${ROOTFS_TO_EXTEND_SIZE}" = "-1" ]; then
+        echo -e "Yes\n" | parted ---pretend-input-tty ${MMC_DEV_FILE} unit s resizepart 2 100%
+        if [ $? -ne 0 ]; then
+            echo "Failed to extend rootfs partition"
+            exit 1
+        fi
+    else
+        echo -e "Yes\n" | parted ---pretend-input-tty ${MMC_DEV_FILE} unit s resizepart 2 $((${ROOTFS_PART_INIT_END} + (${ROOTFS_TO_EXTEND_SIZE} * 1024 * 1024 / 512)))
+        if [ $? -ne 0 ]; then
+            echo "Failed to extend rootfs partition"
+            exit 1
+        fi
     fi
 
     sleep 1

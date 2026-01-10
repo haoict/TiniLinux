@@ -1,0 +1,1 @@
+bootpart=/dev/mmcblk0p1 squashfsimg=rootfs.squashfs overlayfs=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0

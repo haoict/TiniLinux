@@ -8,3 +8,7 @@ echo 3 > /proc/sys/kernel/printk
 
 # Disable console blanking
 echo -ne "\033[9;0]" > /dev/tty1
+
+# /usr/local/bin/freqfunctions.sh powersave
+
+sleep infinity
