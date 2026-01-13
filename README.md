@@ -6,15 +6,15 @@
 
 # Boards & defconfig
 
-| Board Name                    | CPU/Arch             | GPU      | Kernel | Init    | Rootfs           | Notes                                                                                   |
-| ----------------------------- | -------------------- | -------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
-| rgb30                         | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
-| h700                          | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
-| xxx_rootrw                    | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
-| xxx_consoleonly               | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
-| xxx_sway                      | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
-| pc_qemu_aarch64_virt          | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
-| toolchain_hostArch_targetArch | N/A                  | N/A      | N/A    | N/A     | N/A              | install toolchain only to build separated packages purpose, not a full board build      |
+| Board Name           | CPU/Arch             | GPU      | Kernel | Init    | Rootfs           | Notes                                                                                   |
+| -------------------- | -------------------- | -------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
+| rgb30                | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
+| h700                 | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
+| xxx_rootrw           | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
+| xxx_consoleonly      | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
+| xxx_sway             | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
+| pc_qemu_aarch64_virt | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
+| toolchain_targetArch | N/A                  | N/A      | N/A    | N/A     | N/A              | build toolchain only to be reused for other builds                                      |
 
 # Build
 
@@ -149,4 +149,16 @@ dockerd &
 docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
 docker ps -a
 curl localhost:8080
+```
+
+## Build toolchains
+
+To save build time, instead of building buildroot toolchain every time for each board, we can build toolchain once and use it as "external toolchain" for boards configs.
+
+```bash
+./make-board-build.sh configs/toochain_aarch64_defconfig
+cd output.toochain_aarch64
+make -j$(nproc)
+cd host
+tar -Jcf ../tinilinux-toolchain-$(uname -m)-aarch64-glibc-gcc14.3-kernel6.6.x-binutils2.43.1.tar.xz .
 ```

@@ -47,7 +47,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output.<board>` directory name.
 - **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
 - **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
-- **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_x86_64_aarch64_defconfig`) for building SDKs without a full image.
+- **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_aarch64_defconfig`) for building SDKs without a full image.
 - **Docker builds:** See [README.md](README.md) for container usage.
 
 **Config Fragments System**
