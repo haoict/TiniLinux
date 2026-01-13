@@ -56,7 +56,6 @@ truncate -s ${BOOT_SIZE}M ${P1_IMG}
 echo "  ✓ Formatting as FAT32"
 mkfs.fat -F32 -n BOOT ${P1_IMG}
 echo "  ✓ Copying boot files"
-mcopy -i ${P1_IMG} -o ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* ::/
 mcopy -i ${P1_IMG} -o images/Image ::/
 mcopy -i ${P1_IMG} -o images/initramfs ::/
 if [[ "${BOARD}" == "rgb30"* ]]; then
@@ -68,6 +67,7 @@ elif [[ "${BOARD}" == *"pi3b"* ]]; then
     mcopy -i ${P1_IMG} -o images/rpi-firmware/* ::/
     mcopy -i ${P1_IMG} -o images/broadcom/* ::/
 fi
+mcopy -i ${P1_IMG} -o ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* ::/
 echo "  ✓ Verifying BOOT partition"
 mdir -i images/p1.img ::/
 sync

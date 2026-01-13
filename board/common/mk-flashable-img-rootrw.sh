@@ -75,7 +75,6 @@ mkdir -p /mnt/rootfs && mount -t ext4 ${DEV_LOOP}p2 /mnt/rootfs
 echo ""
 echo "[4/5] Copying files..."
 echo "  ✓ Copying boot files"
-cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* /mnt/BOOT/
 cp images/Image /mnt/BOOT/
 cp images/initramfs /mnt/BOOT/
 if [[ "${BOARD}" == "rgb30"* ]]; then
@@ -87,6 +86,7 @@ elif [[ "${BOARD}" == *"pi3b"* ]]; then
     cp -r images/rpi-firmware/* /mnt/BOOT/
     cp -r images/broadcom/* /mnt/BOOT/
 fi
+cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* /mnt/BOOT/
 
 echo "  ✓ Extracting rootfs"
 tar -xf images/rootfs.tar -C /mnt/rootfs --no-same-owner
