@@ -102,7 +102,7 @@ With pc_qemu_targetArch_virt build, we can test kernel, initramfs, rootfs disk w
 sudo apt install qemu-system-aarch64
 cd output.pc_qemu_aarch64_virt (or _consoleonly variant)
 make -j$(nproc)
-make img
+ZIP=0 make img
 make runqemu (or make runqemugui)
 ```
 

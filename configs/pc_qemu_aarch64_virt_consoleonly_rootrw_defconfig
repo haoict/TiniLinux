@@ -1,2 +1,6 @@
 BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pc_qemu.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/rootrw.fragment"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_qemu_aarch64_virt_consoleonly_rootrw/rootfs"
+BR2_PACKAGE_DOCKER_CLI=y
+BR2_PACKAGE_DOCKER_COMPOSE=y
+BR2_PACKAGE_DOCKER_ENGINE=y
+BR2_PACKAGE_DOCKER_ENGINE_DOCKER_INIT_CATATONIT=y

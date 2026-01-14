@@ -1,7 +1,7 @@
 # Partitions size, in MiB
 BOOT_SIZE=33 # minimum F32 size is 32MiB, we set to 33 to avoid mkfs.fat errors
-ROOTFS_INIT_SIZE=250 # the initial rootfs size to make flashable image
-ROOTFS_TO_EXTEND_SIZE=250 # the extra size to extend rootfs on first boot
+ROOTFS_INIT_SIZE=500 # the initial rootfs size to make flashable image
+ROOTFS_TO_EXTEND_SIZE=2048 # the extra size to extend rootfs on first boot
 # Sector size is 512 bytes & Default boot partition offset, in sectors (don't change this, it is required by u-boot)
 SECTOR_SIZE=512
 BOOT_PART_START=10
