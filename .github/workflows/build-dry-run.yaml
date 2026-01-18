@@ -14,6 +14,7 @@ on:
           - rgb30
           - rgb30_consoleonly
           - pi3b
+          - pi3b_docker
       runner:
         description: 'Select runner type'
         required: true
