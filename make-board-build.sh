@@ -35,7 +35,7 @@ fi
 # Check if ../buildroot exists, if not clone it
 if [ ! -e "../buildroot/Makefile" ]; then
     echo "Cloning buildroot repository..."
-    git clone --depth=1 -b 2025.11 https://github.com/buildroot/buildroot.git ../buildroot
+    git clone --depth=1 -b 2025.11.1 https://github.com/buildroot/buildroot.git ../buildroot
 fi
 
 # Get the directory of this script (TiniLinux)

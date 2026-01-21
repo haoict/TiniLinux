@@ -18,12 +18,12 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Configs:** [configs/](configs) holds all `<board>_defconfig` and toolchain-only defconfigs. Most defconfigs use fragments via `BR2_DEFCONFIG_FRAGMENT` to reduce duplication. Example: `h700_defconfig` is just 2 lines referencing fragments and overlay paths.
 - **Config Fragments:** [configs/fragments/](configs/fragments) contains reusable config fragments: `common.fragment` (shared by all), `h700.fragment`/`rgb30.fragment`/`pi.fragment` (board-specific), `with-graphics.fragment` (GUI packages), `rootrw.fragment`, `sway.fragment`, `pc_qemu.fragment`.
 - **Packages:** Examples: [package/initramfs](package/initramfs), [package/simple-launcher](package/simple-launcher), [package/mesa3d-no-llvm](package/mesa3d-no-llvm), [package/rk3566-dtbo](package/rk3566-dtbo). Each package has `<name>.mk` (Makefile) and `Config.in` (menu entry).
-- **Tooling:** [make-board-build.sh](make-board-build.sh) bootstraps an out-of-tree Buildroot output, auto-clones buildroot 2025.11 if needed, and merges fragments; [Dockerfile](Dockerfile) provides Ubuntu 24.04 build container with all deps.
+- **Tooling:** [make-board-build.sh](make-board-build.sh) bootstraps an out-of-tree Buildroot output, auto-clones buildroot if needed, and merges fragments; [Dockerfile](Dockerfile) provides Ubuntu 24.04 build container with all deps.
 - **CI/CD:** [.github/workflows/build.yaml](.github/workflows/build.yaml) defines manual workflow_dispatch builds with caching for `dl/` (downloads) and `.buildroot-ccache/` (compiled objects). Supports multiple runner types including GitHub-hosted and self-hosted ARM runners.
 - **Docs:** Start with [README.md](README.md). Board-specific notes may exist in `board/<board>/README`.
 
 **Build Workflow**
-- **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2025.11 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
+- **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2025.11.1 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
 - **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output.<board>` or `buildroot/output.<board>` (for Docker builds).
 - **Bootstrap build dir:**
   - `./make-board-build.sh configs/<board>_defconfig` → creates `output.<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
