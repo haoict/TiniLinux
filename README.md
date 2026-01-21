@@ -8,8 +8,8 @@
 
 | Board Name           | CPU/Arch             | GPU      | Kernel | Init    | Rootfs           | Notes                                                                                   |
 | -------------------- | -------------------- | -------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
-| rgb30                | aarch64 (Cortex-A55) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
-| h700                 | aarch64 (Cortex-A53) | Panfrost | 6.18.2 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
+| rgb30                | aarch64 (Cortex-A55) | Panfrost | 6.18.6 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
+| h700                 | aarch64 (Cortex-A53) | Panfrost | 6.18.6 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
 | xxx_rootrw           | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
 | xxx_consoleonly      | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
 | xxx_sway             | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |

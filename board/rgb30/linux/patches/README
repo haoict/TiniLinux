@@ -1,1 +1,32 @@
-../../../h700/linux/patches/README
+
+# Update linux.conf and linux patches from ROCKNIX
+
+Rocknix documentation: https://rocknix.org/contribute/build, https://rocknix.org/contribute/modify/#building-a-single-package
+
+linux.conf: https://github.com/ROCKNIX/distribution/blob/next/projects/ROCKNIX/devices/RK3566/linux/linux.aarch64.conf
+
+## download linux source and patches from ROCKNIX
+```bash
+git clone https://github.com/ROCKNIX/distribution.git
+cd distribution
+export PROJECT=ROCKNIX DEVICE=RK3566 ARCH=aarch64
+./scripts/build linux
+# after it downloaded and patched the linux source, you can cancel the build
+```
+
+## create .patch file
+```bash
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.6.tar.xz
+tar -xvf linux-6.18.6.tar.xz
+cd linux-6.18.6
+git init
+git add -A
+git commit -m "init"
+
+cp -r ~/distribution/build.ROCKNIX-RK3566.aarch64/build/linux-6.18.6/* .
+rm -rf dest
+find . -type f -name '*.orig' -delete
+
+git add -A
+git diff --staged > ~/TiniLinux/board/rgb30/linux/patches/from-rocknix.patch
+```
