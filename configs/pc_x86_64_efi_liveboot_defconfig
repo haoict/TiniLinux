@@ -1,5 +1,10 @@
 BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pc_qemu.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/sway.fragment"
-BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_qemu_aarch64_virt/rootfs"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_x86_64_efi_liveboot/rootfs"
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_x86_64_efi_liveboot/linux/linux.conf"
+BR2_x86_64=y
+BR2_TOOLCHAIN_EXTERNAL_CUSTOM=n
+BR2_TOOLCHAIN_EXTERNAL_BOOTLIN=y
+BR2_TOOLCHAIN_EXTERNAL_BOOTLIN_X86_64_GLIBC_STABLE=y
 BR2_PACKAGE_ALSA_UTILS=y
 BR2_PACKAGE_ALSA_UTILS_ALSACONF=y
 BR2_PACKAGE_ALSA_UTILS_ACONNECT=y

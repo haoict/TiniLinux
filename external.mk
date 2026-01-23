@@ -59,6 +59,28 @@ runqemurootrw:
 		-device virtio-blk-device,drive=hd0 \
 		-nographic
 
+
+liveiso:
+	cd $(BINARIES_DIR); \
+	rm -rf iso; \
+	mkdir -p iso; \
+	cp -r $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_x86_64_efi_liveboot/BOOT iso/boot; \
+	cp bzImage iso/boot; \
+	cp initramfs iso/boot; \
+	cp rootfs.squashfs iso/boot; \
+	grub-mkrescue -o tinilinux-x86_64-liveboot.iso iso
+
+runqemuiso:
+	cd $(BINARIES_DIR); \
+	qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 2G \
+		-drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/OVMF.fd \
+		-boot d \
+		-cdrom tinilinux-x86_64-liveboot.iso \
+		-device virtio-gpu-gl,xres=640,yres=480 -display gtk,gl=on \
+		-device virtio-keyboard \
+		-device virtio-mouse \
+		-vga none
+
 # unused
 runqemux64:
 	cd $(BINARIES_DIR); \

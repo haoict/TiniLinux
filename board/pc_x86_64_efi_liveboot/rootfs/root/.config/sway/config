@@ -1,0 +1,19 @@
+#include /etc/sway/config.d/*
+#input * {
+#    xkb_layout us
+#}
+
+#exec_always --no-startup-id ./simple-launcher
+
+bar {
+    mode invisible
+}
+
+# Disable user shortcuts
+#bindsym --no-repeat Mod4+Shift+e exec echo "disabled"
+#bindsym Mod1+Tab exec echo "disabled"
+
+# Always fullscreen
+for_window [title=".*"] fullscreen enable
+
+seat seat0 hide_cursor 0001
