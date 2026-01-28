@@ -7,6 +7,7 @@ After=sway.service
 Environment=XDG_RUNTIME_DIR=/run/user/0
 Environment=SDL_VIDEODRIVER=wayland
 Environment=WAYLAND_DISPLAY=/run/user/0/wayland-1
+Environment=SWAYSOCK=/run/user/0/sway-ipc.0.sock
 ExecStartPre=-/bin/killall swaynag
 ExecStart=/usr/local/bin/simple-launcher
 Restart=on-failure

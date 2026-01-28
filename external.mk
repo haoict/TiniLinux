@@ -37,7 +37,7 @@ runqemugui:
 	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 2 -m 1G \
 		-kernel Image \
 		-initrd initramfs \
-		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0" \
+		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0 video=640x480" \
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \

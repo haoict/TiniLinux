@@ -17,3 +17,7 @@ bar {
 for_window [title=".*"] fullscreen enable
 
 seat seat0 hide_cursor 0001
+
+output Virtual-1 {
+    mode 640x480
+}

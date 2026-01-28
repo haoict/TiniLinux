@@ -1,0 +1,1 @@
+# bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=tty0 video=640x480

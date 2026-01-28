@@ -1,0 +1,1 @@
+# rootwait root=/dev/vda2 console=ttyAMA0
