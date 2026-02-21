@@ -11,6 +11,8 @@ Btop
 /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
 /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
+System Info
+HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch > /dev/tty1 2>&1
 Quit launcher
 killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >> /dev/tty1
 Sleep

@@ -1,5 +1,6 @@
 menu "TiniLinux Common Packages"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/btop/Config.in"
+	source "$BR2_EXTERNAL_TiniLinux_PATH/package/fastfetch/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/gptokeyb2/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/initramfs/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/populatefs/Config.in.host"
