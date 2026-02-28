@@ -26,6 +26,12 @@ gpu_mem_1024=300
 
 # Enable KMS
 dtoverlay=vc4-kms-v3d
+dtoverlay=pi-st7789v-240x240
+
+# if use legacy fbtft instead of our custom firmware pi-st7789v-240x240, uncomment these line and comment the above line
+#dtoverlay=fbtft,spi0-0,st7789v,dc_pin=25,reset_pin=27,speed=64000000,rotate=270,bgr=1
+#dtparam=width=240
+#dtparam=height=240
 
 # enable 64bits support
 arm_64bit=1

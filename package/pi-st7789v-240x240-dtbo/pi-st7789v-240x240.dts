@@ -1,0 +1,38 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835";
+
+    fragment@0 {
+        target = <&spi0>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            display@0 {
+                compatible = "panel-mipi-dbi-spi";
+                reg = <0>;
+                spi-max-frequency = <64000000>;
+                dc-gpios = <&gpio 25 0>;
+                reset-gpios = <&gpio 27 0>;
+                rotation = <0>;
+                width-mm = <24>;
+                height-mm = <24>;
+
+                panel-timing {
+                    hactive = <240>;
+                    vactive = <240>;
+                    hback-porch = <0>;
+                    vback-porch = <0>;
+                    hfront-porch = <0>;
+                    vfront-porch = <0>;
+                    hsync-len = <0>;
+                    vsync-len = <0>;
+                    clock-frequency = <0>;
+                };
+            };
+        };
+    };
+};

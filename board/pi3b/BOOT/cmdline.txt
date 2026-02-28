@@ -1,1 +1,2 @@
-bootpart=/dev/mmcblk0p1 squashfsimg=rootfs.squashfs overlayfs=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0
+bootpart=/dev/mmcblk0p1 squashfsimg=rootfs.squashfs overlayfs=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0 fbcon=map:1
+# "fbcon=map:10" - This maps consoles across all framebuffers in order — fb0 first, fb1 second. If SPI is fb1 and HDMI is fb0, both get console output simultaneously. No blank HDMI.

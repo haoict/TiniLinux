@@ -57,7 +57,7 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
     echo "[initramfs] Setting up OverlayFS: lower from $bootpart/$squashfsimg, upper on $overlayfs"
     mkdir -p /mnt/boot /mnt/squashfsimg /mnt/overlayfs
     echo "[initramfs] Mounting boot partition $bootpart (read-only)..."
-    mount -o ro "$bootpart" /mnt/boot || exec sh
+    mount -o rw "$bootpart" /mnt/boot || exec sh
     echo "[initramfs] Mounting squashfs image /mnt/boot/$squashfsimg (read-only)..."
     mount -t squashfs -o loop,ro "/mnt/boot/$squashfsimg" /mnt/squashfsimg || exec sh
     echo "[initramfs] Mounting overlay partition $overlayfs (read-write)..."

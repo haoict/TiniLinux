@@ -18,3 +18,7 @@ endmenu
 menu "TiniLinux RK3566 Packages"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/rk3566-dtbo/Config.in"
 endmenu
+
+menu "TiniLinux Raspberry Pi Packages"
+	source "$BR2_EXTERNAL_TiniLinux_PATH/package/pi-st7789v-240x240-dtbo/Config.in"
+endmenu

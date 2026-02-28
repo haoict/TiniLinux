@@ -1,0 +1,3 @@
+config BR2_PACKAGE_PI_ST7789V_240X240_DTBO
+    bool "pi-st7789v-240x240-dtbo"
+    select BR2_PACKAGE_HOST_DTC
