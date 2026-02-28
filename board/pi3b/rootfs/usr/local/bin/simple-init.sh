@@ -13,6 +13,7 @@ amixer -c 0 set "PCM" "80%"
 
 # /usr/local/bin/freqfunctions.sh powersave
 
-cd /usr/local/bin && /usr/local/bin/simple-launcher &
+# cd /usr/local/bin && /usr/local/bin/simple-launcher &
+setfont /usr/share/fonts/spleen-6x12.psfu
 
 sleep infinity
