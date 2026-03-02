@@ -32,9 +32,22 @@ for param in $(cat /proc/cmdline); do
         squashfsimg=*)
             squashfsimg="${param#squashfsimg=}"
             ;;
+        setfont=*)
+            setfont="${param#setfont=}"
+            ;;
+        debug)
+            debug=yes
+            ;;
     esac
 done
 
+# Set console font if specified
+if [ -n "$setfont" ]; then
+    echo "[initramfs] Setting console font to $setfont..."
+    setfont -C /dev/console "/usr/share/consolefonts/$setfont" || echo "[initramfs] Warning: Failed to set console font to $setfont"
+fi
+
+# Create new root directory
 mkdir -p /newroot
 INIT_UNIT=""
 
@@ -136,6 +149,13 @@ else # no OverlayFS, just mount root directly
         echo "[initramfs] No resize flags found - proceeding with normal boot"
         INIT_UNIT="" # normal boot
     fi
+fi
+
+# if debug=yes, drop to shell before switching root
+if [ "$debug" = "yes" ]; then
+    echo "[initramfs] Debug mode enabled - dropping to shell before switching root"
+    echo "[initramfs] Press Ctrl+D to continue booting after debugging"
+    exec sh
 fi
 
 # Mount runtime dirs for systemd
