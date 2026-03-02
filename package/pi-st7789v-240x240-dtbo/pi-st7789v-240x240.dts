@@ -35,4 +35,56 @@
             };
         };
     };
+
+    fragment@1 {
+        target-path = "/";
+        __overlay__ {
+            gpio-keys {
+                compatible = "gpio-keys";
+                autorepeat;
+
+                /* file:///usr/include/linux/input-event-codes.h */
+                up {
+                    label = "joystick up";
+                    linux,code = <103>;    /* KEY_UP */
+                    gpios = <&gpio 6 1>;   /* active low */
+                };
+                down {
+                    label = "joystick down";
+                    linux,code = <108>;    /* KEY_DOWN */
+                    gpios = <&gpio 19 1>;
+                };
+                left {
+                    label = "joystick left";
+                    linux,code = <105>;    /* KEY_LEFT */
+                    gpios = <&gpio 5 1>;
+                };
+                right {
+                    label = "joystick right";
+                    linux,code = <106>;    /* KEY_RIGHT */
+                    gpios = <&gpio 26 1>;
+                };
+                press {
+                    label = "joystick press";
+                    linux,code = <28>;     /* KEY_ENTER */
+                    gpios = <&gpio 13 1>;
+                };
+                a {
+                    label = "button a";
+                    linux,code = <1>;     /* KEY_ESC */
+                    gpios = <&gpio 21 1>;
+                };
+                b {
+                    label = "button b";
+                    linux,code = <44>;     /* KEY_Z */
+                    gpios = <&gpio 20 1>;
+                };
+                x {
+                    label = "button x";
+                    linux,code = <45>;     /* KEY_X */
+                    gpios = <&gpio 16 1>;
+                };
+            };
+        };
+    };
 };

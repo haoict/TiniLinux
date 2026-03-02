@@ -1,0 +1,23 @@
+TiniLinux
+Retroarch
+/usr/local/bin/freqfunctions.sh performance && HOME=/roms /usr/local/bin/retroarch && /usr/local/bin/freqfunctions.sh powersave
+Pico-8 (native)
+if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8.dat" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >> /dev/tty1; sleep 5; else chmod +x /roms/pico-8/pico8_64; /roms/pico-8/pico8_64 -splore -home /roms/pico-8; fi
+File Commander
+HOME=/root /usr/local/bin/commander >/dev/tty1 2>&1
+Simple Terminal
+HOME=/root /usr/local/bin/simple-terminal -scale 1 >/dev/tty1 2>&1
+Htop
+TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/bin/htop
+Wifi
+/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
+System Info
+HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch > /dev/tty1 2>&1
+Install Nothing
+/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/install-nothing-linux-aarch64 >/dev/tty1 2>&1
+Quit launcher
+killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >> /dev/tty1
+Reboot
+CONFIRM::echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
+Poweroff
+CONFIRM::echo "Powering off..." >> /dev/tty1 && systemctl poweroff

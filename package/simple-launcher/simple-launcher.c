@@ -52,13 +52,13 @@
 #define CREDIT "TiniLinux " VERSION " (H700)"
 
 #elif defined(RPI)
-#define FALLBACK_SCREEN_WIDTH 800
-#define FALLBACK_SCREEN_HEIGHT 600
-#define ITEMS_PER_PAGE 10
+#define FALLBACK_SCREEN_WIDTH 480
+#define FALLBACK_SCREEN_HEIGHT 480
+#define ITEMS_PER_PAGE 8
 #define BATTERY_CAPACITY_FILE ""  // no battery
 #define BATTERY_STATUS_FILE ""    // no battery
 #define BRIGHTNESS_FILE ""        // no brightness
-#define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Front Left:/ { print $2 }'"
+#define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Mono: Playback/ { print $2 }'"
 #define CREDIT "TiniLinux " VERSION " (RPI)"
 
 #else
@@ -82,6 +82,7 @@ SDL_Renderer *renderer;
 SDL_Joystick *joystick;
 int windowWidth;
 int windowHeight;
+float windowScale;
 
 TTF_Font *xsFont;
 TTF_Font *sFont;
@@ -466,6 +467,9 @@ void executeShellScript(const char *script) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
     renderer = SDL_CreateRenderer(window, -1, 0);
+    if (windowScale != 1) {
+        SDL_RenderSetScale(renderer, windowScale, windowScale);  // scale down to make it look sharper on high-res screens
+    }
     joystick = SDL_JoystickOpen(0);
 }
 
@@ -476,20 +480,29 @@ int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
     TTF_Init();
 
-    int displayIndex = 0;  // usually 0 unless you have multiple screens
-    SDL_DisplayMode mode;
-    if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
-        printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
-        windowWidth = FALLBACK_SCREEN_WIDTH;
-        windowHeight = FALLBACK_SCREEN_HEIGHT;
+    // if arguments are passed, use window size from arguments (for testing on PC), otherwise detect screen size
+    if (argv[1] != NULL && argv[2] != NULL && argv[3] != NULL) {
+        windowWidth = atoi(argv[1]);
+        windowHeight = atoi(argv[2]);
+        windowScale = atof(argv[3]);
+        printf("Using window size from arguments: %dx%d with scale %f\n", windowWidth, windowHeight, windowScale);
     } else {
-        printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
-        windowWidth = mode.w;
-        windowHeight = mode.h;
+        windowScale = 1;
+        int displayIndex = 0;  // usually 0 unless you have multiple screens
+        SDL_DisplayMode mode;
+        if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
+            printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
+            windowWidth = FALLBACK_SCREEN_WIDTH;
+            windowHeight = FALLBACK_SCREEN_HEIGHT;
+        } else {
+            printf("Detected screen: %dx%d @ %dHz\n", mode.w, mode.h, mode.refresh_rate);
+            windowWidth = mode.w;
+            windowHeight = mode.h;
 #ifndef BR2
-        windowWidth = FALLBACK_SCREEN_WIDTH;
-        windowHeight = FALLBACK_SCREEN_HEIGHT;
+            windowWidth = FALLBACK_SCREEN_WIDTH;
+            windowHeight = FALLBACK_SCREEN_HEIGHT;
 #endif
+        }
     }
 
     window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
@@ -500,6 +513,10 @@ int main(int argc, char *argv[]) {
 
     renderer = SDL_CreateRenderer(window, -1, 0);
     // SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
+    if (windowScale != 1) {
+        printf("Applying window scale: %f\n", windowScale);
+        SDL_RenderSetScale(renderer, windowScale, windowScale);  // scale down to make it look sharper on high-res screens
+    }
 
     if (access(FONT_PATH, F_OK) == -1) {
         printf("Font file %s not found, fallback to %s\n", FONT_PATH, FONT_PATH_FALLBACK);
