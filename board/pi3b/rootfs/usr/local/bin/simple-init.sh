@@ -13,6 +13,15 @@ amixer -c 0 set "PCM" "100%" # aplay -l && aplay /usr/share/sounds/test.wav
 
 # /usr/local/bin/freqfunctions.sh powersave
 
-# cd /usr/local/bin && /usr/local/bin/simple-launcher 480 480 0.5 &
+killall python3
+export PYTHONUNBUFFERED=1
+nohup /usr/bin/python3 /usr/local/bin/simple-keymon.py &
+unset PYTHONUNBUFFERED
+
+printf "\033c" > /dev/tty3
+printf "\033c" > /dev/tty4
+
+sleep 3
+cd /usr/local/bin && /usr/local/bin/simple-launcher 480 480 0.5 &
 
 sleep infinity
