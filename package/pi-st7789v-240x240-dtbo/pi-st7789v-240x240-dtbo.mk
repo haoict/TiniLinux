@@ -18,6 +18,7 @@ define PI_ST7789V_240X240_DTBO_BUILD_CMDS
 endef
 
 define PI_ST7789V_240X240_DTBO_INSTALL_TARGET_CMDS
+	mkdir -p $(BINARIES_DIR)/rpi-firmware/overlays/
 	$(INSTALL) -m 0644 $(@D)/*.dtbo $(BINARIES_DIR)/rpi-firmware/overlays/
 	$(INSTALL) -d $(TARGET_DIR)/lib/firmware/
 	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(TARGET_DIR)/lib/firmware/

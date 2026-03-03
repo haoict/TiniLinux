@@ -14,10 +14,10 @@
             display@0 {
                 compatible = "panel-mipi-dbi-spi";
                 reg = <0>;
-                spi-max-frequency = <64000000>;
+                spi-max-frequency = <96000000>; /* try to drop to 64MHz if you see pixel corruption */
+                spi-tx-bus-width = <1>;
                 dc-gpios = <&gpio 25 0>;
                 reset-gpios = <&gpio 27 0>;
-                rotation = <0>;
                 width-mm = <24>;
                 height-mm = <24>;
 

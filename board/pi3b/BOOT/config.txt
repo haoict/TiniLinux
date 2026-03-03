@@ -24,6 +24,9 @@ gpu_mem_256=100
 gpu_mem_512=200
 gpu_mem_1024=300
 
+framebuffer_width=240
+framebuffer_height=240
+
 # enable 3.5mm jack 
 dtparam=audio=on
 
