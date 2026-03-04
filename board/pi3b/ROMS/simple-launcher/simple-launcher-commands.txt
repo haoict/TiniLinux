@@ -14,7 +14,7 @@ Wifi
 System Info
 HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch > /dev/tty1 2>&1
 Install Nothing
-/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/install-nothing-linux-aarch64 >/dev/tty1 2>&1
+/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/install-nothing-linux-aarch64 -c >/dev/tty1 2>&1
 Quit launcher
 killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >> /dev/tty1
 Reboot

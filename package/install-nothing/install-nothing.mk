@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-INSTALL_NOTHING_VERSION = 0.5.0
-INSTALL_NOTHING_SITE = https://github.com/buyukakyuz/install-nothing/releases/download/v${INSTALL_NOTHING_VERSION}
+INSTALL_NOTHING_VERSION = 0.5.1
+INSTALL_NOTHING_SITE = https://github.com/haoict/install-nothing/releases/download/${INSTALL_NOTHING_VERSION}
 
 ifeq ($(findstring x86_64,$(BR2_DEFCONFIG)),x86_64)
 	INSTALL_NOTHING_SOURCE = install-nothing-linux-x86_64
