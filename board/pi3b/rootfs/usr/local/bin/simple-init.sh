@@ -11,7 +11,7 @@ echo -ne "\033[9;0]" > /dev/tty1
 
 amixer -c 0 set "PCM" "100%" # aplay -l && aplay /usr/share/sounds/test.wav
 
-# /usr/local/bin/freqfunctions.sh powersave
+/usr/local/bin/freqfunctions.sh powersave
 
 killall python3
 export PYTHONUNBUFFERED=1
