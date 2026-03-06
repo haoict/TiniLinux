@@ -14,7 +14,7 @@
             display@0 {
                 compatible = "panel-mipi-dbi-spi";
                 reg = <0>;
-                spi-max-frequency = <96000000>; /* try to drop to 64MHz if you see pixel corruption */
+                spi-max-frequency = <96000000>; /* drop to 64MHz if pixel corruption */
                 spi-tx-bus-width = <1>;
                 dc-gpios = <&gpio 25 0>;
                 reset-gpios = <&gpio 27 0>;
@@ -36,53 +36,75 @@
         };
     };
 
+    /* declare pull-ups via pinctrl - applied by kernel, survives firmware resets */
     fragment@1 {
+        target = <&gpio>;
+        __overlay__ {
+            button_pins: button_pins {
+                brcm,pins = <6 19 5 26 13 21 20 16>;
+                brcm,function = <0>;  /* INPUT */
+                brcm,pull = <2>;      /* PULL_UP */
+            };
+        };
+    };
+
+    fragment@2 {
         target-path = "/";
         __overlay__ {
             gpio-keys {
                 compatible = "gpio-keys";
                 autorepeat;
+                pinctrl-names = "default";
+                pinctrl-0 = <&button_pins>;
 
                 /* file:///usr/include/linux/input-event-codes.h */
                 up {
                     label = "joystick up";
-                    linux,code = <103>;    /* KEY_UP */
-                    gpios = <&gpio 6 1>;   /* active low */
+                    linux,code = <103>;   /* KEY_UP */
+                    gpios = <&gpio 6 1>;  /* active low */
+                    debounce-interval = <20>;
                 };
                 down {
                     label = "joystick down";
-                    linux,code = <108>;    /* KEY_DOWN */
+                    linux,code = <108>;   /* KEY_DOWN */
                     gpios = <&gpio 19 1>;
+                    debounce-interval = <20>;
                 };
                 left {
                     label = "joystick left";
-                    linux,code = <105>;    /* KEY_LEFT */
+                    linux,code = <105>;   /* KEY_LEFT */
                     gpios = <&gpio 5 1>;
+                    debounce-interval = <20>;
                 };
                 right {
                     label = "joystick right";
-                    linux,code = <106>;    /* KEY_RIGHT */
+                    linux,code = <106>;   /* KEY_RIGHT */
                     gpios = <&gpio 26 1>;
+                    debounce-interval = <20>;
                 };
                 press {
                     label = "joystick press";
-                    linux,code = <28>;     /* KEY_ENTER */
+                    linux,code = <28>;    /* KEY_ENTER */
                     gpios = <&gpio 13 1>;
+                    debounce-interval = <20>;
                 };
                 a {
                     label = "button a";
                     linux,code = <1>;     /* KEY_ESC */
                     gpios = <&gpio 21 1>;
+                    debounce-interval = <20>;
                 };
                 b {
                     label = "button b";
-                    linux,code = <44>;     /* KEY_Z */
+                    linux,code = <44>;    /* KEY_Z */
                     gpios = <&gpio 20 1>;
+                    debounce-interval = <20>;
                 };
                 x {
                     label = "button x";
-                    linux,code = <45>;     /* KEY_X */
+                    linux,code = <45>;    /* KEY_X */
                     gpios = <&gpio 16 1>;
+                    debounce-interval = <20>;
                 };
             };
         };

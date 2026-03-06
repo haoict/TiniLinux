@@ -20,6 +20,10 @@ export PYTHONUNBUFFERED=1
 nohup /usr/bin/python3 /usr/local/bin/simple-keymon.py &
 unset PYTHONUNBUFFERED
 
+while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick ]; do
+    echo "Waiting joypad device ready..." > /dev/tty1
+    sleep 0.5
+done
 cd /usr/local/bin && /usr/local/bin/simple-launcher &
 
 sleep infinity

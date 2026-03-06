@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-ROCKNIX_JOYPAD_VERSION = 15b5a29b6b24c0fc59dd6f61602dacf34cbb7eae
+ROCKNIX_JOYPAD_VERSION = 7647fdb0fc89cd69b284903bf7707e861df5dc7e
 ROCKNIX_JOYPAD_SITE = https://github.com/ROCKNIX/rocknix-joypad.git
 ROCKNIX_JOYPAD_SITE_METHOD = git
 ROCKNIX_JOYPAD_LICENSE = GPL

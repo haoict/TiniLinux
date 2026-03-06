@@ -1900,7 +1900,7 @@ index 000000000..bca48d258
 +	rotation = <0>;
 +};
 diff --git a/arch/arm64/boot/dts/rockchip/rk3566-powkiddy-x55.dts b/arch/arm64/boot/dts/rockchip/rk3566-powkiddy-x55.dts
-index e274f7bf9..7c3df7142 100644
+index e274f7bf9..186f3db86 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3566-powkiddy-x55.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3566-powkiddy-x55.dts
 @@ -25,51 +25,44 @@ chosen: chosen {
@@ -2115,7 +2115,7 @@ index e274f7bf9..7c3df7142 100644
 +
 +		/* analog mux define */
 +		io-channel-names = "key-RY", "key-RX", "key-LY", "key-LX";
-+		io-channels = <&saradc 3>,<&saradc 2>,<&saradc 1>, <&saradc 0>;
++		io-channels = <&saradc 2>,<&saradc 3>,<&saradc 0>, <&saradc 1>;
 +
 +		/* gpio pincontrol setup */
 +		pinctrl-names = "default";
@@ -3626,7 +3626,7 @@ index 000000000..4afd3b64b
 +	status = "disabled";
 +};
 diff --git a/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi b/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
-index fd2214b6f..017891827 100644
+index fd2214b6f..f55a79956 100644
 --- a/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
 +++ b/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
 @@ -55,6 +55,7 @@ cpu0: cpu@0 {
@@ -3680,7 +3680,21 @@ index fd2214b6f..017891827 100644
  	};
  
  	/*
-@@ -559,9 +575,22 @@ gpu: gpu@fde60000 {
+@@ -184,6 +200,13 @@ scmi_shmem: shmem@10f000 {
+ 			reg = <0x0 0x0010f000 0x0 0x100>;
+ 			no-map;
+ 		};
++        linux,cma {
++			compatible = "shared-dma-pool";
++			reusable;
++			size = <0x0 0x10000000>;
++			alignment = <0x0 0x400000>;
++			linux,cma-default;
++		};
+ 	};
+ 
+ 	timer {
+@@ -559,9 +582,22 @@ gpu: gpu@fde60000 {
  		interrupt-names = "job", "mmu", "gpu";
  		clocks = <&scmi_clk 1>, <&cru CLK_GPU>;
  		clock-names = "gpu", "bus";
@@ -3703,7 +3717,7 @@ index fd2214b6f..017891827 100644
  	};
  
  	vpu: video-codec@fdea0400 {
-@@ -812,6 +841,47 @@ hdmi_out: port@1 {
+@@ -812,6 +848,47 @@ hdmi_out: port@1 {
  		};
  	};
  
@@ -3751,7 +3765,7 @@ index fd2214b6f..017891827 100644
  	qos_gpu: qos@fe128000 {
  		compatible = "rockchip,rk3568-qos", "syscon";
  		reg = <0x0 0xfe128000 0x0 0x20>;
-@@ -1334,6 +1404,7 @@ uart1: serial@fe650000 {
+@@ -1334,6 +1411,7 @@ uart1: serial@fe650000 {
  		clocks = <&cru SCLK_UART1>, <&cru PCLK_UART1>;
  		clock-names = "baudclk", "apb_pclk";
  		dmas = <&dmac0 2>, <&dmac0 3>;
@@ -3796,10 +3810,10 @@ index 52794db27..26430c225 100644
  MODULE_FIRMWARE("rtl_bt/rtl8761a_config.bin");
  MODULE_FIRMWARE("rtl_bt/rtl8761b_fw.bin");
 diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 3420f711f..7b040deec 100644
+index a953fa9af..261256140 100644
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -774,6 +774,9 @@ static const struct usb_device_id quirks_table[] = {
+@@ -776,6 +776,9 @@ static const struct usb_device_id quirks_table[] = {
  	{ USB_DEVICE(0x0bda, 0xb009), .driver_info = BTUSB_REALTEK },
  	{ USB_DEVICE(0x2ff8, 0xb011), .driver_info = BTUSB_REALTEK },
  
@@ -3867,10 +3881,10 @@ index 3615a761b..392647225 100644
 +obj-y += panel-generic-dsi.o
 diff --git a/drivers/gpu/drm/panel/panel-generic-dsi.c b/drivers/gpu/drm/panel/panel-generic-dsi.c
 new file mode 100644
-index 000000000..e01ce7477
+index 000000000..3adcfd15f
 --- /dev/null
 +++ b/drivers/gpu/drm/panel/panel-generic-dsi.c
-@@ -0,0 +1,681 @@
+@@ -0,0 +1,689 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Generic MIPI-DSI panel driver
@@ -3937,6 +3951,7 @@ index 000000000..e01ce7477
 +struct generic_panel {
 +    struct device *dev;
 +    struct drm_panel panel;
++    struct gpio_desc *enable_gpio;
 +    struct gpio_desc *reset_gpio;
 +    struct regulator *vdd;
 +    struct regulator *iovcc;
@@ -4275,6 +4290,7 @@ index 000000000..e01ce7477
 +        return ret;
 +    }
 +
++    if (ctx->enable_gpio) { gpiod_set_value_cansleep(ctx->enable_gpio, 0); }
 +    gpiod_set_value_cansleep(ctx->reset_gpio, 1);
 +
 +    regulator_disable(ctx->iovcc);
@@ -4309,6 +4325,7 @@ index 000000000..e01ce7477
 +        goto disable_vdd;
 +    }
 +
++    if (ctx->enable_gpio) { gpiod_set_value_cansleep(ctx->enable_gpio, 1); }
 +    msleep(ctx->delays.prepare);
 +
 +    gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -4440,6 +4457,12 @@ index 000000000..e01ce7477
 +    if (!ctx)
 +        return -ENOMEM;
 +
++    ctx->enable_gpio = devm_gpiod_get_optional(dev, "enable", GPIOD_OUT_LOW);
++    if (IS_ERR(ctx->enable_gpio)) {
++        dev_err(dev, "cannot get enable gpio\n");
++	ctx->enable_gpio = NULL;
++    }
++
 +    ctx->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
 +    if (IS_ERR(ctx->reset_gpio)) {
 +        dev_err(dev, "cannot get reset gpio\n");
@@ -4511,7 +4534,6 @@ index 000000000..e01ce7477
 +static void generic_panel_shutdown(struct mipi_dsi_device *dsi)
 +{
 +    struct generic_panel *ctx = mipi_dsi_get_drvdata(dsi);
-+    int ret;
 +
 +    drm_panel_unprepare(&ctx->panel);
 +
@@ -4628,68 +4650,6 @@ index 6c348fe28..91014315b 100644
  	.flags		= DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
  	.width_mm	= 76,
  	.height_mm	= 76,
-diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
-index 7ec7bea5e..96f7539b3 100644
---- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
-+++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
-@@ -966,6 +966,9 @@ static void vop2_crtc_atomic_disable(struct drm_crtc *crtc,
- 	if (!ret)
- 		drm_info(vop2->drm, "wait for vp%d dsp_hold timeout\n", vp->id);
- 
-+	/* Clear initial commit bit so the VP can be re-enabled properly */
-+	vop2->vp_initial_commits &= ~BIT(vp->id);
-+
- 	vop2_crtc_disable_irq(vp, VP_INT_DSP_HOLD_VALID);
- 
- 	if (vp->dclk_src)
-diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h
-index 912419189..cc2c4fe73 100644
---- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h
-+++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h
-@@ -340,6 +340,13 @@ struct vop2 {
- 	 */
- 	u32 old_layer_sel;
- 	u32 old_port_sel;
-+	/*
-+	 * Bitmask tracking which video ports have completed their initial commit.
-+	 * During first commit, vblank isn't enabled yet, so we must skip the
-+	 * layer config wait. Bit N corresponds to VP N (bit 0 = VP0, etc).
-+	 */
-+	u8 vp_initial_commits;
-+
- 	/*
- 	 * Ensure that the updates to these two registers(RKK3568_OVL_LAYER_SEL/RK3568_OVL_PORT_SEL)
- 	 * take effect in sequence.
-diff --git a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
-index cd8380f0e..061bc8808 100644
---- a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
-+++ b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
-@@ -2134,6 +2134,7 @@ static void rk3568_vop2_setup_layer_mixer(struct vop2_video_port *vp)
- {
- 	struct vop2 *vop2 = vp->vop2;
- 	struct drm_plane *plane;
-+	bool vp_initial_commit;
- 	u32 layer_sel = 0;
- 	u32 port_sel;
- 	u32 old_layer_sel = 0;
-@@ -2298,7 +2299,16 @@ static void rk3568_vop2_setup_layer_mixer(struct vop2_video_port *vp)
- 		rk3568_vop2_wait_for_port_mux_done(vop2);
- 	}
- 
--	if (layer_sel != old_layer_sel && atv_layer_sel != old_layer_sel)
-+	/*
-+	 * On initial commit for each VP, skip the wait since vblank isn't enabled yet and
-+	 * there's no previous configuration to synchronize with. Mark this VP as having
-+	 * completed its initial commit for subsequent calls.
-+	 */
-+	vp_initial_commit = !(vop2->vp_initial_commits & BIT(vp->id));
-+	if (vp_initial_commit)
-+		vop2->vp_initial_commits |= BIT(vp->id);
-+
-+	if (layer_sel != old_layer_sel && atv_layer_sel != old_layer_sel && !vp_initial_commit)
- 		rk3568_vop2_wait_for_layer_cfg_done(vop2, vop2->old_layer_sel);
- 
- 	vop2_writel(vop2, RK3568_OVL_LAYER_SEL, layer_sel);
 diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
 index 88ecdf521..d5340645e 100644
 --- a/drivers/input/Kconfig

@@ -6,7 +6,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Buildroot External Tree:** This repo is a Buildroot BR2_EXTERNAL that defines boards, overlays, and custom packages. Build output lives in `output.<board>` created via an out-of-tree build alongside a sibling `buildroot/` directory. See [external.desc](external.desc) and [external.mk](external.mk).
 - **Boards as Variants:** Each board name maps 1:1 to a defconfig in [configs/](configs). Matching board directories live under [board/](board) for BOOT, rootfs overlays, and board-specific assets. Board variants (e.g., `h700`, `h700_sway`, `h700_rootrw`, `h700_consoleonly`) share configs via fragments.
 - **Custom Packages:** All packages reside in [package/](package) and are auto-included via `include $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk)` in [external.mk](external.mk). A top-level [Config.in](Config.in) exposes package menus grouped by function: "TiniLinux Common Packages" (btop, gptokeyb2, initramfs, etc.), "TiniLinux Graphic Packages" (mesa3d-no-llvm, retroarch, simple-launcher, etc.), and "TiniLinux RK3566 Packages" (rk3566-dtbo).
-- **Init System + Kernel:** Systemd-based images with board-specific kernels (Linux 6.18.6) and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](configs/h700_sway_defconfig).
+- **Init System + Kernel:** Systemd-based images with board-specific kernels (Linux 6.18.16) and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](configs/h700_sway_defconfig).
 - **Architecture:** Targets embedded ARM64 devices (Rockchip RK3326/RK3566, Allwinner H700) with GPU acceleration via Panfrost Mesa driver. Also supports QEMU virtual boards (`pc_qemu_aarch64_virt`) and Raspberry Pi 3B (including `pi3b_docker` variant with Docker support).
 
 **Repo Layout**
@@ -23,7 +23,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Docs:** Start with [README.md](README.md). Board-specific notes may exist in `board/<board>/README`.
 
 **Build Workflow**
-- **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2025.11.1 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
+- **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2026.02 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
 - **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output.<board>` or `buildroot/output.<board>` (for Docker builds).
 - **Bootstrap build dir:**
   - `./make-board-build.sh configs/<board>_defconfig` → creates `output.<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.

@@ -38,7 +38,6 @@ arm_64bit=1
 
 # use custom dtbo for st7789 lcd hat
 dtoverlay=pi-st7789v-240x240
-gpio=6,19,5,26,13,21,20,16=pu # for buttons
 # if use legacy fbtft instead of our custom firmware pi-st7789v-240x240, uncomment these line and comment the above line
 #dtoverlay=fbtft,spi0-0,st7789v,dc_pin=25,reset_pin=27,speed=64000000,rotate=270,bgr=1
 #dtparam=width=240

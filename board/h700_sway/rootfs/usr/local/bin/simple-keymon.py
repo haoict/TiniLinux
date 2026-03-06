@@ -101,11 +101,12 @@ async def handle_event(device):
         time.sleep(0.001)
 
 def run():
-    asyncio.ensure_future(handle_event(joypadInput))
-    asyncio.ensure_future(handle_event(volumeInput))
-    asyncio.ensure_future(handle_event(powerKeyInput))
-
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    loop.create_task(handle_event(joypadInput))
+    loop.create_task(handle_event(volumeInput))
+    loop.create_task(handle_event(powerKeyInput))
     loop.run_forever()
 
 if __name__ == "__main__": # admire

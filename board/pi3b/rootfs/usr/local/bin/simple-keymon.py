@@ -27,17 +27,18 @@ async def handle_event(device):
         if device.name == "gpio-keys":
             keys = gpioKeys.active_keys()
 
-            if 1 in keys:  # enter key (joystick press)
-                if 44 in keys:  # esc key (button a)
+            if 1 in keys:  # esckey (key 1)
+                if 44 in keys:  # x (key 2)
                     runcmd("killall retroarch; killall pico8_64; killall commander; killall simple-terminal; killall htop; killall install-nothing-linux-aarch64; true\n", shell=True)
-                if 45 in keys:  # x key (button x)
+                if 45 in keys:  # z key (key 3)
                     runcmd("""systemctl restart simple-init; true\n""", shell=True)
         time.sleep(0.001)
 
 def run():
-    asyncio.ensure_future(handle_event(gpioKeys))
-
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    loop.create_task(handle_event(gpioKeys))
     loop.run_forever()
 
 if __name__ == "__main__": # admire

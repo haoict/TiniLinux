@@ -21,7 +21,10 @@ unset PYTHONUNBUFFERED
 printf "\033c" > /dev/tty3
 printf "\033c" > /dev/tty4
 
-sleep 3
+while [ ! -e /dev/dri/renderD128 ]; do
+    echo "Waiting GPU device ready..." > /dev/tty1
+    sleep 0.5
+done
 cd /usr/local/bin && /usr/local/bin/simple-launcher 480 480 0.5 &
 
 sleep infinity

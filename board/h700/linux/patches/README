@@ -16,14 +16,15 @@ export PROJECT=ROCKNIX DEVICE=H700 ARCH=aarch64
 
 ## create .patch file
 ```bash
-wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.4.tar.xz
-tar -xvf linux-6.18.4.tar.xz
-cd linux-6.18.4
+export LINUX_VERSION=6.x.x
+wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz
+tar -xvf linux-${LINUX_VERSION}.tar.xz
+cd linux-${LINUX_VERSION}
 git init
 git add -A
 git commit -m "init"
 
-cp -r ~/distribution/build.ROCKNIX-H700.aarch64/build/linux-6.18.4/* .
+cp -r ~/distribution/build.ROCKNIX-H700.aarch64/build/linux-${LINUX_VERSION}/* .
 rm -rf dest
 find . -type f -name '*.orig' -delete
 

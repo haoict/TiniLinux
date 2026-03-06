@@ -23,6 +23,22 @@ if [ -f /root/urwid-2.1.2-py3-none-any.whl  ]; then
   pip install /root/urwid-2.1.2-py3-none-any.whl 2>&1 >/dev/tty
   if [ $? -eq 0 ]; then
     mv /root/urwid-2.1.2-py3-none-any.whl /root/urwid-2.1.2-py3-none-any.whl.installed
+
+    # Patch the urwid module in Python 3.14
+    python3 -c "
+      path = '/usr/lib/python3.14/site-packages/urwid/raw_display.py'
+      with open(path, 'r') as f:
+          lines = f.readlines()
+
+      # Replace lines 669, 670, 671 (indices 668, 669, 670)
+      lines[668] = '                import subprocess; r = subprocess.run([\"stty\", \"size\"], capture_output=True, text=True)\n'
+      lines[669] = ''
+      lines[670] = '                y, x = (int(v) for v in r.stdout.split()) if r.stdout.strip() else (24, 80)\n'
+
+      with open(path, 'w') as f:
+          f.writelines(lines)
+      print('Done')
+      "
   else
     echo "urwid module installation failed" 2>&1 >/dev/tty
   fi
