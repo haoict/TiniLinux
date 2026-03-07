@@ -1,0 +1,5 @@
+config BR2_PACKAGE_FAKE_08
+  bool "fake-08"
+  select BR2_PACKAGE_RETROARCH
+  help
+    Fake-08 libretro (Retroarch core for PICO-8 simulator)
