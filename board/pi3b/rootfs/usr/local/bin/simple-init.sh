@@ -22,7 +22,8 @@ while [ ! -e /dev/dri/renderD128 ]; do
     echo "Waiting GPU device ready..." >/dev/tty1
     sleep 0.5
 done
-cd /usr/local/bin && /usr/local/bin/simple-launcher 480 480 0.5 &
+
+/usr/local/bin/simple-launcher -width 400 -height 400 -scale 0.6 -itemsPerPage 6 -font /usr/share/fonts/Ubuntu.ttf &
 
 chvt 3
 sleep infinity

@@ -113,6 +113,7 @@ char dialogBoxString[1024];
 int showDialogBox = 0;
 int dialogSelectedButton = 0;  // 0: Ok, 1: Cancel
 int isShowingSystemInfo = 0;
+int itemsPerPage = ITEMS_PER_PAGE;
 
 void loadCommands() {
     FILE *file = fopen(COMMANDS_FILE, "r");
@@ -316,20 +317,20 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
     SDL_RenderClear(renderer);
 
     // menu items
-    unsigned int selectedPage = selectedItem / ITEMS_PER_PAGE;
+    unsigned int selectedPage = selectedItem / itemsPerPage;
     for (int i = 0; i < numCommands; i++) {
-        if (i >= selectedPage * ITEMS_PER_PAGE && i < (selectedPage + 1) * ITEMS_PER_PAGE) {
+        if (i >= selectedPage * itemsPerPage && i < (selectedPage + 1) * itemsPerPage) {
             char itemName[MAX_NAME_LENGTH] = "> ";
             SDL_Surface *surface = TTF_RenderText_Blended(mFont, selectedItem == i ? strcat(itemName, commands[i].name) : commands[i].name, selectedItem == i ? highlightColor : color);
             SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_Rect rect = {20, 80 + (i - (selectedPage * ITEMS_PER_PAGE)) * 40, surface->w, surface->h};
+            SDL_Rect rect = {20, 80 + (i - (selectedPage * itemsPerPage)) * 40, surface->w, surface->h};
             SDL_RenderCopy(renderer, texture, NULL, &rect);
             SDL_FreeSurface(surface);
             SDL_DestroyTexture(texture);
         }
     }
     // pages
-    unsigned int totalPages = (numCommands - 1) / ITEMS_PER_PAGE + 1;
+    unsigned int totalPages = (numCommands - 1) / itemsPerPage + 1;
     sprintf(pagesDisplayString, "Page %d / %d", selectedPage + 1, totalPages);
     SDL_Surface *pagesSurface = TTF_RenderText_Blended(xsFont, pagesDisplayString, color);
     SDL_Texture *pagesTexture = SDL_CreateTextureFromSurface(renderer, pagesSurface);
@@ -475,14 +476,36 @@ int main(int argc, char *argv[]) {
     TTF_Init();
 
     // if arguments are passed, use window size from arguments (for testing on PC), otherwise detect screen size
-    if (argv[1] != NULL && argv[2] != NULL && argv[3] != NULL) {
-        windowWidth = atoi(argv[1]);
-        windowHeight = atoi(argv[2]);
-        windowScale = atof(argv[3]);
+    // Parse named arguments
+    int argWidth = 0, argHeight = 0, argItemsPerPage = 0;
+    float argScale = 0;
+    const char *argFont = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-width") == 0 && i + 1 < argc) {
+            argWidth = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-height") == 0 && i + 1 < argc) {
+            argHeight = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-scale") == 0 && i + 1 < argc) {
+            argScale = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-font") == 0 && i + 1 < argc) {
+            argFont = argv[++i];
+        } else if (strcmp(argv[i], "-itemsPerPage") == 0 && i + 1 < argc) {
+            argItemsPerPage = atoi(argv[++i]);
+        }
+    }
+
+    if (argFont != NULL) FONT_PATH = argFont;
+    if (argItemsPerPage > 0) itemsPerPage = argItemsPerPage;
+
+    if (argWidth > 0 && argHeight > 0) {
+        windowWidth = argWidth;
+        windowHeight = argHeight;
+        windowScale = (argScale > 0) ? argScale : 1.0f;
         printf("Using window size from arguments: %dx%d with scale %f\n", windowWidth, windowHeight, windowScale);
     } else {
         windowScale = 1;
-        int displayIndex = 0;  // usually 0 unless you have multiple screens
+        int displayIndex = 0;
         SDL_DisplayMode mode;
         if (SDL_GetCurrentDisplayMode(displayIndex, &mode) != 0) {
             printf("SDL_GetCurrentDisplayMode failed: %s\n", SDL_GetError());
@@ -587,14 +610,14 @@ int main(int argc, char *argv[]) {
                                 dialogSelectedButton = !dialogSelectedButton;
                                 break;
                             }
-                            selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                            selectedItem = MAX(0, selectedItem - itemsPerPage);
                             break;
                         case SDLK_RIGHT:
                             if (showDialogBox) {
                                 dialogSelectedButton = !dialogSelectedButton;
                                 break;
                             }
-                            selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                            selectedItem = MIN(selectedItem + itemsPerPage, numCommands - 1);
                             break;
                         case SDLK_RETURN:
                             if (showDialogBox) {
@@ -678,9 +701,9 @@ int main(int argc, char *argv[]) {
                         else
                             selectedItem = 0;
                     } else if (event.jhat.value == SDL_HAT_LEFT) {
-                        selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                        selectedItem = MAX(0, selectedItem - itemsPerPage);
                     } else if (event.jhat.value == SDL_HAT_RIGHT) {
-                        selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                        selectedItem = MIN(selectedItem + itemsPerPage, numCommands - 1);
                     }
                     break;
 #endif
@@ -741,14 +764,14 @@ int main(int argc, char *argv[]) {
                                 dialogSelectedButton = !dialogSelectedButton;
                                 break;
                             }
-                            selectedItem = MAX(0, selectedItem - ITEMS_PER_PAGE);
+                            selectedItem = MAX(0, selectedItem - itemsPerPage);
                             break;
                         case BTN_RIGHT:
                             if (showDialogBox) {
                                 dialogSelectedButton = !dialogSelectedButton;
                                 break;
                             }
-                            selectedItem = MIN(selectedItem + ITEMS_PER_PAGE, numCommands - 1);
+                            selectedItem = MIN(selectedItem + itemsPerPage, numCommands - 1);
                             break;
                         case BTN_SELECT:
                             if (!showDialogBox) {
