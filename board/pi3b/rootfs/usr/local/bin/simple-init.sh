@@ -6,9 +6,6 @@ fi
 
 echo 3 > /proc/sys/kernel/printk
 
-# Disable console blanking
-echo -ne "\033[9;0]" > /dev/tty1
-
 amixer -c 0 set "PCM" "100%" # aplay -l && aplay /usr/share/sounds/test.wav
 
 /usr/local/bin/freqfunctions.sh powersave
@@ -22,9 +19,10 @@ printf "\033c" > /dev/tty3
 printf "\033c" > /dev/tty4
 
 while [ ! -e /dev/dri/renderD128 ]; do
-    echo "Waiting GPU device ready..." > /dev/tty1
+    echo "Waiting GPU device ready..." >/dev/tty1
     sleep 0.5
 done
 cd /usr/local/bin && /usr/local/bin/simple-launcher 480 480 0.5 &
 
+chvt 3
 sleep infinity

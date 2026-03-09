@@ -2,7 +2,7 @@ TiniLinux
 Retroarch
 /usr/local/bin/freqfunctions.sh performance && HOME=/roms /usr/local/bin/retroarch && /usr/local/bin/freqfunctions.sh powersave
 Pico-8 (native)
-if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8.dat" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >>/dev/tty0; sleep 5; else chmod +x /roms/pico-8/pico8_64; /roms/pico-8/pico8_64 -pixel_perfect 1 -splore -home /roms/pico-8; fi
+if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8.dat" ]; then echo "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" >>/dev/tty0; sleep 5; else chmod +x /roms/pico-8/pico8_64; SDL_RENDER_SCALE_QUALITY=nearest /roms/pico-8/pico8_64 -splore -home /roms/pico-8; fi
 File Commander
 HOME=/root /usr/local/bin/commander >/dev/tty0 2>&1
 Simple Terminal
@@ -14,7 +14,7 @@ Wifi
 System Info
 HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch >/dev/tty0 2>&1
 Quit launcher
-killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Select + B + Start to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
+killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Menu + Select + Start to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
 Sleep
 CONFIRM::systemctl suspend
 Reboot

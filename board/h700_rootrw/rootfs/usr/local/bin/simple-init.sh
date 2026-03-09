@@ -6,9 +6,6 @@ fi
 
 echo 3 > /proc/sys/kernel/printk
 
-# Disable console blanking
-echo -ne "\033[9;0]" > /dev/tty1
-
 amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"
 
@@ -26,4 +23,5 @@ while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick
 done
 cd /usr/local/bin && /usr/local/bin/simple-launcher &
 
+chvt 3
 sleep infinity

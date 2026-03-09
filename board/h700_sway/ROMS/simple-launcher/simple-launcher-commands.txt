@@ -4,9 +4,9 @@ Retroarch
 Pico-8 (native)
 if [ ! -e "/roms/pico-8/pico8_64" ] || [ ! -e "/roms/pico-8/pico8.dat" ]; then /usr/bin/swaynag -m "Put pico8_64 and pico8.dat to /roms/pico-8/ to run native pico8" -t warning & PID=$!; sleep 5; kill "$PID"; else chmod +x /roms/pico-8/pico8_64; /roms/pico-8/pico8_64 -pixel_perfect 0 -splore -home /roms/pico-8; fi
 File Commander
-HOME=/root /usr/local/bin/commander >/dev/tty1 2>&1
+HOME=/root /usr/local/bin/commander >/dev/tty0 2>&1
 Simple Terminal
-HOME=/root /usr/local/bin/simple-terminal >/dev/tty1 2>&1
+HOME=/root /usr/local/bin/simple-terminal >/dev/tty0 2>&1
 Btop
 /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
@@ -16,6 +16,6 @@ Quit launcher
 Sleep
 CONFIRM::systemctl suspend
 Reboot
-CONFIRM::echo "Rebooting..." >> /dev/tty1 && systemctl reboot -f
+CONFIRM::echo "Rebooting..." >>/dev/tty0 && systemctl reboot -f
 Poweroff
-CONFIRM::echo "Powering off..." >> /dev/tty1 && systemctl poweroff
+CONFIRM::echo "Powering off..." >>/dev/tty0 && systemctl poweroff

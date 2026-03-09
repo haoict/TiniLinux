@@ -164,7 +164,7 @@ void loadCommands() {
         // Check line overflow
         if (strchr(line, '\n') == NULL) {
             perror("Line is too long (max 512 chars). Skip this command\n");
-            strcpy(commands[numCommands].command, "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty1 && sleep 2");
+            strcpy(commands[numCommands].command, "echo 'Line is too long (max 512 chars). Skip this command' >> /dev/tty0 && sleep 2");
             // If the buffer doesn't contain a newline character, read and discard remaining characters
             int ch;
             while ((ch = fgetc(file)) != '\n' && ch != EOF) {
@@ -375,15 +375,9 @@ void updateRender(int selectedItem, SDL_Color color, SDL_Color highlightColor) {
         double dialogWidthRatio = 0.4;
         double dialogHeightRatio = 0.3;
         if (isShowingSystemInfo) {
-            dialogWidthRatio = 0.5;
-            dialogHeightRatio = 0.5;
+            dialogWidthRatio = 0.8;
+            dialogHeightRatio = 0.8;
         }
-#if defined(H700)
-        if (isShowingSystemInfo) {
-            dialogWidthRatio = 0.55;
-            dialogHeightRatio = 0.7;
-        }
-#endif
         SDL_Rect dialogRect = {windowWidth * (1 - dialogWidthRatio) / 2, windowHeight * (1 - dialogHeightRatio) / 2, windowWidth * dialogWidthRatio, windowHeight * dialogHeightRatio};
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);  // black
         SDL_RenderFillRect(renderer, &dialogRect);
@@ -458,7 +452,7 @@ void executeShellScript(const char *script) {
     SDL_Quit();
 
     // Execute shell script
-    system("printf \"\\033c\" > /dev/tty1");
+    system("printf \"\\033c\" > /dev/tty0");
     system(script);
 
     updateHwInfo();
