@@ -28,8 +28,8 @@ function set_led() {
 
 while true
 do
-  CAP=$(cat /sys/class/power_supply/rk817-battery/capacity)
-  STAT=$(cat /sys/class/power_supply/rk817-battery/status) # STAT= Discharging or Charging
+  CAP=$(cat /sys/class/power_supply/battery/capacity)
+  STAT=$(cat /sys/class/power_supply/battery/status) # STAT= Discharging or Charging or Full
   if [[ ${STAT} == "Discharging" ]]; then
     if (( ${CAP} <= 10 )); then
       for ctr in $(seq 1 1 5); do
