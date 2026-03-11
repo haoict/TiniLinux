@@ -31,6 +31,8 @@ run-name: (Dry run) Build for ${{ inputs.board }} on ${{ inputs.runner }}
 jobs:
   build:
     runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'github-hosted_ubuntu-24.04-arm' && 'ubuntu-24.04-arm') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
+    permissions:
+      contents: write
     steps:
       - name: Install deps
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
@@ -80,9 +82,19 @@ jobs:
           set -x
           cd TiniLinux/output.${{ inputs.board }}
           ZIP=0 make img
+
+          if [ "$GITHUB_REF_TYPE" == "tag" ]; then
+            cd images && zip -j tinilinux-${{ inputs.board }}.img.zip tinilinux-${{ inputs.board }}.img
+          fi
       - name: Archive build output
         uses: actions/upload-artifact@v4
         with:
-          name: tinilinux-${{ inputs.board }}.img
+          name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2
+      - name: Create Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
+          generate_release_notes: false
