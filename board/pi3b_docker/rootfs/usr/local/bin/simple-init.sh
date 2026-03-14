@@ -6,9 +6,11 @@ fi
 
 echo 3 > /proc/sys/kernel/printk
 
+rfkill block bluetooth
+
 # Disable console blanking
 echo -ne "\033[9;0]" > /dev/tty1
 
-# /usr/local/bin/freqfunctions.sh powersave
+/usr/local/bin/freqfunctions.sh balanced_performance
 
-sleep infinity
+#sleep infinity
