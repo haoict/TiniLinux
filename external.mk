@@ -15,7 +15,11 @@ flash:
 	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/flash-to-sdcard.sh
 
 cleantarget:
-	rm -rf $(BASE_TARGET_DIR) && find $(BUILD_DIR) -name ".stamp_target_installed" -delete && rm -f $(BUILD_DIR)/host-gcc-final-*/.stamp_host_installed
+	rm -rf $(BASE_TARGET_DIR); \
+	find $(BUILD_DIR) -name ".stamp_target_installed" -delete; \
+	rm -f $(BUILD_DIR)/host-gcc-final-*/.stamp_host_installed; \
+	rm -rf $(CONFIG_DIR)/per-package/skeleton-init-systemd; \
+	rm -rf $(CONFIG_DIR)/build/skeleton-init-systemd;
 
 savefconf:
 	cd $(CONFIG_DIR) && $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/save-fragment-defconfig.sh
