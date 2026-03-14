@@ -1,6 +1,6 @@
 printf " 💻 Hostname : %s\n" "$(hostname)"
 printf " 🐧 Kernel   : %s\n" "$(uname -r)"
-printf " 🏗️ Build    : %s\n" "$(uname -v)"
+printf " 🔧 Build    : %s\n" "$(grep '^BUILD_ID=' /etc/os-release | cut -d= -f2)"
 printf " 🧠 Memory   : %s\n" "$(free -h | awk '/Mem:/ {print $3 "/" $2}')"
 printf " 📦 Disk     : %s\n" "$(df -h / | awk 'NR==2 {print $3 "/" $2 " used"}')"
 printf "\nHave a great day, hacker! 🚀\n\n"
