@@ -146,7 +146,7 @@ wget https://download.docker.com/linux/static/stable/aarch64/docker-29.1.3.tgz
 tar -xzvf docker-29.1.3.tgz
 mv docker/* /usr/bin/
 dockerd &
-docker run -p 8080:80 -d --name hello --rm nginxdemos/hello
+docker run --name hello -p 8080:80 --restart=unless-stopped -d nginxdemos/hello
 docker ps -a
 curl localhost:8080
 ```
