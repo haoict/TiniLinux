@@ -25,6 +25,10 @@ on:
           - self-hosted_debian12-sachchat2
           - self-hosted_ubuntu-24.04
           - self-hosted_ubuntu-25.04-arm
+      create_release:
+        description: 'Create GitHub release with name (and tag): (leave empty for no release)'
+        required: false
+        type: string
 
 run-name: (Dry run) Build for ${{ inputs.board }} on ${{ inputs.runner }}
 
@@ -44,7 +48,7 @@ jobs:
           # install packages
           sudo apt update && sudo apt install -y mtools
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: TiniLinux
       - name: Build
@@ -83,18 +87,20 @@ jobs:
           cd TiniLinux/output.${{ inputs.board }}
           ZIP=0 make img
 
-          if [ "$GITHUB_REF_TYPE" == "tag" ]; then
+          if [ -n "${{ inputs.create_release }}" ]; then
             cd images && zip -j tinilinux-${{ inputs.board }}.img.zip tinilinux-${{ inputs.board }}.img
           fi
       - name: Archive build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2
       - name: Create Release
-        if: github.ref_type == 'tag'
+        if: inputs.create_release != ''
         uses: softprops/action-gh-release@v2
         with:
           files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
           generate_release_notes: false
+          name: ${{ inputs.create_release }}
+          tag_name: ${{ inputs.create_release }}

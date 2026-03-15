@@ -25,6 +25,10 @@ on:
           - self-hosted_debian12-sachchat2
           - self-hosted_ubuntu-24.04
           - self-hosted_ubuntu-25.04-arm
+      create_release:
+        description: 'Create GitHub release with name (and tag): (leave empty for no release)'
+        required: false
+        type: string
 
 run-name: Build for ${{ inputs.board }} on ${{ inputs.runner }}
 
@@ -48,7 +52,7 @@ jobs:
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 8192 # 8GB for cache
+          root-reserve-mb: 16384
           swap-size-mb: 1024
           # remove-dotnet: 'true'
           # remove-android: 'true'
@@ -62,7 +66,7 @@ jobs:
           path: TiniLinux
 
       - name: Restore dl cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: TiniLinux/dl
           key: dl-cache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
@@ -70,7 +74,7 @@ jobs:
             dl-cache-${{ inputs.board }}-
 
       - name: Restore ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: TiniLinux/.buildroot-ccache
           key: ccache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
@@ -94,20 +98,22 @@ jobs:
           cd TiniLinux/output.${{ inputs.board }}
           ZIP=0 make img
 
-          if [ "$GITHUB_REF_TYPE" == "tag" ]; then
+          if [ -n "${{ inputs.create_release }}" ]; then
             cd images && zip -j tinilinux-${{ inputs.board }}.img.zip tinilinux-${{ inputs.board }}.img
           fi
 
       - name: Archive build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2
 
       - name: Create Release
-        if: github.ref_type == 'tag'
+        if: inputs.create_release != ''
         uses: softprops/action-gh-release@v2
         with:
           files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
           generate_release_notes: false
+          name: ${{ inputs.create_release }}
+          tag_name: ${{ inputs.create_release }}

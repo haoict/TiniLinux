@@ -25,6 +25,10 @@ on:
           - self-hosted_debian12-sachchat2
           - self-hosted_ubuntu-24.04
           - self-hosted_ubuntu-25.04-arm
+      create_release:
+        description: 'Create GitHub release with name (and tag): (leave empty for no release)'
+        required: false
+        type: string
 
 run-name: (Dry run) Build for ${{ inputs.board }} on ${{ inputs.runner }}
 
@@ -35,7 +39,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout main repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: TiniLinux
       - name: Build
@@ -69,7 +73,7 @@ jobs:
 
           cd ..
       - name: Upload result for next job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: images_dir
           path: |
@@ -81,9 +85,9 @@ jobs:
     runs-on: ${{ (inputs.runner == 'github-hosted_ubuntu-24.04' && 'ubuntu-24.04') || (inputs.runner == 'github-hosted_ubuntu-24.04-arm' && 'ubuntu-24.04-arm') || (inputs.runner == 'self-hosted_debian12-sachchat2' && fromJSON('["self-hosted","debian12-sachchat2"]')) || (inputs.runner == 'self-hosted_ubuntu-24.04' && fromJSON('["self-hosted","ubuntu-24.04"]')) || (inputs.runner == 'self-hosted_ubuntu-25.04-arm' && fromJSON('["self-hosted","ubuntu-25.04-arm"]')) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download images_dir result from build job
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: images_dir
           path: output.${{ inputs.board }}/images/
@@ -100,11 +104,11 @@ jobs:
             BOARD=${{ inputs.board }} ZIP=0 board/common/mk-flashable-img-rootless.sh
           fi
 
-          if [ "$GITHUB_REF_TYPE" == "tag" ]; then
+          if [ -n "${{ inputs.create_release }}" ]; then
             cd images && zip -j tinilinux-${{ inputs.board }}.img.zip tinilinux-${{ inputs.board }}.img
           fi
       - name: Archive build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
@@ -115,3 +119,5 @@ jobs:
         with:
           files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
           generate_release_notes: false
+          name: ${{ inputs.create_release }}
+          tag_name: ${{ inputs.create_release }}
