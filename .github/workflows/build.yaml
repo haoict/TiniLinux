@@ -48,17 +48,17 @@ jobs:
           # install packages
           sudo apt update && sudo apt install -y build-essential cmake mtools
 
-      - name: Maximize build space
-        if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 16384
-          swap-size-mb: 1024
-          # remove-dotnet: 'true'
-          # remove-android: 'true'
-          # remove-haskell: 'true'
-          # remove-codeql: 'true'
-          # remove-docker-images: 'true'
+      # - name: Maximize build space
+      #   if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
+      #   uses: easimon/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 8192
+      #     swap-size-mb: 1024
+      #     remove-dotnet: 'true'
+      #     remove-android: 'true'
+      #     # remove-haskell: 'true'
+      #     # remove-codeql: 'true'
+      #     remove-docker-images: 'true'
 
       - name: Checkout main repo
         uses: actions/checkout@v5
@@ -85,11 +85,24 @@ jobs:
         run: |
           set -x
           cd TiniLinux
+
+          # create board config
           ./make-board-build.sh configs/${{ inputs.board }}_defconfig
           cd output.${{ inputs.board }}
-          # sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
+
+          # download packages
           make source -s
+          # remove git folders in dl to save space
+          find ../dl -name '*git' -type d -exec rm -rf {} +
+
+          # build
           time make -j$(nproc) -s
+
+          # remove some heavy packages after built to save space (for dl-cache optimization)
+          rm -rf ../dl/linux
+          rm -rf ../dl/linux-firmware
+          rm -rf ../dl/rpi-firmware
+
           cd ..
 
       - name: Make flashable image
