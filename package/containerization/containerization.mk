@@ -20,7 +20,7 @@ define CONTAINERIZATION_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/lib/systemd/system/
 	mkdir -p ${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/
 	$(INSTALL) -D -m 0644 $(@D)/dockerd.service  $(TARGET_DIR)/usr/lib/systemd/system
-	ln -sf /usr/lib/systemd/system/dockerd.service ${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/dockerd.service
+	#ln -sf /usr/lib/systemd/system/dockerd.service ${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/dockerd.service
 
 	mkdir -p ${TARGET_DIR}/usr/local/lib/docker/cli-plugins/
 	$(INSTALL) -D -m 0755 $(@D)/docker-compose-linux-aarch64 ${TARGET_DIR}/usr/local/lib/docker/cli-plugins/docker-compose
