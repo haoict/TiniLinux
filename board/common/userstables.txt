@@ -1,0 +1,2 @@
+admin 1000 tinilinux 1000 =admin123 /home/admin /bin/bash sudo Admin user
+viewer 1001 tinilinux 1000 =viewer /home/viewer /bin/bash - View only user
