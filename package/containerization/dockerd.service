@@ -1,0 +1,13 @@
+[Unit]
+Description=Docker Application Container Engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/dockerd --log-level=warn
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
