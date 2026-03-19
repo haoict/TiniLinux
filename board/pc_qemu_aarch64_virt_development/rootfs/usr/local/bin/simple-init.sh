@@ -6,4 +6,4 @@ fi
 
 echo 3 > /proc/sys/kernel/printk
 
-sleep infinity
+#sleep infinity
