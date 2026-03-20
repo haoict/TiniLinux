@@ -5,7 +5,7 @@
 ################################################################################
 
 INITRAMFS_VERSION = 1.0.0
-INITRAMFS_SITE = https://www.busybox.net/downloads
+INITRAMFS_SITE = https://mirrors.slackware.com/slackware/slackware64-current/source/a/mkinitrd
 INITRAMFS_SOURCE = busybox-1.37.0.tar.bz2
 
 INITRAMFS_MAKE_ENV = \
