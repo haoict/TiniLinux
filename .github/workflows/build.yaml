@@ -92,18 +92,15 @@ jobs:
 
           # download packages
           make source -s
-          # remove git folders in dl to save space
-          find ../dl -name '*git' -type d -exec rm -rf {} +
 
           # build
           time make -j$(nproc) -s
 
           # remove some heavy packages after built to save space (for dl-cache optimization)
+          find ../dl -name '*git' -type d -exec rm -rf {} +
           rm -rf ../dl/linux
           rm -rf ../dl/linux-firmware
           rm -rf ../dl/rpi-firmware
-
-          cd ..
 
       - name: Make flashable image
         run: |
@@ -130,3 +127,4 @@ jobs:
           generate_release_notes: false
           name: ${{ inputs.create_release }}
           tag_name: ${{ inputs.create_release }}
+
