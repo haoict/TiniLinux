@@ -8,6 +8,6 @@ killall simple-launcher && echo "Press Fn + Select + Start to restart Simple Lau
 Sleep
 CONFIRM::systemctl suspend
 Reboot
-CONFIRM::systemctl reboot -f
+CONFIRM::systemctl reboot
 Poweroff
 CONFIRM::systemctl poweroff

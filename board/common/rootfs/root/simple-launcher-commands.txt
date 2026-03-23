@@ -12,6 +12,6 @@ killall simple-launcher && echo "Press Select + B + Start to restart Launcher" >
 Sleep
 CONFIRM::systemctl suspend
 Reboot
-CONFIRM::echo "Rebooting..." >>/dev/tty0 && systemctl reboot -f
+CONFIRM::chvt 1; echo "Rebooting..." >>/dev/tty0 && systemctl reboot
 Poweroff
-CONFIRM::echo "Powering off..." >>/dev/tty0 && systemctl poweroff
+CONFIRM::chvt 1; echo "Powering off..." >>/dev/tty0 && systemctl poweroff

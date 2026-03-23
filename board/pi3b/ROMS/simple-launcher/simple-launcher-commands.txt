@@ -18,6 +18,6 @@ Install Nothing
 Quit launcher
 killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Key1+Key3 to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
 Reboot
-CONFIRM::echo "Rebooting..." >>/dev/tty0 && systemctl reboot -f
+CONFIRM::chvt 1; echo "Rebooting..." >>/dev/tty0 && systemctl reboot
 Poweroff
-CONFIRM::echo "Powering off..." >>/dev/tty0 && systemctl poweroff
+CONFIRM::chvt 1; echo "Powering off..." >>/dev/tty0 && systemctl poweroff
