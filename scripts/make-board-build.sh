@@ -39,20 +39,20 @@ if [ ! -e "../buildroot/Makefile" ]; then
 fi
 
 # Get the directory of this script (TiniLinux)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TINILINUX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Check if defconfig uses BR2_DEFCONFIG_FRAGMENT
-if grep -q "BR2_DEFCONFIG_FRAGMENT" "$SCRIPT_DIR/$DEFCONFIG_PATH"; then
+if grep -q "BR2_DEFCONFIG_FRAGMENT" "$TINILINUX_DIR/$DEFCONFIG_PATH"; then
     echo "Defconfig uses fragments, merging..."
     
     # Create a temporary merged defconfig
     TEMP_DEFCONFIG=$(mktemp)
     
     # Extract fragment files from BR2_DEFCONFIG_FRAGMENT line
-    FRAGMENTS=$(grep "BR2_DEFCONFIG_FRAGMENT=" "$SCRIPT_DIR/$DEFCONFIG_PATH" | sed 's/BR2_DEFCONFIG_FRAGMENT=//' | tr -d '"')
+    FRAGMENTS=$(grep "BR2_DEFCONFIG_FRAGMENT=" "$TINILINUX_DIR/$DEFCONFIG_PATH" | sed 's/BR2_DEFCONFIG_FRAGMENT=//' | tr -d '"')
     
     # Expand $(BR2_EXTERNAL_TiniLinux_PATH) to actual path
-    FRAGMENTS=$(echo "$FRAGMENTS" | sed "s|\$(BR2_EXTERNAL_TiniLinux_PATH)|$SCRIPT_DIR|g")
+    FRAGMENTS=$(echo "$FRAGMENTS" | sed "s|\$(BR2_EXTERNAL_TiniLinux_PATH)|$TINILINUX_DIR|g")
     
     # Merge all fragments
     for fragment in $FRAGMENTS; do
@@ -66,10 +66,10 @@ if grep -q "BR2_DEFCONFIG_FRAGMENT" "$SCRIPT_DIR/$DEFCONFIG_PATH"; then
     done
     
     # Append non-fragment lines from the original defconfig
-    grep -v "BR2_DEFCONFIG_FRAGMENT=" "$SCRIPT_DIR/$DEFCONFIG_PATH" >> "$TEMP_DEFCONFIG"
+    grep -v "BR2_DEFCONFIG_FRAGMENT=" "$TINILINUX_DIR/$DEFCONFIG_PATH" >> "$TEMP_DEFCONFIG"
     
     # Add BR2_DEFCONFIG to point to the correct defconfig with absolute path
-    echo "BR2_DEFCONFIG=\"$SCRIPT_DIR/configs/${BOARDNAME}_defconfig\"" >> "$TEMP_DEFCONFIG"
+    echo "BR2_DEFCONFIG=\"$TINILINUX_DIR/configs/${BOARDNAME}_defconfig\"" >> "$TEMP_DEFCONFIG"
     
     # Create output directory and copy merged config
     mkdir -p ${OUTPUT_DIR}

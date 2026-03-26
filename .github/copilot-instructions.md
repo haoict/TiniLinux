@@ -30,11 +30,11 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Configure and build:**
   - `cd output.<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
 - **Save config changes:**
-  - `make savefconf` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs. Implemented in [save-fragment-defconfig.sh](board/common/save-fragment-defconfig.sh).
+  - `make savefconf` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs. Implemented in [save-fragment-defconfig.sh](scripts/save-fragment-defconfig.sh).
 - **Image creation:**
-  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](board/common/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](board/common/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
+  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](scripts/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](scripts/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
 - **Flash to SD:**
-  - `make flash` runs [board/common/flash-to-sdcard.sh](board/common/flash-to-sdcard.sh) with the current board.
+  - `make flash` runs [flash-to-sdcard.sh](scripts/flash-to-sdcard.sh) with the current board.
 - **QEMU (virt boards):**
   - `make runqemu` (headless) or `make runqemugui` (GTK) from `output.<board>`; see the helper targets in [external.mk](external.mk). For rootrw variants, use `make runqemurootrw`.
 - **Rebuild after changes:**
@@ -45,7 +45,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 **Images and Partitions**
 - **Partition metadata:** Per-board sizing is defined in `rootfs/root/partition-info.sh` (e.g., [pc_qemu_aarch64_virt](board/pc_qemu_aarch64_virt/rootfs/root/partition-info.sh)) with variables like `DISK_SIZE`, `BOOT_SIZE`, `OVERLAY_SIZE`.
 - **BOOT content:** `Image`, `initramfs`, device trees, and `extlinux.conf` (e.g., [board/h700/BOOT/extlinux/extlinux.conf](board/h700/BOOT/extlinux/extlinux.conf)). Kernel boot args specify rootfs type.
-- **U-Boot offsets:** rgb30 uses 32KiB offset (`seek=64`), h700 uses 8KiB offset (`seek=8`). See [mk-flashable-img-squashfs-rootless.sh](board/common/mk-flashable-img-squashfs-rootless.sh) for dd commands.
+- **U-Boot offsets:** rgb30 uses 32KiB offset (`seek=64`), h700 uses 8KiB offset (`seek=8`). See [mk-flashable-img-squashfs-rootless.sh](scripts/mk-flashable-img-squashfs-rootless.sh) for dd commands.
 - **Rootfs:**
   - squashfs flow (default): BOOT includes `rootfs.squashfs`; writeable overlay comes from `overlay_upper/`. Kernel args: `bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2`.
   - ext4 flow (rootrw variants): `rootfs.tar` extracted into partition by `populatefs-*` binaries. Kernel args: `root=/dev/vda2`.

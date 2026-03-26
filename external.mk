@@ -5,14 +5,14 @@ BOARD=$(shell basename $(BR2_DEFCONFIG) _defconfig)
 img:
 	cd $(CONFIG_DIR); \
 	if [ -f $(BINARIES_DIR)/rootfs.tar ]; then \
-		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-rootrw-rootless.sh; \
+		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mk-flashable-img-rootrw-rootless.sh; \
 	else \
-		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/mk-flashable-img-squashfs-rootless.sh; \
+		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mk-flashable-img-squashfs-rootless.sh; \
 	fi
 
 flash:
 	cd $(CONFIG_DIR); \
-	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/flash-to-sdcard.sh
+	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/flash-to-sdcard.sh
 
 cleantarget:
 	rm -rf $(BASE_TARGET_DIR); \
@@ -22,7 +22,7 @@ cleantarget:
 	rm -rf $(CONFIG_DIR)/build/skeleton-init-systemd;
 
 savefconf:
-	cd $(CONFIG_DIR) && $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/save-fragment-defconfig.sh
+	cd $(CONFIG_DIR) && $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/save-fragment-defconfig.sh
 
 runqemu:
 	cd $(BINARIES_DIR); \
