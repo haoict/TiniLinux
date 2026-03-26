@@ -7,3 +7,6 @@ framebuffer_width=240
 framebuffer_height=240
 arm_64bit=1
 dtoverlay=pi-st7789v-240x240
+start_x=0
+dtoverlay=disable-bt
+dtparam=audio=off
