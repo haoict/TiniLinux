@@ -98,10 +98,10 @@ jobs:
             mv output.${{ inputs.board }}/images/sdcard.img output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           elif sudo -n true &> /dev/null; then
             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
-            sudo BOARD=${{ inputs.board }} ZIP=0 board/common/mk-flashable-img.sh
+            sudo BOARD=${{ inputs.board }} ZIP=0 scripts/mk-flashable-img.sh
           else
             echo "Current user does not have passwordless sudo privileges (or requires a password). Calling rootless (slower) mk-flashable-img script"
-            BOARD=${{ inputs.board }} ZIP=0 board/common/mk-flashable-img-rootless.sh
+            BOARD=${{ inputs.board }} ZIP=0 scripts/mk-flashable-img-rootless.sh
           fi
 
           if [ -n "${{ inputs.create_release }}" ]; then

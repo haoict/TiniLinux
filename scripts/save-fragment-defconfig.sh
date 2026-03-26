@@ -6,7 +6,7 @@ set -euo pipefail
 # Usage: run from output.<board> directory
 
 # Get the TiniLinux root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Check if we're in an output directory
 if [[ ! "$PWD" =~ output\. ]]; then

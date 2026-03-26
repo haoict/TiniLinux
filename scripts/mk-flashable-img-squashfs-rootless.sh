@@ -87,8 +87,6 @@ rootfstmp=$(mktemp -d)
 echo "  ✓ Copying overlay files"
 cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/overlay_upper $rootfstmp/
 if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/overlay_upper/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/overlay_upper/ $rootfstmp/; fi
-echo "  ✓ Updating build info"
-sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" $rootfstmp/overlay_upper/etc/os-release
 echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
 cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/ROMS/ ${romtmp}/
@@ -98,9 +96,9 @@ tar -Jcf $rootfstmp/overlay_upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 echo "  ✓ Populating filesystem"
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
 elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
 fi
 sync
 echo "  ✓ Verifying overlay"

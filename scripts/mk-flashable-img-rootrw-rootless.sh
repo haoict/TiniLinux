@@ -1,22 +1,17 @@
 #!/bin/bash
-# Ref about commands: https://raspberrypi.stackexchange.com/questions/78466/how-to-make-an-image-file-from-scratch/78467#78467
-# Check if user is root
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root." 
-    exit 1
-fi
-
 set -euo pipefail
 
-echo "======================================================="
-echo " Creating Flashable Image for ${BOARD} (RootRW)"
-echo " (Loop device mount variant, need host root privileges)"
-echo "======================================================="
+#####################################################
+# SETUP ENV
+#####################################################
+
+echo "================================================"
+echo "  Creating Flashable Image for ${BOARD} (RootRW)"
+echo "================================================"
 echo ""
 
 # Load partition info variables
 source ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/rootfs/root/partition-info.sh
-
 OUT_IMG=images/tinilinux-${BOARD}.img
 rm -f ${OUT_IMG}
 
@@ -52,65 +47,68 @@ echo "  ✓ Setting boot flag"
 parted -s ${OUT_IMG} set 1 boot on
 sync
 
-echo ""
-echo "[3/5] Setting up loop device..."
-echo "  ✓ Cleaning up previous mounts"
-umount /mnt/BOOT || true
-umount /mnt/rootfs || true
-rm -rf /mnt/BOOT /mnt/rootfs
-losetup --detach-all || true
-
-echo "  ✓ Creating loop device"
-DEV_LOOP=$(losetup --show --find --partscan ${OUT_IMG})
-sync
-echo "  ✓ Formatting BOOT partition (FAT32)"
-mkfs.fat -F32 -n BOOT ${DEV_LOOP}p1
-echo "  ✓ Formatting rootfs partition (ext4)"
-mkfs.ext4 -O ^orphan_file -L rootfs ${DEV_LOOP}p2
-
-echo "  ✓ Mounting partitions"
-mkdir -p /mnt/BOOT && mount -t vfat ${DEV_LOOP}p1 /mnt/BOOT
-mkdir -p /mnt/rootfs && mount -t ext4 ${DEV_LOOP}p2 /mnt/rootfs
 
 echo ""
-echo "[4/5] Copying files..."
+echo "[3/5] Formatting BOOT partition..."
+P1_IMG=images/p1.img
+rm -f ${P1_IMG}
+truncate -s ${BOOT_SIZE}M ${P1_IMG}
+echo "  ✓ Formatting as FAT32"
+mkfs.fat -F32 -n BOOT ${P1_IMG}
 echo "  ✓ Copying boot files"
-cp images/Image /mnt/BOOT/
-cp images/initramfs /mnt/BOOT/
+mcopy -i ${P1_IMG} -o images/Image ::/
+mcopy -i ${P1_IMG} -o images/initramfs ::/
 if [[ "${BOARD}" == "rgb30"* ]]; then
-    cp -r images/rockchip /mnt/BOOT/dtb
-    cp images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/
+    mcopy -i ${P1_IMG} -o images/rockchip/ ::/dtb
+    mcopy -i ${P1_IMG} -o images/rk3566-dtbo/*.dtbo ::/dtb
 elif [[ "${BOARD}" == "h700"* ]]; then
-    cp -r images/allwinner /mnt/BOOT/dtb
+    mcopy -i ${P1_IMG} -o images/allwinner/ ::/dtb
 elif [[ "${BOARD}" == *"pi3b"* ]]; then
-    cp -r images/rpi-firmware/* /mnt/BOOT/
-    cp -r images/broadcom/* /mnt/BOOT/
+    mcopy -i ${P1_IMG} -o images/rpi-firmware/* ::/
+    mcopy -i ${P1_IMG} -o images/broadcom/* ::/
 fi
-cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* /mnt/BOOT/
+mcopy -i ${P1_IMG} -o ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* ::/
+echo "  ✓ Verifying BOOT partition"
+mdir -i images/p1.img ::/
+sync
+fsck.fat -n ${P1_IMG}
+echo "  ✓ Writing BOOT partition to image"
+dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notrunc
+rm -f ${P1_IMG}
 
+echo ""
+echo "[4/5] Creating rootfs partition..."
+P2_IMG=images/p2.img
+rm -f ${P2_IMG}
+truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
+echo "  ✓ Formatting as ext4"
+mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
+rootfstmp=$(mktemp -d)
 echo "  ✓ Extracting rootfs"
-tar -xf images/rootfs.tar -C /mnt/rootfs --no-same-owner
-echo "  ✓ Updating build info"
-sed -i "s/^BUILD_ID=buildroot/BUILD_ID=$(TZ='Asia/Tokyo' date +%Y%m%d-%H%M)JST/" /mnt/rootfs/etc/os-release
+tar -p -xf images/rootfs.tar -C $rootfstmp
 echo "  ✓ Preparing ROMs archive"
 romtmp=$(mktemp -d)
 cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/ROMS/ ${romtmp}/
 if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ${romtmp}/; fi
 if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/* ${romtmp}/ROMS/; fi
-tar -Jcf /mnt/rootfs/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
-
+echo "  ✓ Populating filesystem"
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+fi
 sync
+echo "  ✓ Verifying rootfs"
+e2fsck -n ${P2_IMG}
+rm -rf ${rootfstmp}
+echo "  ✓ Writing rootfs partition to image"
+dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START}" conv=fsync,notrunc
+rm -f ${P2_IMG}
 
 echo ""
 echo "[5/5] Finalizing..."
-echo "  ✓ Unmounting partitions"
-umount /mnt/BOOT
-umount /mnt/rootfs
-rm -rf /mnt/BOOT /mnt/rootfs
-echo "  ✓ Detaching loop device"
-losetup --detach-all
-
 parted ${OUT_IMG} unit MiB print
 
 # if "ZIP=0 make img" then do not create zip archive
