@@ -8,7 +8,7 @@ HOME=/root /usr/local/bin/commander >/dev/tty0 2>&1
 Simple Terminal
 HOME=/root /usr/local/bin/simple-terminal >/dev/tty0 2>&1
 Btop
-/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
+HOME=/root /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
 /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
 Quit launcher
