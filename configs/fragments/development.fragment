@@ -1,4 +1,5 @@
-BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/userstables.txt"
+BR2_ROOTFS_DEVICE_TABLE="system/device_table.txt $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/files_tables.txt"
+BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/users_tables.txt"
 BR2_PACKAGE_IPTABLES=y
 BR2_PACKAGE_GIT=y
 BR2_PACKAGE_MAKE=y
