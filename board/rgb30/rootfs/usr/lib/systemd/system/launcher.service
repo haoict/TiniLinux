@@ -1,13 +1,7 @@
 [Unit]
 Description=Simple Launcher
-Requires=sway.service
-After=sway.service
 
 [Service]
-Environment=XDG_RUNTIME_DIR=/run/user/0
-Environment=SDL_VIDEODRIVER=wayland
-Environment=WAYLAND_DISPLAY=/run/user/0/wayland-1
-ExecStartPre=-/bin/killall swaynag
 ExecStartPre=/bin/sh -c 'while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick ]; do echo "Waiting joypad device ready..." >/dev/tty0; sleep 0.5; done'
 ExecStartPre=/bin/sh -c 'while [ ! -e /dev/dri/renderD128 ]; do echo "Waiting GPU device ready..." >/dev/tty0; sleep 0.5; done'
 ExecStart=/usr/local/bin/simple-launcher
