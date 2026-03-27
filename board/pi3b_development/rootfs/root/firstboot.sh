@@ -1,5 +1,8 @@
 #!/bin/sh
 
+chown -R admin:tinilinux ${TARGET_DIR}/home/admin
+chown -R viewer:tinilinux ${TARGET_DIR}/home/viewer
+
 sleep 3
 systemctl disable --now bluetooth
 
