@@ -80,29 +80,37 @@ echo ""
 echo "[4/5] Creating rootfs partition..."
 P2_IMG=images/p2.img
 rm -f ${P2_IMG}
-truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
-echo "  ✓ Formatting as ext4"
-mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
-rootfstmp=$(mktemp -d)
-echo "  ✓ Extracting rootfs"
-tar -p -xf images/rootfs.tar -C $rootfstmp
-echo "  ✓ Preparing ROMs archive"
-romtmp=$(mktemp -d)
-cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/ROMS/ ${romtmp}/
-if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ${romtmp}/; fi
-if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/* ${romtmp}/ROMS/; fi
-tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
-rm -rf ${romtmp}
-echo "  ✓ Populating filesystem"
-if [[ "$(uname -m)" == "x86_64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
-elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+
+if [[ "${BOARD}" != *"development"* ]]; then
+    # if the board is not development, we need to extract the rootfs.tar and inject rom.tar.xz and repact it to ext4 img
+    truncate -s ${ROOTFS_INIT_SIZE}M ${P2_IMG}
+    echo "  ✓ Formatting as ext4"
+    mkfs.ext4 -O ^orphan_file -L rootfs ${P2_IMG}
+    rootfstmp=$(mktemp -d)
+    echo "  ✓ Extracting rootfs"
+    tar -p -xf images/rootfs.tar -C $rootfstmp
+    echo "  ✓ Preparing ROMs archive"
+    romtmp=$(mktemp -d)
+    cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/ROMS/ ${romtmp}/
+    if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/ROMS/ ${romtmp}/; fi
+    if [ -d ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/ ]; then cp -r ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/private-ROMS/* ${romtmp}/ROMS/; fi
+    tar -Jcf $rootfstmp/root/roms.tar.xz -C ${romtmp}/ROMS/ .
+    rm -rf ${romtmp}
+    echo "  ✓ Populating filesystem"
+    if [[ "$(uname -m)" == "x86_64" ]]; then
+        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+    elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
+        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+    fi
+    sync
+    rm -rf ${rootfstmp}
+else
+    mkfs.ext4 -O ^orphan_file -L rootfs -d images/rootfs.tar ${P2_IMG} ${ROOTFS_INIT_SIZE}M
 fi
-sync
+
 echo "  ✓ Verifying rootfs"
 e2fsck -n ${P2_IMG}
-rm -rf ${rootfstmp}
+
 echo "  ✓ Writing rootfs partition to image"
 dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START}" conv=fsync,notrunc
 rm -f ${P2_IMG}
