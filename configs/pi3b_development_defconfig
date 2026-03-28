@@ -1,2 +1,2 @@
 BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pi.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/rootrw.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/development.fragment"
-BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b_development/rootfs"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/development/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b_development/rootfs"

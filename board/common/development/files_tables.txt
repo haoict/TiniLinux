@@ -1,0 +1,7 @@
+# See package/makedevs/README for details
+#
+# This device table is used to assign proper ownership and permissions on various files
+# <name>				<type>	<mode>	<uid>	<gid>	<major>	<minor>	<start>	<inc>	<count>
+/usr/bin/sudo			f		4755	0		0		-	-	-	-	-
+#/home/admin				r		700		1000	1000	-	-	-	-	-
+#/home/viewer			r		700		1001	1000	-	-	-	-	-
