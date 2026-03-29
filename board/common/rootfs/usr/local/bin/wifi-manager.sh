@@ -1,5 +1,4 @@
 #!/bin/bash
-#sudo nmui
 
 # Copyright (c) 2021
 #
@@ -27,56 +26,50 @@
 export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
 
-dialog --clear
-
-height="15"
+height="13"
 width="55"
 
 old_ifs="$IFS"
+scan_cache=""
 
 ###################################
 # Wifi functions
 ###################################
-CURRENT_CONNECTED_SSID=""
 getCurrentConnectedSSID() {
-  # CURRENT_CONNECTED_SSID=$(iw dev wlan0 info | grep ssid | cut -c 7-30)
-  # if [[ -z $CURRENT_CONNECTED_SSID ]]; then
-    CURRENT_CONNECTED_SSID=$(nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\: -f1)
-  # fi
+  echo $(sudo nmcli -t -f name,device connection show --active | grep wlan0 | cut -d\: -f1)
 }
 
 deleteConnection() {
-
-  dialog --clear --title "Removing $1" --clear --yesno "\nWould you like to continue to remove this connection?" $height $width 2>&1 >/dev/tty
+  dialog --clear --title "Removing $1" --yesno "\nWould you like to continue to remove this connection?" 8 $width 2>&1 >/dev/tty
   if [[ $? != 0 ]]; then
-    #chvt 1
-    exit 1
+    return 0
   fi
   case $? in
-  0) sudo rm -f "/etc/NetworkManager/system-connections/$1.nmconnection" ;;
+  0) sudo nmcli con down "$1"; sudo rm -f "/etc/NetworkManager/system-connections/$1.nmconnection" ;;
   esac
 
   DeleteMenu
 }
 
 connectExisting() {
-  getCurrentConnectedSSID
-
   dialog --infobox "\nConnecting to: $1 ..." 5 $width 2>&1 >/dev/tty
 
-  nmcli con down "$CURRENT_CONNECTED_SSID" >>/dev/null
-  sleep 1
+  currentConnectedSSID=$(getCurrentConnectedSSID)
+  if [[ -n $currentConnectedSSID ]]; then
+    sudo nmcli con down "$currentConnectedSSID" >>/dev/null
+    sleep 1
+  fi
 
-  output=$(nmcli con up "$1")
+  output=$(sudo nmcli con up "$1")
 
   success=$(echo "$output" | grep successfully)
 
   if [ -z "$success" ]; then
-    dialog --infobox "\nFailed to connect to $1" 6 $width 2>&1 >/dev/tty
+    dialog --infobox "\nFailed to connect to $1\n$output" $height $width 2>&1 >/dev/tty
     sleep 3
     ActivateExistingMenu
   else
-    NetworkInfo "Device successfully activated and connected to: "
+    NetworkInfo "Successfully connected to: "
     MainMenu
   fi
 }
@@ -87,35 +80,33 @@ makeConnection() {
   EXIT_CODE=$?
   SDL_GAMECONTROLLERCONFIG_FILE="/usr/share/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/usr/share/gptokeyb2.ini" >/dev/null 2>&1 &
   if [[ $EXIT_CODE != 0 ]]; then
-    MainMenu
+    ScanAndConnectMenu "use_scan_cache"
   fi
 
   PASS="$(echo $PASS | tail -n 1)"
   dialog --infobox "\nConnecting to: $1 ..." 5 $width 2>&1 >/dev/tty
-  clist2=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
-  WPA3=$(echo "$clist2" | grep "$1" | grep "WPA3")
+  WPA3=$(echo "$scan_cache" | grep "$1" | grep "WPA3")
 
   # try to connect
-  nmcli con delete "$1" >/dev/null 2>&1 || true
+  sudo nmcli con delete "$1" >/dev/null 2>&1 || true
   if [[ "$WPA3" != *"WPA3"* ]]; then
-    output=$(nmcli device wifi connect "$1" password "$PASS")
+    output=$(sudo nmcli device wifi connect "$1" password "$PASS")
   else
-    #workaround for wpa2/wpa3 connectivity
-    output=$(nmcli device wifi connect "$1" password "$PASS")
+    #workaround for wpa3 connectivity
+    output=$(sudo nmcli device wifi connect "$1" password "$PASS")
     sudo sed -i '/key-mgmt\=sae/s//key-mgmt\=wpa-psk/' /etc/NetworkManager/system-connections/"$1".nmconnection
     sudo systemctl restart NetworkManager
     sleep 5
-    output=$(nmcli con up "$1")
+    output=$(sudo nmcli con up "$1")
   fi
   success=$(echo "$output" | grep successfully)
 
   if [ -z "$success" ]; then
     sudo rm -f /etc/NetworkManager/system-connections/"$1".nmconnection
-    dialog --infobox "\nActivation failed: The password isn't correct!" 6 $width 2>&1 >/dev/tty
-    sleep 3
-    MainMenu
+    dialog --msgbox "\nActivation failed: $output" 9 $width 2>&1 >/dev/tty
+    ScanAndConnectMenu "use_scan_cache"
   else
-    NetworkInfo "Device successfully activated and connected to: "
+    NetworkInfo "Successfully connected to: "
     MainMenu
   fi
 }
@@ -123,8 +114,8 @@ makeConnection() {
 ###################################
 # Menu
 ###################################
+
 MainMenu() {
-  # if [[ "$(tr -d '\0' </proc/device-tree/compatible)" == *"rk3566"* ]] || [[ "$(tr -d '\0' </proc/device-tree/compatible)" == *"h700"* ]]; then
   if [[ ! -z $(rfkill -n -o TYPE,SOFT | grep wlan) ]]; then
     if [[ ! -z $(rfkill -n -o TYPE,SOFT | grep wlan | grep -w unblocked) ]]; then
       local Wifi_Stat="On"
@@ -135,7 +126,7 @@ MainMenu() {
       mainMenuTitle="Wifi Disabled"
     fi
 
-    mainoptions=(1 "Turn Wifi $Wifi_MStat (Currently: $Wifi_Stat)" 2 "Connect to new Wifi connection" 3 "Activate existing Wifi Connection" 4 "Delete exiting connections" 5 "Current Network Info" 6 "Change Country Code" 7 "Exit")
+    mainoptions=(1 "Turn Wifi $Wifi_MStat (Currently: $Wifi_Stat)" 2 "Connect to new Wifi connection" 3 "Activate existing Wifi Connection" 4 "Delete exiting connections" 5 "Current Network Info" 6 "Exit")
   else
     local Wifi_Stat="Off"
     mainMenuTitle="No Wifi device found"
@@ -143,11 +134,11 @@ MainMenu() {
   fi
 
   if [ $Wifi_Stat == "On" ]; then
-    getCurrentConnectedSSID
-    if [[ -z $CURRENT_CONNECTED_SSID ]]; then
+    currentConnectedSSID=$(getCurrentConnectedSSID)
+    if [[ -z $currentConnectedSSID ]]; then
       mainMenuTitle="Not connected"
     else
-      mainMenuTitle="Currently connected to \"$CURRENT_CONNECTED_SSID\""
+      mainMenuTitle="Currently connected to \"$currentConnectedSSID\""
     fi
   fi
 
@@ -165,7 +156,6 @@ MainMenu() {
 
     mainchoices=$("${mainselection[@]}" "${mainoptions[@]}" 2>&1 >/dev/tty)
     if [[ $? != 0 ]]; then
-      #chvt 1
       exit 1
     fi
 
@@ -184,8 +174,7 @@ MainMenu() {
         3) ActivateExistingMenu ;;
         4) DeleteMenu ;;
         5) NetworkInfo ;;
-        6) CountryMenu ;;
-        7) ExitMenu ;;
+        6) ExitMenu ;;
         esac
       done
     fi
@@ -208,9 +197,14 @@ ToggleWifi() {
 }
 
 ActivateExistingMenu() {
+  currentConnectedSSID=$(getCurrentConnectedSSID)
   declare aoptions=()
   while IFS= read -r -d $'\n' ssid; do
-    aoptions+=("$ssid" ".")
+    if [[ $currentConnectedSSID == $ssid ]]; then
+      aoptions+=("$ssid" "*")
+    else
+      aoptions+=("$ssid" " ")
+    fi
   done < <(ls -1 /etc/NetworkManager/system-connections/ | sed 's/.\{13\}$//' | sed -e 's/$//')
 
   while true; do
@@ -222,7 +216,6 @@ ActivateExistingMenu() {
 
     achoice=$("${aselection[@]}" "${aoptions[@]}" 2>&1 >/dev/tty) || MainMenu
     if [[ $? != 0 ]]; then
-      #chvt 1
       exit 1
     fi
 
@@ -232,18 +225,23 @@ ActivateExistingMenu() {
 }
 
 ScanAndConnectMenu() {
-  dialog --infobox "\nScanning available Wi-Fi access points..." 5 $width 2>&1 >/dev/tty
-  clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
-  if [ -z "$clist" ]; then
+  if [[ -z $1 ]]; then
+    dialog --infobox "\nScanning available Wi-Fi access points..." 5 $width 2>&1 >/dev/tty
     clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
+    if [ -z "$clist" ]; then
+      clist=$(sudo nmcli -f ALL --mode tabular --terse --fields IN-USE,SSID,CHAN,SIGNAL,SECURITY dev wifi)
+    fi
+    scan_cache="$clist" # cache the scan result
+  else
+    clist="$scan_cache" # restore from cache
   fi
 
   # Set colon as the delimiter
   IFS=':'
   unset coptions
-  while IFS= read -r clist; do
+  while IFS= read -r line; do
     # Read the split words into an array based on colon delimiter
-    read -a strarr <<<"$clist"
+    read -a strarr <<<"$line"
 
     INUSE=$(printf '%-5s' "${strarr[0]}")
     SSID="${strarr[1]}"
@@ -251,7 +249,9 @@ ScanAndConnectMenu() {
     SIGNAL=$(printf '%-5s' "${strarr[3]}%")
     SECURITY="${strarr[4]:-OPEN}"
 
-    coptions+=("$SSID" "$INUSE $CHAN $SIGNAL $SECURITY")
+    if [[ -n $SSID ]]; then
+      coptions+=("$SSID" "$INUSE $CHAN $SIGNAL $SECURITY")
+    fi
   done <<<"$clist"
 
   while true; do
@@ -259,11 +259,10 @@ ScanAndConnectMenu() {
       --no-collapse
       --clear
       --cancel-label "Back"
-      --menu "" $height $width 15)
+      --menu "" 16 $width 15)
 
     cchoices=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty) || MainMenu
     if [[ $? != 0 ]]; then
-      #chvt 1
       exit 1
     fi
 
@@ -276,9 +275,14 @@ ScanAndConnectMenu() {
 }
 
 DeleteMenu() {
+  currentConnectedSSID=$(getCurrentConnectedSSID)
   declare deloptions=()
   while IFS= read -r -d $'\n' ssid; do
-    deloptions+=("$ssid" ".")
+    if [[ $currentConnectedSSID == $ssid ]]; then
+      deloptions+=("$ssid" "*")
+    else
+      deloptions+=("$ssid" " ")
+    fi
   done < <(ls -1 /etc/NetworkManager/system-connections/ | sed 's/.\{13\}$//' | sed -e 's/$//')
 
   while true; do
@@ -292,7 +296,6 @@ DeleteMenu() {
     # There is only a single choice possible
     delchoice=$("${delselection[@]}" "${deloptions[@]}" 2>&1 >/dev/tty) || MainMenu
     if [[ $? != 0 ]]; then
-      #chvt 1
       exit 1
     fi
     deleteConnection "$delchoice"
@@ -301,64 +304,55 @@ DeleteMenu() {
 
 NetworkInfo() {
   gateway=$(ip r | grep default | awk '{print $3}')
-  getCurrentConnectedSSID
-  if [[ -z $CURRENT_CONNECTED_SSID ]]; then
+  currentConnectedSSID=$(getCurrentConnectedSSID)
+  if [[ -z $currentConnectedSSID ]]; then
     connectionName="Ethernet Connection: eth0"
     currentip=$(ip -f inet addr show eth0 | sed -En -e 's/.*inet ([0-9.]+).*/\1/p')
   else
-    connectionName="SSID: $CURRENT_CONNECTED_SSID"
+    connectionName="SSID: $currentConnectedSSID"
     currentip=$(ip -f inet addr show wlan0 | sed -En -e 's/.*inet ([0-9.]+).*/\1/p')
   fi
   
-  currentdns=$( (nmcli dev list || nmcli dev show) 2>/dev/null | grep DNS | awk '{print $2}')
+  currentdns=$( (sudo nmcli dev list || sudo nmcli dev show) 2>/dev/null | grep DNS | awk '{print $2}')
   message=$1
   details=$(ip a | sed 's/$/\\n/')
   
-  dialog --clear --title "Your Network Information" --clear --msgbox "\n$message\n$connectionName\nIP: $currentip\nGateway: $gateway\nDNS: $currentdns\n\n\nDetails:\n$details" $height $width 2>&1 >/dev/tty
+  dialog --clear --title "Network Information" --msgbox "$message\n$connectionName\nIP: $currentip\nGateway: $gateway\nDNS: $currentdns\n\n\nDetails:\n$details" $height $width 2>&1 >/dev/tty
   if [[ $? != 0 ]]; then
-    #chvt 1
     exit 1
   fi
 }
 
-CountryMenu() {
-
-  cur_country=$(sudo iw reg get | grep country | cut -c 9-10)
-  if [[ "$cur_country" == "00" ]]; then
-    cur_country="WORLD"
-  fi
-
-  declare coptions=()
-  coptions=("WORLD" . "US" . "DZ" . "AR" . "AU" . "AT" . "BH" . "BM" . "BO" . "BR" . "BG" . "CA" . "CL" . "CN" . "CO" . "CR" . "CY" . "CZ" . "DK" . "DO" . "EC" . "EG" . "SV" . "EE" . "FI" . "FR" . "DE" . "GR" . "GT" . "HN" . "HK" . "IS" . "IN" . "ID" . "IE" . "PK" . "IL" . "IT" . "JM" . "JP3" . "JO" . "KE" . "KW" . "KW" . "LB" . "LI" . "LI" . "LT" . "LT" . "LU" . "MU" . "MX" . "MX" . "MA" . "MA" . "NL" . "NZ" . "NZ" . "NO" . "OM" . "PA" . "PA" . "PE" . "PH" . "PL" . "PL" . "PT" . "PR" . "PR" . "QA" . "KR" . "RO" . "RU" . "RU" . "SA" . "CS" . "SG" . "SK" . "SK" . "SI" . "SI" . "ZA" . "ES" . "LK" . "CH" . "TW" . "TH" . "TH" . "TT" . "TN" . "TR" . "UA" . "AE" . "GB" . "UY" . "UY" . "VE" . "VN" .)
-
-  while true; do
-    cselection=(dialog
-      --backtitle "Country currently set to $cur_country"
-      --title "Which country would you like to set your wifi to?"
-      --no-collapse
-      --clear
-      --cancel-label "Back"
-      --menu "" $height $width 15)
-
-    cchoice=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty) || MainMenu
-    if [[ $? != 0 ]]; then
-      #chvt 1
-      exit 1
-    fi
-
-    # There is only one choice possible
-    if [[ "$cchoice" == "WORLD" ]]; then
-      sudo iw reg set 00
-    else
-      sudo iw reg set "$cchoice"
-    fi
-    CountryMenu
-  done
-
-}
+# CountryMenu() {
+#   cur_country=$(sudo iw reg get | grep country | cut -c 9-10)
+#   if [[ "$cur_country" == "00" ]]; then
+#     cur_country="WORLD"
+#   fi
+#   declare coptions=()
+#   coptions=("WORLD" . "US" . "DZ" . "AR" . "AU" . "AT" . "BH" . "BM" . "BO" . "BR" . "BG" . "CA" . "CL" . "CN" . "CO" . "CR" . "CY" . "CZ" . "DK" . "DO" . "EC" . "EG" . "SV" . "EE" . "FI" . "FR" . "DE" . "GR" . "GT" . "HN" . "HK" . "IS" . "IN" . "ID" . "IE" . "PK" . "IL" . "IT" . "JM" . "JP3" . "JO" . "KE" . "KW" . "KW" . "LB" . "LI" . "LI" . "LT" . "LT" . "LU" . "MU" . "MX" . "MX" . "MA" . "MA" . "NL" . "NZ" . "NZ" . "NO" . "OM" . "PA" . "PA" . "PE" . "PH" . "PL" . "PL" . "PT" . "PR" . "PR" . "QA" . "KR" . "RO" . "RU" . "RU" . "SA" . "CS" . "SG" . "SK" . "SK" . "SI" . "SI" . "ZA" . "ES" . "LK" . "CH" . "TW" . "TH" . "TH" . "TT" . "TN" . "TR" . "UA" . "AE" . "GB" . "UY" . "UY" . "VE" . "VN" .)
+#   while true; do
+#     cselection=(dialog
+#       --backtitle "Country currently set to $cur_country"
+#       --title "Which country would you like to set your wifi to?"
+#       --no-collapse
+#       --clear
+#       --cancel-label "Back"
+#       --menu "" $height $width 15)
+#     cchoice=$("${cselection[@]}" "${coptions[@]}" 2>&1 >/dev/tty) || MainMenu
+#     if [[ $? != 0 ]]; then
+#       exit 1
+#     fi
+#     # There is only one choice possible
+#     if [[ "$cchoice" == "WORLD" ]]; then
+#       sudo iw reg set 00
+#     else
+#       sudo iw reg set "$cchoice"
+#     fi
+#     CountryMenu
+#   done
+# }
 
 ExitMenu() {
-  #chvt 1
   exit 0
 }
 
