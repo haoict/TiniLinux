@@ -17,12 +17,12 @@
 #    pip install urwid-2.1.2-py3-none-any.whl
 
 
-# Check /root/urwid-2.1.2-py3-none-any.whl exists, then install it
-if [ -f /root/urwid-2.1.2-py3-none-any.whl  ]; then
+# Check /usr/share/lib/python/urwid-2.1.2-py3-none-any.whl exists, then install it
+if [ -f /usr/share/lib/python/urwid-2.1.2-py3-none-any.whl  ]; then
   echo "Installing the python3 urwid module needed for this.  Please wait..." 2>&1 >/dev/tty
-  pip install /root/urwid-2.1.2-py3-none-any.whl 2>&1 >/dev/tty
+  pip install /usr/share/lib/python/urwid-2.1.2-py3-none-any.whl 2>&1 >/dev/tty
   if [ $? -eq 0 ]; then
-    mv /root/urwid-2.1.2-py3-none-any.whl /root/urwid-2.1.2-py3-none-any.whl.installed
+    rm -f /usr/share/lib/python/urwid-2.1.2-py3-none-any.whl
 
     # Patch the urwid module in Python 3.14
     python3 -c "
@@ -48,7 +48,7 @@ fi
 export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
 ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
-SDL_GAMECONTROLLERCONFIG_FILE="/root/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/root/gptokeyb2.ini" >/dev/null 2>&1 &
+SDL_GAMECONTROLLERCONFIG_FILE="/usr/share/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/usr/share/gptokeyb2.ini" >/dev/null 2>&1 &
 
 RESULTS="$(python3 /usr/local/bin/osk.py "$1" 2>&1 >/dev/tty)"
 EXIT_CODE=$?

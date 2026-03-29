@@ -75,7 +75,7 @@
 const char *FONT_PATH = "/roms/simple-launcher/font.ttf";
 const char *FONT_PATH_FALLBACK = "/usr/share/fonts/Fiery_Turk.ttf";
 const char *COMMANDS_FILE = "/roms/simple-launcher/simple-launcher-commands.txt";
-const char *COMMANDS_FILE_FALLBACK = "/root/simple-launcher-commands.txt";
+const char *COMMANDS_FILE_FALLBACK = "/usr/share/simple-launcher-commands.txt";
 
 SDL_Window *window;
 SDL_Renderer *renderer;

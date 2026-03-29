@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
 
-# Offline install urwid==2.1.2
-# With internet connection, we can run  pip install urwid==2.1.2
-# But for offline env, we need to install it from .whl file
-# Steps to create urwid-2.1.2-py3-none-any.whl (from another handheld machine with internet access):
-# 1. Run: pip download urwid==2.1.2 --dest /root/urwid_offline
-# 2. Run: cd /root/urwid_offline && tar xzf urwid-2.1.2.tar.gz && cd urwid-2.1.2
-# 3. Run: python3 setup.py bdist_wheel
-# 4. The .whl file will be created in the dist/ folder: dist/urwid-2.1.2-py3-none-any.whl
-# 5. Copy the .whl file to the target system and install it using pip:
-#    pip install urwid-2.1.2-py3-none-any.whl
-
 """
 This file is part of The RetroPie Project
 The RetroPie Project is the legal property of its developers, whose names are
