@@ -7,3 +7,4 @@ package/simple-launcher/simple-launcher
 
 # Ignore all rom files & pico-8 binaries
 board/common/private-ROMS/*
+board/common/rootfs/etc/NetworkManager/system-connections/*.nmconnection
