@@ -105,5 +105,5 @@ if [ "$need_reboot" = "1" ]; then
     systemctl reboot -f
 else
     echo "Continuing to normal boot..."
-    exec systemctl isolate default.target
+    exec systemctl default
 fi
