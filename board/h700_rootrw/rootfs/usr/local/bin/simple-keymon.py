@@ -77,7 +77,7 @@ async def handle_event(device):
             if Joypad.fn in keys:
                 if Joypad.select in keys:
                     if event.code == Joypad.start and event.value == 1:
-                        runcmd("systemctl restart simple-init\n", shell=True)
+                        runcmd("systemctl restart launcher\n", shell=True)
                 if event.code == Joypad.start and event.value == 1:
                     runcmd("killall retroarch; killall pico8_64; killall commander; killall simple-terminal; true\n", shell=True)
                 if event.code == Joypad.up and event.value == 1:

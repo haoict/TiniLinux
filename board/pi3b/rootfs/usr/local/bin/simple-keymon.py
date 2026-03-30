@@ -45,7 +45,7 @@ async def handle_event(device):
                         shell=True
                     )
                 elif KEY_Z in active:
-                    runcmd("systemctl restart simple-init; true", shell=True)
+                    runcmd("systemctl restart launcher; true", shell=True)
 
         time.sleep(0.001)
 

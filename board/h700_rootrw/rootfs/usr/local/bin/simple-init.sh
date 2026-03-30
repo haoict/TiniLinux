@@ -1,8 +1,6 @@
 #!/bin/sh
 
-if [ -f /root/firstboot.sh ]; then
-    /root/firstboot.sh
-fi
+[ -f /root/firstboot.sh ] && /root/firstboot.sh
 
 echo 3 > /proc/sys/kernel/printk
 
@@ -10,18 +8,15 @@ amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"
 
 /usr/local/bin/freqfunctions.sh powersave
-rfkill block bluetooth
 
-killall python3
-export PYTHONUNBUFFERED=1
-nohup /usr/bin/python3 /usr/local/bin/simple-keymon.py &
-unset PYTHONUNBUFFERED
+if [ -f /usr/local/bin/simple-launcher ]; then
+    chvt 3;
+else
+    # consoleonly boards
+    systemctl set-default multi-user.target
+fi
 
-while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick ]; do
-    echo "Waiting joypad device ready..." > /dev/tty1
-    sleep 0.5
-done
-cd /usr/local/bin && /usr/local/bin/simple-launcher &
+printf "\033c" > /dev/tty3
+printf "\033c" > /dev/tty4
 
-chvt 3
-sleep infinity
+PYTHONUNBUFFERED=1 exec /usr/local/bin/simple-keymon.py
