@@ -9,7 +9,6 @@ if [ -f /root/firstboot.sh ]; then
     systemctl enable launcher.service --now
 fi
 
-echo 3 > /proc/sys/kernel/printk
 # cd /usr/local/bin && /usr/local/bin/simple-launcher &
 
 sleep infinity

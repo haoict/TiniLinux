@@ -2,13 +2,10 @@
 
 [ -f /root/firstboot.sh ] && /root/firstboot.sh
 
-echo 3 > /proc/sys/kernel/printk
-
 amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"
 
 /usr/local/bin/freqfunctions.sh powersave
-rfkill block bluetooth
 
 if [ -f /usr/local/bin/simple-launcher ]; then
     chvt 3;

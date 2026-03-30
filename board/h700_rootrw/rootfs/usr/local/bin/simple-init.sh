@@ -2,8 +2,6 @@
 
 [ -f /root/firstboot.sh ] && /root/firstboot.sh
 
-echo 3 > /proc/sys/kernel/printk
-
 amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"
 
