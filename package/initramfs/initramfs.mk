@@ -36,12 +36,10 @@ define INITRAMFS_INSTALL_TARGET_CMDS
 
 	# prepare filesystem
 	mkdir -p $(@D)/initramfs/{dev,proc,sys,run,tmp,newroot}
-	cp $(BR2_EXTERNAL_TiniLinux_PATH)/package/initramfs/init $(@D)/initramfs
+
+	# copy files
+	cp -r $(BR2_EXTERNAL_TiniLinux_PATH)/package/initramfs/rootfs/* $(@D)/initramfs/
 	chmod +x $(@D)/initramfs/init
-	
-	# copy console fonts
-	mkdir -p $(@D)/initramfs/usr/share/consolefonts
-	cp $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs/usr/share/fonts/*.psfu $(@D)/initramfs/usr/share/consolefonts/
 
 	# Create cpio archive
 	cd $(@D)/initramfs && find . | cpio -o -H newc | gzip > $(BINARIES_DIR)/initramfs
