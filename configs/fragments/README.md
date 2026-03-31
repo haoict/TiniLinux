@@ -20,7 +20,7 @@ BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/rootfs"
 ```
 
-When you run `./make-board-build.sh configs/<board>_defconfig`, it automatically merges all referenced fragments.
+When you run `./scripts/make-board-build.sh configs/<board>_defconfig`, it automatically merges all referenced fragments.
 
 ## Saving Configuration Changes
 

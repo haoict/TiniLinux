@@ -30,7 +30,7 @@ git clone https://github.com/haoict/TiniLinux.git
 
 # Create board config
 cd TiniLinux
-./make-board-build.sh configs/<boardname>_defconfig
+./scripts/make-board-build.sh configs/<boardname>_defconfig
 
 # Build
 cd output.<boardname>
@@ -83,7 +83,7 @@ docker exec -it tinilinux-builder bash
 
 # NOTE: Commands from here are executed inside docker container
 cd TiniLinux
-./make-board-build.sh configs/<boardname>_defconfig docker
+./scripts/make-board-build.sh configs/<boardname>_defconfig docker
 cd /home/ubuntu/buildroot/output.<boardname>
 make -j$(nproc)
 make img
@@ -156,7 +156,7 @@ curl localhost:8080
 To save build time, instead of building buildroot toolchain every time for each board, we can build toolchain once and use it as "external toolchain" for boards configs.
 
 ```bash
-./make-board-build.sh configs/toochain_aarch64_defconfig
+./scripts/make-board-build.sh configs/toochain_aarch64_defconfig
 cd output.toochain_aarch64
 make -j$(nproc)
 cd host

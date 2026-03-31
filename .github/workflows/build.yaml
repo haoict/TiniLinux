@@ -87,7 +87,7 @@ jobs:
           cd TiniLinux
 
           # create board config
-          ./make-board-build.sh configs/${{ inputs.board }}_defconfig
+          ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
           cd output.${{ inputs.board }}
 
           # download packages

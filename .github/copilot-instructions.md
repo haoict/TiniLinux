@@ -26,7 +26,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2026.02 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
 - **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output.<board>` or `buildroot/output.<board>` (for Docker builds).
 - **Bootstrap build dir:**
-  - `./make-board-build.sh configs/<board>_defconfig` → creates `output.<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
+  - `./scripts/make-board-build.sh configs/<board>_defconfig` → creates `output.<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
 - **Configure and build:**
   - `cd output.<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
 - **Save config changes:**
@@ -61,7 +61,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
 - **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
 - **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_aarch64_defconfig`, `toolchain_x86_64_defconfig`) for building reusable cross-compilation SDKs without a full image.
-- **Docker builds:** [Dockerfile](Dockerfile) creates an Ubuntu 24.04 container with user `ubuntu:ubuntu`, all build deps, and mounts for TiniLinux source and buildroot cache. Use `./make-board-build.sh configs/<board>_defconfig docker` to adjust paths for containerized builds. See [README.md](README.md) for full workflow.
+- **Docker builds:** [Dockerfile](Dockerfile) creates an Ubuntu 24.04 container with user `ubuntu:ubuntu`, all build deps, and mounts for TiniLinux source and buildroot cache. Use `./scripts/make-board-build.sh configs/<board>_defconfig docker` to adjust paths for containerized builds. See [README.md](README.md) for full workflow.
 
 **Config Fragments System**
 - **Fragment-based defconfigs:** Most defconfigs use `BR2_DEFCONFIG_FRAGMENT` to reference multiple fragment files, dramatically reducing duplication.
