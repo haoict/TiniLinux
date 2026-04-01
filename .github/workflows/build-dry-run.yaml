@@ -47,6 +47,23 @@ jobs:
           sudo rm -r /var/cache/man
           # install packages
           sudo apt update && sudo apt install -y mtools
+      - name: Install deps (fix)
+        if: ${{ inputs.board == 'pi3b_development' }}
+        run: |
+          ### FIX for development boards on ubuntu 24.04 as mkfs.ext4 didn't accept tar (mk-flashable-img-rootrw-rootless.sh:L108)
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libext2fs2t64_1.47.1-1ubuntu1_amd64.deb
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libcom-err2_1.47.1-1ubuntu1_amd64.deb
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/comerr-dev_2.1-1.47.1-1ubuntu1_amd64.deb
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/e2fsprogs_1.47.1-1ubuntu1_amd64.deb
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libss2_1.47.1-1ubuntu1_amd64.deb
+          wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libext2fs-dev_1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i libcom-err2_1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i libext2fs2t64_1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i libss2_1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i comerr-dev_2.1-1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i libext2fs-dev_1.47.1-1ubuntu1_amd64.deb
+          sudo dpkg -i e2fsprogs_1.47.1-1ubuntu1_amd64.deb
+          sudo apt -f install
       - name: Checkout main repo
         uses: actions/checkout@v5
         with:
