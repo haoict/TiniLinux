@@ -2,8 +2,9 @@
 Description=Simple Launcher
 
 [Service]
-ExecStartPre=/bin/sh -c 'while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick ]; do echo "Waiting joypad device ready..." >/dev/tty0; sleep 0.5; done'
-ExecStartPre=/bin/sh -c 'while [ ! -e /dev/dri/renderD128 ]; do echo "Waiting GPU device ready..." >/dev/tty0; sleep 0.5; done'
+ExecStartPre=/bin/sh -c 'while [ ! -e /dev/input/by-path/platform-rocknix-singleadc-joypad-event-joystick ]; do echo "Waiting joypad device ready..."; sleep 0.5; done'
+ExecStartPre=/bin/sh -c 'while [ ! -e /dev/dri/renderD128 ]; do echo "Waiting GPU device ready..."; sleep 0.5; done'
+ExecStartPre=/bin/sh -c 'chvt 3 || true'
 ExecStart=/usr/local/bin/simple-launcher
 Restart=on-failure
 RestartSec=5

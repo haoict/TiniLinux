@@ -1,0 +1,13 @@
+[Unit]
+Description=Starts Psplash Boot screen
+DefaultDependencies=no
+ConditionKernelCommandLine=splash
+RequiresMountsFor=/run
+Before=sysinit.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/psplash
+
+[Install]
+WantedBy=sysinit.target
