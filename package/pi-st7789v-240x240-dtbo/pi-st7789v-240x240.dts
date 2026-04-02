@@ -18,6 +18,7 @@
                 spi-tx-bus-width = <1>;
                 dc-gpios = <&gpio 25 0>;
                 reset-gpios = <&gpio 27 0>;
+                backlight = <&backlight>;
                 width-mm = <24>;
                 height-mm = <24>;
 
@@ -51,6 +52,14 @@
     fragment@2 {
         target-path = "/";
         __overlay__ {
+            /* BACKLIGHT NODE - GPIO 24, active high */
+            /* Control brightness with: echo 1 > /sys/class/backlight/backlight/brightness */
+            backlight: backlight {
+                compatible = "gpio-backlight";
+                gpios = <&gpio 24 0>;   /* GPIO 24, active high */
+                default-on;
+            };
+
             gpio-keys {
                 compatible = "gpio-keys";
                 autorepeat;
