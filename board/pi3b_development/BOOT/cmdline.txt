@@ -1,1 +1,1 @@
-root=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=0 setfont=spleen-5x8.psfu fbcon=map:10 video=240x240-16@60
+root=/dev/mmcblk0p2 fsck.repair=yes net.ifnames=0 console=tty1 consoleblank=300 setfont=spleen-5x8.psfu fbcon=map:10 video=240x240-16@60

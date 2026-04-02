@@ -36,6 +36,8 @@ dtoverlay=vc4-kms-v3d
 # enable 64bits support
 arm_64bit=1
 
+# control st7789 lcd hat brightness
+dtoverlay=pwm,pin=18,func=2
 # use custom dtbo for st7789 lcd hat
 dtoverlay=pi-st7789v-240x240
 # if use legacy fbtft instead of our custom firmware pi-st7789v-240x240, uncomment these line and comment the above line

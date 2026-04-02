@@ -1,10 +1,7 @@
 #!/bin/sh
 
-if [ -f /root/firstboot.sh ]; then
-    /root/firstboot.sh
-fi
-
-# Disable console blanking
-echo -ne "\033[9;0]" > /dev/tty1
+[ -f /root/firstboot.sh ] && /root/firstboot.sh
 
 /usr/local/bin/freqfunctions.sh balanced_performance
+
+PYTHONUNBUFFERED=1 exec /usr/local/bin/simple-keymon.py

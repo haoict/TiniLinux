@@ -46,18 +46,34 @@
                 brcm,function = <0>;  /* INPUT */
                 brcm,pull = <2>;      /* PULL_UP */
             };
+
+            /* set GPIO24 to ALT5 = PWM0 is NOT available on GPIO24.
+               GPIO24 has no hardware PWM alt function, so we use
+               pwm-gpio (software PWM) instead — no pinctrl needed */
         };
     };
 
     fragment@2 {
         target-path = "/";
         __overlay__ {
-            /* BACKLIGHT NODE - GPIO 24, active high */
-            /* Control brightness with: echo 1 > /sys/class/backlight/backlight/brightness */
+            /* Control brightness. Check max_brightness: cat /sys/class/backlight/backlight/max_brightness */
+            /* echo 4 > /sys/class/backlight/backlight/brightness   # ~25% */
+            /* echo 8 > /sys/class/backlight/backlight/brightness   # 100% */
+            /* echo 0 > /sys/class/backlight/backlight/brightness   # off  */
+            /* Consoleblanking also turn off the lcd: echo 1 > /sys/class/graphics/fb1/blank  */
+
+            /* Software PWM on GPIO 24 */
+            pwm_bl: pwm-gpio {
+                compatible = "pwm-gpio";
+                #pwm-cells = <3>;
+                gpios = <&gpio 24 0>;
+            };
+
             backlight: backlight {
-                compatible = "gpio-backlight";
-                gpios = <&gpio 24 0>;   /* GPIO 24, active high */
-                default-on;
+                compatible = "pwm-backlight";
+                pwms = <&pwm_bl 0 50000 0>; /* channel 0, 50µs period = 20kHz, normal polarity */
+                brightness-levels = <0 4 8 16 32 64 128 192 255>;
+                default-brightness-level = <8>; /* index 8 = 255 = full */
             };
 
             gpio-keys {
