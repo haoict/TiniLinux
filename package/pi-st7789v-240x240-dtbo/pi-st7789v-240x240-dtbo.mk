@@ -21,7 +21,10 @@ define PI_ST7789V_240X240_DTBO_INSTALL_TARGET_CMDS
 	mkdir -p $(BINARIES_DIR)/rpi-firmware/overlays/
 	$(INSTALL) -m 0644 $(@D)/*.dtbo $(BINARIES_DIR)/rpi-firmware/overlays/
 	$(INSTALL) -d $(TARGET_DIR)/lib/firmware/
+	# can skip copy to /lib/firmware if it's built-in in kernel
 	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(TARGET_DIR)/lib/firmware/
+	# for built-in kernel firmware
+	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b_development/linux/external-firmware/panels/
 endef
 
 $(eval $(generic-package))
