@@ -44,7 +44,7 @@ deleteConnection() {
     return 0
   fi
   case $? in
-  0) sudo nmcli con down "$1"; sudo rm -f "/etc/NetworkManager/system-connections/$1.nmconnection" ;;
+  0) sudo nmcli con down "$1" >/dev/null 2>&1; sudo rm -f "/etc/NetworkManager/system-connections/$1.nmconnection" ;;
   esac
 
   DeleteMenu
@@ -53,14 +53,10 @@ deleteConnection() {
 connectExisting() {
   dialog --infobox "\nConnecting to: $1 ..." 5 $width 2>&1 >/dev/tty
 
-  currentConnectedSSID=$(getCurrentConnectedSSID)
-  if [[ -n $currentConnectedSSID ]]; then
-    sudo nmcli con down "$currentConnectedSSID" >>/dev/null
-    sleep 1
-  fi
+  sudo nmcli con down "$1" >/dev/null 2>&1;
+  sleep 1
 
   output=$(sudo nmcli con up "$1")
-
   success=$(echo "$output" | grep successfully)
 
   if [ -z "$success" ]; then
@@ -84,20 +80,10 @@ makeConnection() {
 
   PASS="$(echo $PASS | tail -n 1)"
   dialog --infobox "\nConnecting to: $1 ..." 5 $width 2>&1 >/dev/tty
-  WPA3=$(echo "$scan_cache" | grep "$1" | grep "WPA3")
 
   # try to connect
   sudo nmcli con delete "$1" >/dev/null 2>&1 || true
-  if [[ "$WPA3" != *"WPA3"* ]]; then
-    output=$(sudo nmcli device wifi connect "$1" password "$PASS")
-  else
-    #workaround for wpa3 connectivity
-    output=$(sudo nmcli device wifi connect "$1" password "$PASS")
-    sudo sed -i '/key-mgmt\=sae/s//key-mgmt\=wpa-psk/' /etc/NetworkManager/system-connections/"$1".nmconnection
-    sudo systemctl restart NetworkManager
-    sleep 5
-    output=$(sudo nmcli con up "$1")
-  fi
+  output=$(sudo nmcli device wifi connect "$1" password "$PASS")
   success=$(echo "$output" | grep successfully)
 
   if [ -z "$success" ]; then
@@ -352,6 +338,7 @@ NetworkInfo() {
 # }
 
 ExitMenu() {
+  dialog --clear
   exit 0
 }
 
