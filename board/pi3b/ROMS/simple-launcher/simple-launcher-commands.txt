@@ -10,7 +10,7 @@ HOME=/root /usr/local/bin/simple-terminal -scale 1 >/dev/tty0 2>&1
 Htop
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/bin/htop
 Wifi
-/usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
+TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
 System Info
 HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch >/dev/tty0 2>&1
 Install Nothing

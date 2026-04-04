@@ -23,7 +23,6 @@
 # Wi-Fi-dialog
 #
 
-export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
 
 height="13"

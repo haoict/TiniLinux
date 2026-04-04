@@ -44,8 +44,6 @@ if [ -f /usr/share/lib/python/urwid-2.1.2-py3-none-any.whl  ]; then
   fi
 fi
 
-
-export TERM=linux
 export XDG_RUNTIME_DIR=/run/user/$UID/
 ps aux | grep gptokeyb2 | grep -v grep | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1 || true
 SDL_GAMECONTROLLERCONFIG_FILE="/usr/share/gamecontrollerdb.txt" /usr/local/bin/gptokeyb2 -c "/usr/share/gptokeyb2.ini" >/dev/null 2>&1 &
