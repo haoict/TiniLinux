@@ -1,2 +1,10 @@
 config BR2_PACKAGE_INITRAMFS
     bool "initramfs"
+
+if BR2_PACKAGE_INITRAMFS
+
+config BR2_PACKAGE_INITRAMFS_NFS
+    bool "enable mount nfs as rootfs support"
+    depends on BR2_USE_WCHAR
+
+endif

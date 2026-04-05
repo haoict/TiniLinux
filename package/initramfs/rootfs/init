@@ -44,6 +44,9 @@ for param in $(cat /proc/cmdline); do
         setfont=*)
             setfont="${param#setfont=}"
             ;;
+        ip=*)
+            ip="${param#ip=}"
+            ;;
         debug)
             debug=yes
             ;;
@@ -135,50 +138,116 @@ if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
         fi
     fi
 else # no OverlayFS, just mount root directly
-    # wait for $root to be available
-    i=1
-    while [ $i -le 30 ]; do
-        if [ -b "$root" ]; then
-            break
-        fi
-        log "[initramfs] Waiting for root device $root... ($i/30)"
-        sleep 1
-        i=$((i + 1))
-    done
+    nfs_server=""
+    nfs_path=""
+    case "$root" in
+        nfs:*)
+            # root=nfs:server:/path
+            nfs_target="${root#nfs:}"                      # server:/path
+            nfs_server="${nfs_target%%:*}"                 # server
+            nfs_path="${nfs_target#*:}"                    # /path
+            ;;
+    esac
 
-    if [ -n "$fsck_opt" ]; then
-        log "[initramfs] (Not implemented) Running fsck (repair=$fsck_opt)..."
-        ### We likely need to include the util-linux-fsck (e2fsck) package into the initramfs image. Busybox's fsck won't work
-        # fsck -t ext4 $fsck_opt $root
-        # ret=$?
-        # log "[initramfs] fsck returned $ret"
-        # if [ $ret -eq 2 ]; then
-        #     log "[initramfs] fsck requested reboot..."
-        #     reboot -f
-        # elif [ $ret -gt 2 ]; then
-        #     log "[initramfs] fsck failed (ret=$ret), dropping to shell"
-        #     exec sh
-        # fi
-    fi
+    if [ -n "$nfs_server" ]; then
+        # ---- NFS root boot ----
+        # make sure nfs.ko, sunrpc.ko, and nfsv3.ko are either built into your kernel (=y) or present in the initramfs and loaded before the mount attempt. If they're modules you'll need modprobe nfs before the mount -t nfs call.
+        # CONFIG_IP_PNP=y
+        # CONFIG_NFS_FS=y
+        # CONFIG_NFS_V3=y
+        # CONFIG_ROOT_NFS=y
+        # CONFIG_SUNRPC=y
+        # host NFS rootfs prepration: sudo tar -p -xf images/rootfs.tar -C /srv/nfs/rootfs
+        # host NFS must have insecure option: /etc/exports:
+        # /srv/nfs/rootfs    10.0.2.0/24(rw,sync,no_subtree_check,no_root_squash,insecure)
+        log "[initramfs] NFS root boot: $nfsroot"
 
-    log "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
-    mount -o rw "$root" /newroot || exec sh
-
-    # Check for rootfs resize flags
-    if [ -f /newroot/root/.resize-rootfs ]; then
-        log "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
-        mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
-        if [ -f /newroot/root/.resize-romsfs ]; then
-            INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
+        # Bring up network
+        # ip= format: ip=<client>:<server>:<gw>:<mask>:<hostname>:<iface>:<proto>
+        # e.g. ip=dhcp  or  ip=192.168.1.10::192.168.1.1:255.255.255.0::eth0:off
+        if [ "$ip" = "dhcp" ] || [ "$ip" = "on" ]; then
+            log "[initramfs] Bringing up network via DHCP..."
+            # wait for network interface
+            i=1
+            while [ $i -le 10 ]; do
+                iface=$(ip link show | awk -F: '$2 ~ /^ e/{print $2; exit}' | tr -d ' ')
+                [ -n "$iface" ] && break
+                sleep 1; i=$((i+1))
+            done
+            log "[initramfs] Using interface: $iface"
+            udhcpc -i "$iface" -t 10 -q || { log "[initramfs] DHCP failed"; exec sh; }
         else
-            INIT_UNIT="--unit=fs-resize@rootfs.service"
+            # static: ip=<client>:<server>:<gw>:<mask>:<hostname>:<iface>:<proto>
+            client=$(echo $ip | cut -d: -f1)
+            gw=$(echo $ip     | cut -d: -f3)
+            mask=$(echo $ip   | cut -d: -f4)
+            iface=$(echo $ip  | cut -d: -f6)
+            iface=${iface:-eth0}
+            log "[initramfs] Configuring static IP $client on $iface..."
+            ip link set "$iface" up
+            ip addr add "$client/$mask" dev "$iface"
+            [ -n "$gw" ] && ip route add default via "$gw"
         fi
-    elif [ -f /newroot/root/.resize-romsfs ]; then
-        log "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
-        INIT_UNIT="--unit=fs-resize@romsfs.service"
+
+        log "[initramfs] Mounting NFS $nfs_server:$nfs_path..."
+        i=1
+        while [ $i -le 10 ]; do
+            mount -t nfs -o "vers=3,nolock" "$nfs_server:$nfs_path" /newroot && break
+            log "[initramfs] NFS mount failed, retrying... ($i/10)"
+            sleep 2; i=$((i+1))
+        done
+
+        if ! mountpoint -q /newroot; then
+            log "[initramfs] NFS mount failed, dropping to shell"
+            exec sh
+        fi
     else
-        log "[initramfs] No resize flags found - proceeding with normal boot"
-        INIT_UNIT=""
+        # ---- local root ----
+        # wait for $root to be available
+        i=1
+        while [ $i -le 30 ]; do
+            if [ -b "$root" ]; then
+                break
+            fi
+            log "[initramfs] Waiting for root device $root... ($i/30)"
+            sleep 1
+            i=$((i + 1))
+        done
+
+        if [ -n "$fsck_opt" ]; then
+            log "[initramfs] (Not implemented) Running fsck (repair=$fsck_opt)..."
+            ### We likely need to include the util-linux-fsck (e2fsck) package into the initramfs image. Busybox's fsck won't work
+            # fsck -t ext4 $fsck_opt $root
+            # ret=$?
+            # log "[initramfs] fsck returned $ret"
+            # if [ $ret -eq 2 ]; then
+            #     log "[initramfs] fsck requested reboot..."
+            #     reboot -f
+            # elif [ $ret -gt 2 ]; then
+            #     log "[initramfs] fsck failed (ret=$ret), dropping to shell"
+            #     exec sh
+            # fi
+        fi
+
+        log "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
+        mount -o rw "$root" /newroot || exec sh
+
+        # Check for rootfs resize flags
+        if [ -f /newroot/root/.resize-rootfs ]; then
+            log "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
+            mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
+            if [ -f /newroot/root/.resize-romsfs ]; then
+                INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
+            else
+                INIT_UNIT="--unit=fs-resize@rootfs.service"
+            fi
+        elif [ -f /newroot/root/.resize-romsfs ]; then
+            log "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
+            INIT_UNIT="--unit=fs-resize@romsfs.service"
+        else
+            log "[initramfs] No resize flags found - proceeding with normal boot"
+            INIT_UNIT=""
+        fi
     fi
 fi
 

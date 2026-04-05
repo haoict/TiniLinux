@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# https://github.com/mschlenker/TinyCrossLinux/blob/master/patches/usr-share-udhcpc-default.script
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+mkdir -p /etc
+RESOLV_CONF="/etc/resolv.conf"
+
+case "$1" in
+  deconfig)
+    ip addr flush dev $interface
+    ip link set $interface up
+    ;;
+
+  renew|bound)
+    ip addr replace $ip${subnet:+/$subnet} ${broadcast:+broadcast $broadcast} dev $interface
+
+    if [ -n "$router" ]; then
+      while ip route del default dev $interface; do
+        :
+      done
+
+      for i in $router; do
+        ip route add default via $i dev $interface
+      done
+    fi
+
+    : > $RESOLV_CONF
+    [ -n "$domain" ] && echo "search $domain" >> $RESOLV_CONF
+    for i in $dns; do
+      echo "nameserver $i" >> $RESOLV_CONF
+    done
+    ;;
+esac
+
+exit 0

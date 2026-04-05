@@ -63,6 +63,17 @@ runqemurootrw:
 		-device virtio-blk-device,drive=hd0 \
 		-nographic
 
+runqemurootnfs:
+	cd $(BINARIES_DIR); \
+	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 1 -m 1G \
+		-kernel Image \
+		-initrd initramfs \
+		-append "root=nfs:10.0.2.2:/home/haoict/Documents/nfs/shared ip=dhcp console=ttyAMA0" \
+		-netdev user,id=eth0 \
+		-device virtio-net-device,netdev=eth0 \
+		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
+		-device virtio-blk-device,drive=hd0 \
+		-nographic
 
 liveiso:
 	cd $(BINARIES_DIR); \
