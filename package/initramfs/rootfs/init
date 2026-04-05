@@ -33,6 +33,14 @@ for param in $(cat /proc/cmdline); do
         squashfsimg=*)
             squashfsimg="${param#squashfsimg=}"
             ;;
+        fsck.repair=*)
+            case "${param#fsck.repair=}" in
+                yes)   fsck_opt="-y" ;;
+                no)    fsck_opt="-n" ;;
+                preen) fsck_opt="-a" ;;
+                *)     fsck_opt="-a" ;;
+            esac
+            ;;
         setfont=*)
             setfont="${param#setfont=}"
             ;;
@@ -137,6 +145,21 @@ else # no OverlayFS, just mount root directly
         sleep 1
         i=$((i + 1))
     done
+
+    if [ -n "$fsck_opt" ]; then
+        log "[initramfs] (Not implemented) Running fsck (repair=$fsck_opt)..."
+        ### We likely need to include the util-linux-fsck (e2fsck) package into the initramfs image. Busybox's fsck won't work
+        # fsck -t ext4 $fsck_opt $root
+        # ret=$?
+        # log "[initramfs] fsck returned $ret"
+        # if [ $ret -eq 2 ]; then
+        #     log "[initramfs] fsck requested reboot..."
+        #     reboot -f
+        # elif [ $ret -gt 2 ]; then
+        #     log "[initramfs] fsck failed (ret=$ret), dropping to shell"
+        #     exec sh
+        # fi
+    fi
 
     log "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
     mount -o rw "$root" /newroot || exec sh

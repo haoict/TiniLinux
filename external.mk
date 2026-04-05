@@ -29,7 +29,7 @@ runqemu:
 	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 1 -m 1G \
 		-kernel Image \
 		-initrd initramfs \
-		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0" \
+		-append "bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0" \
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
@@ -41,7 +41,7 @@ runqemugui:
 	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 2 -m 1G \
 		-kernel Image \
 		-initrd initramfs \
-		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0 video=640x480" \
+		-append "bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyAMA0 video=640x480" \
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
@@ -56,7 +56,7 @@ runqemurootrw:
 	qemu-system-aarch64 -M virt -cpu cortex-a53 -smp 1 -m 1G \
 		-kernel Image \
 		-initrd initramfs \
-		-append "rootwait root=/dev/vda2 console=ttyAMA0" \
+		-append "root=/dev/vda2 fsck.repair=yes console=ttyAMA0" \
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
@@ -91,7 +91,7 @@ runqemux64:
 	qemu-system-x86_64 -M q35 -smp 1 -m 1G \
 		-kernel bzImage \
 		-initrd initramfs \
-		-append "rootwait bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyS0" \
+		-append "bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyS0" \
 		-netdev user,id=eth0 \
 		-device virtio-net-pci,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
