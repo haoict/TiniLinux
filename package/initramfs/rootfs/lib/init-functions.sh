@@ -122,7 +122,7 @@ mount_nfs() {
     log "[initramfs] Mounting NFS $nfs_server:$nfs_path..."
     i=1
     while [ $i -le 5 ]; do
-        mount -t nfs -o "vers=3,nolock" "$nfs_server:$nfs_path" /newroot && break
+        mount -t nfs -o "rw,noatime,nodiratime,vers=3,nolock,rsize=32768,wsize=32768,timeo=11,retrans=3" "$nfs_server:$nfs_path" /newroot && break
         log "[initramfs] NFS mount failed, retrying... ($i/5)"
         sleep 2; i=$((i+1))
     done
