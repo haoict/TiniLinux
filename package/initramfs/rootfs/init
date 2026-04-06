@@ -6,10 +6,10 @@
 #
 #####
 
-#echo "[initramfs] Booting..."
+echo "TiniLinux Booting..."
+. /lib/init-functions.sh
 
 # Mount pseudo filesystems
-#echo "[initramfs] Mounting pseudo filesystems..."
 mount -t proc proc /proc
 mount -t sysfs sys /sys
 mount -t devtmpfs dev /dev
@@ -44,8 +44,8 @@ for param in $(cat /proc/cmdline); do
         setfont=*)
             setfont="${param#setfont=}"
             ;;
-        ip=*)
-            ip="${param#ip=}"
+        networkconf=*)
+            networkconf="${param#networkconf=}"
             ;;
         debug)
             debug=yes
@@ -56,10 +56,6 @@ for param in $(cat /proc/cmdline); do
     esac
 done
 
-# Helper: only print if not in quiet mode
-log() {
-    [ "$quiet" = "yes" ] || echo "$@"
-}
 
 # Set console font if specified
 if [ -n "$setfont" ]; then
@@ -71,199 +67,37 @@ fi
 mkdir -p /newroot
 INIT_UNIT=""
 
-# if overlayfs is specified, set up OverlayFS
 if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
-    # wait for $bootpart and $overlayfs to be available
-    i=1
-    while [ $i -le 10 ]; do
-        if [ -b "$bootpart" ] && [ "$overlayfs" = "tmpfs" ]; then
-            break
-        fi
-        if [ -b "$bootpart" ] && [ -b "$overlayfs" ]; then
-            break
-        fi
-        log "[initramfs] Waiting for boot partition $bootpart and overlay partition $overlayfs... ($i/10)"
-        sleep 1
-        i=$((i + 1))
-    done
-
-    log "[initramfs] Setting up OverlayFS: lower from $bootpart/$squashfsimg, upper on $overlayfs"
-    mkdir -p /mnt/boot /mnt/squashfsimg /mnt/overlayfs
-    log "[initramfs] Mounting boot partition $bootpart (read-only)..."
-    mount -o rw "$bootpart" /mnt/boot || exec sh
-    log "[initramfs] Mounting squashfs image /mnt/boot/$squashfsimg (read-only)..."
-    mount -t squashfs -o loop,ro "/mnt/boot/$squashfsimg" /mnt/squashfsimg || exec sh
-    log "[initramfs] Mounting overlay partition $overlayfs (read-write)..."
-    if [ "$overlayfs" = "tmpfs" ]; then
-        mount -o rw -t tmpfs tmpfs /mnt/overlayfs || exec sh
-    else
-        mount -o rw "$overlayfs" /mnt/overlayfs || exec sh
-    fi
-
-    # Check for rootfs resize flags
-    if [ -f /mnt/overlayfs/overlay_upper/root/.resize-rootfs ]; then
-        mv /mnt/overlayfs/overlay_upper/root/.resize-rootfs /mnt/overlayfs/overlay_upper/root/.resize-rootfs-done
-        if [ -f /mnt/overlayfs/overlay_upper/root/.resize-romsfs ]; then
-            log "[initramfs] Found .resize-rootfs and .resize-romsfs flags - will boot into rootfs_romsfs resize mode"
-            INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
-        else
-            log "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
-            INIT_UNIT="--unit=fs-resize@rootfs.service"
-        fi
-        log "[initramfs] Unmounting overlay partition for resize..."
-        umount $overlayfs || exec sh
-        log "[initramfs] Moving squashfs mount to /newroot..."
-        mount --move /mnt/squashfsimg /newroot || exec sh
-    else
-        mkdir -p /mnt/overlayfs/overlay_upper /mnt/overlayfs/overlay_workdir
-        log "[initramfs] Mounting overlay filesystem to /newroot..."
-        mount -t overlay overlay -o lowerdir=/mnt/squashfsimg,upperdir=/mnt/overlayfs/overlay_upper,workdir=/mnt/overlayfs/overlay_workdir /newroot || exec sh
-
-        mkdir -p /newroot/boot /newroot/mnt/squashfsimg /newroot/mnt/overlayfs
-        log "[initramfs] Moving boot partition mount to /newroot/boot..."
-        mount --move /mnt/boot /newroot/boot || exec sh
-        log "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsimg..."
-        mount --move /mnt/squashfsimg /newroot/mnt/squashfsimg || exec sh
-        log "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
-        mount --move /mnt/overlayfs /newroot/mnt/overlayfs || exec sh
-
-        # Check for romsfs resize flag
-        if [ -f /newroot/root/.resize-romsfs ]; then
-            log "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
-            # /root/.resize-romsfs flag will be removed by fs-resize.sh after resizing
-            INIT_UNIT="--unit=fs-resize@romsfs.service"
-        else
-            log "[initramfs] No resize flags found - proceeding with normal boot"
-            INIT_UNIT="" # normal boot
-        fi
-    fi
-else # no OverlayFS, just mount root directly
-    nfs_server=""
-    nfs_path=""
+    # overlayfs is specified, set up squashfs mounts
+    mount_squashfs
+else
+    # mount root from NFS or from local disk
+    # root=nfs:server:/path
+    # root=/dev/mmcblk0p2
     case "$root" in
         nfs:*)
-            # root=nfs:server:/path
-            nfs_target="${root#nfs:}"                      # server:/path
-            nfs_server="${nfs_target%%:*}"                 # server
-            nfs_path="${nfs_target#*:}"                    # /path
+            nfs_target="${root#nfs:}"
+            nfs_server="${nfs_target%%:*}"
+            nfs_path="${nfs_target#*:}"
             ;;
     esac
 
     if [ -n "$nfs_server" ]; then
-        # ---- NFS root boot ----
-        # make sure nfs.ko, sunrpc.ko, and nfsv3.ko are either built into your kernel (=y) or present in the initramfs and loaded before the mount attempt. If they're modules you'll need modprobe nfs before the mount -t nfs call.
-        # CONFIG_IP_PNP=y
-        # CONFIG_NFS_FS=y
-        # CONFIG_NFS_V3=y
-        # CONFIG_ROOT_NFS=y
-        # CONFIG_SUNRPC=y
-        # host NFS rootfs prepration: sudo tar -p -xf images/rootfs.tar -C /srv/nfs/rootfs
-        # host NFS must have insecure option: /etc/exports:
-        # /srv/nfs/rootfs    10.0.2.0/24(rw,sync,no_subtree_check,no_root_squash,insecure)
-        log "[initramfs] NFS root boot: $nfsroot"
-
-        # Bring up network
-        # ip= format: ip=<client>:<server>:<gw>:<mask>:<hostname>:<iface>:<proto>
-        # e.g. ip=dhcp  or  ip=192.168.1.10::192.168.1.1:255.255.255.0::eth0:off
-        if [ "$ip" = "dhcp" ] || [ "$ip" = "on" ]; then
-            log "[initramfs] Bringing up network via DHCP..."
-            # wait for network interface
-            i=1
-            while [ $i -le 10 ]; do
-                iface=$(ip link show | awk -F: '$2 ~ /^ e/{print $2; exit}' | tr -d ' ')
-                [ -n "$iface" ] && break
-                sleep 1; i=$((i+1))
-            done
-            log "[initramfs] Using interface: $iface"
-            udhcpc -i "$iface" -t 10 -q || { log "[initramfs] DHCP failed"; exec sh; }
-        else
-            # static: ip=<client>:<server>:<gw>:<mask>:<hostname>:<iface>:<proto>
-            client=$(echo $ip | cut -d: -f1)
-            gw=$(echo $ip     | cut -d: -f3)
-            mask=$(echo $ip   | cut -d: -f4)
-            iface=$(echo $ip  | cut -d: -f6)
-            iface=${iface:-eth0}
-            log "[initramfs] Configuring static IP $client on $iface..."
-            ip link set "$iface" up
-            ip addr add "$client/$mask" dev "$iface"
-            [ -n "$gw" ] && ip route add default via "$gw"
-        fi
-
-        log "[initramfs] Mounting NFS $nfs_server:$nfs_path..."
-        i=1
-        while [ $i -le 10 ]; do
-            mount -t nfs -o "vers=3,nolock" "$nfs_server:$nfs_path" /newroot && break
-            log "[initramfs] NFS mount failed, retrying... ($i/10)"
-            sleep 2; i=$((i+1))
-        done
-
-        if ! mountpoint -q /newroot; then
-            log "[initramfs] NFS mount failed, dropping to shell"
-            exec sh
-        fi
+        mount_nfs
     else
-        # ---- local root ----
-        # wait for $root to be available
-        i=1
-        while [ $i -le 30 ]; do
-            if [ -b "$root" ]; then
-                break
-            fi
-            log "[initramfs] Waiting for root device $root... ($i/30)"
-            sleep 1
-            i=$((i + 1))
-        done
-
-        if [ -n "$fsck_opt" ]; then
-            log "[initramfs] (Not implemented) Running fsck (repair=$fsck_opt)..."
-            ### We likely need to include the util-linux-fsck (e2fsck) package into the initramfs image. Busybox's fsck won't work
-            # fsck -t ext4 $fsck_opt $root
-            # ret=$?
-            # log "[initramfs] fsck returned $ret"
-            # if [ $ret -eq 2 ]; then
-            #     log "[initramfs] fsck requested reboot..."
-            #     reboot -f
-            # elif [ $ret -gt 2 ]; then
-            #     log "[initramfs] fsck failed (ret=$ret), dropping to shell"
-            #     exec sh
-            # fi
-        fi
-
-        log "[initramfs] No OverlayFS specified, using root=$root directly (r/w)."
-        mount -o rw "$root" /newroot || exec sh
-
-        # Check for rootfs resize flags
-        if [ -f /newroot/root/.resize-rootfs ]; then
-            log "[initramfs] Found .resize-rootfs flag - will boot into rootfs resize mode"
-            mv /newroot/root/.resize-rootfs /newroot/root/.resize-rootfs-done
-            if [ -f /newroot/root/.resize-romsfs ]; then
-                INIT_UNIT="--unit=fs-resize@rootfs_romsfs.service"
-            else
-                INIT_UNIT="--unit=fs-resize@rootfs.service"
-            fi
-        elif [ -f /newroot/root/.resize-romsfs ]; then
-            log "[initramfs] Found .resize-romsfs flag - will boot into romsfs resize mode"
-            INIT_UNIT="--unit=fs-resize@romsfs.service"
-        else
-            log "[initramfs] No resize flags found - proceeding with normal boot"
-            INIT_UNIT=""
-        fi
+        mount_local_root
     fi
 fi
 
 # if debug=yes, drop to shell before switching root
 if [ "$debug" = "yes" ]; then
-    echo "[initramfs] Debug mode enabled - dropping to shell before switching root"
-    echo "[initramfs] Press Ctrl+D to continue booting after debugging"
-    exec sh
+    if [ -n "$bootpart" ] && [ -z "$overlayfs" ]; then
+        mkdir -p /mnt/boot
+        log "[initramfs] Mounting boot partition $bootpart for debugging..."
+        mount -o rw "$bootpart" /mnt/boot
+    fi
+    echo "[initramfs] Debug mode enabled - dropping to shell before switching root. Run ". /lib/init-functions.sh" then "do_switch_root" to continue booting after debugging"
+    sh
 fi
 
-# Mount runtime dirs for systemd
-log "[initramfs] Moving runtime directories mount to /newroot..."
-mount --move /proc /newroot/proc
-mount --move /sys /newroot/sys
-mount --move /dev /newroot/dev
-mount --move /run /newroot/run
-
-log "[initramfs] Init: ${init:-/sbin/init} $INIT_UNIT. Switching to real root..."
-exec switch_root /newroot ${init:-/sbin/init} $INIT_UNIT || exec sh
+do_switch_root
