@@ -26,5 +26,6 @@ menu "TiniLinux Raspberry Pi Packages"
 endmenu
 
 menu "TiniLinux Fun Packages"
+	source "$BR2_EXTERNAL_TiniLinux_PATH/package/fbdoom/Config.in"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/fbgif/Config.in"
 endmenu
