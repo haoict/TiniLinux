@@ -24,3 +24,7 @@ endmenu
 menu "TiniLinux Raspberry Pi Packages"
 	source "$BR2_EXTERNAL_TiniLinux_PATH/package/pi-st7789v-240x240-dtbo/Config.in"
 endmenu
+
+menu "TiniLinux Fun Packages"
+	source "$BR2_EXTERNAL_TiniLinux_PATH/package/fbgif/Config.in"
+endmenu
