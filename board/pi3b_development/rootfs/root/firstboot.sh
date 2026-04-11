@@ -9,5 +9,5 @@ chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
 # Done
 mv /root/firstboot.sh /root/.firstboot-done.sh
 
-systemctl enable --now dockerd.service
+# systemctl enable --now dockerd.service
 systemctl daemon-reexec # reload systemctl suspend override
