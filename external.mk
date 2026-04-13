@@ -59,6 +59,7 @@ runqemurootrw:
 		-append "root=/dev/vda2 fsck.repair=yes console=ttyAMA0" \
 		-netdev user,id=eth0 \
 		-device virtio-net-device,netdev=eth0 \
+		-virtfs local,path=/home/haoict/Documents/filebrowser/srv/public,mount_tag=share,security_model=mapped-xattr \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
 		-device virtio-blk-device,drive=hd0 \
 		-nographic

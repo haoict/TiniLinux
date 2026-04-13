@@ -1,6 +1,6 @@
 #!/bin/sh
 
-systemctl enable --now dockerd.service
+#systemctl enable --now dockerd.service
 
 # fix nmconnection files permissions so it can autoconnect
 chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
