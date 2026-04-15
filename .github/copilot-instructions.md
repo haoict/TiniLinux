@@ -3,7 +3,7 @@
 These notes make AI agents productive quickly in this Buildroot-based distro. Focus on the actual patterns in this repo — not generic advice.
 
 **Big Picture**
-- **Buildroot External Tree:** This repo is a Buildroot BR2_EXTERNAL that defines boards, overlays, and custom packages. Build output lives in `output.<board>` created via an out-of-tree build alongside a sibling `buildroot/` directory. See [external.desc](external.desc) and [external.mk](external.mk).
+- **Buildroot External Tree:** This repo is a Buildroot BR2_EXTERNAL that defines boards, overlays, and custom packages. Build output lives in `output/<board>` created via an out-of-tree build alongside a sibling `buildroot/` directory. See [external.desc](external.desc) and [external.mk](external.mk).
 - **Boards as Variants:** Each board name maps 1:1 to a defconfig in [configs/](configs). Matching board directories live under [board/](board) for BOOT, rootfs overlays, and board-specific assets. Board variants (e.g., `h700`, `h700_sway`, `h700_rootrw`, `h700_consoleonly`) share configs via fragments.
 - **Custom Packages:** All packages reside in [package/](package) and are auto-included via `include $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk)` in [external.mk](external.mk). A top-level [Config.in](Config.in) exposes package menus grouped by function: "TiniLinux Common Packages" (btop, gptokeyb2, initramfs, etc.), "TiniLinux Graphic Packages" (mesa3d-no-llvm, retroarch, simple-launcher, etc.), and "TiniLinux RK3566 Packages" (rk3566-dtbo).
 - **Init System + Kernel:** Systemd-based images with board-specific kernels (Linux 6.18.16) and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](configs/h700_sway_defconfig).
@@ -24,11 +24,11 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 
 **Build Workflow**
 - **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo (2026.02 branch) is auto-cloned by [make-board-build.sh](make-board-build.sh) if not present as a sibling `../buildroot/`.
-- **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output.<board>` or `buildroot/output.<board>` (for Docker builds).
+- **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output/<board>` or `buildroot/output/<board>` (for Docker builds).
 - **Bootstrap build dir:**
-  - `./scripts/make-board-build.sh configs/<board>_defconfig` → creates `output.<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
+  - `./scripts/make-board-build.sh configs/<board>_defconfig` → creates `output/<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
 - **Configure and build:**
-  - `cd output.<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
+  - `cd output/<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
 - **Save config changes:**
   - `make savefconf` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs. Implemented in [save-fragment-defconfig.sh](scripts/save-fragment-defconfig.sh).
 - **Image creation:**
@@ -36,7 +36,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Flash to SD:**
   - `make flash` runs [flash-to-sdcard.sh](scripts/flash-to-sdcard.sh) with the current board.
 - **QEMU (virt boards):**
-  - `make runqemu` (headless) or `make runqemugui` (GTK) from `output.<board>`; see the helper targets in [external.mk](external.mk). For rootrw variants, use `make runqemurootrw`.
+  - `make runqemu` (headless) or `make runqemugui` (GTK) from `output/<board>`; see the helper targets in [external.mk](external.mk). For rootrw variants, use `make runqemurootrw`.
 - **Rebuild after changes:**
   - Package changes: `make <pkg>-dirclean && make` to force rebuild from scratch.
   - Kernel changes: `make linux-rebuild && make` or `make linux-dirclean && make`.
@@ -57,9 +57,9 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Initramfs:** Packaged via [package/initramfs/initramfs.mk](package/initramfs/initramfs.mk) which builds BusyBox and emits `images/initramfs` for BOOT.
 
 **Conventions and Gotchas**
-- **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output.<board>` directory name.
+- **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output/<board>` directory name.
 - **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
-- **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output.<board>`.
+- **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](external.mk) and run from `output/<board>`.
 - **Toolchains:** Toolchain-only defconfigs live in [configs/](configs) (e.g., `toolchain_aarch64_defconfig`, `toolchain_x86_64_defconfig`) for building reusable cross-compilation SDKs without a full image.
 - **Docker builds:** [Dockerfile](Dockerfile) creates an Ubuntu 24.04 container with user `ubuntu:ubuntu`, all build deps, and mounts for TiniLinux source and buildroot cache. Use `./scripts/make-board-build.sh configs/<board>_defconfig docker` to adjust paths for containerized builds. See [README.md](README.md) for full workflow.
 
@@ -71,15 +71,15 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Creating fragments:** Define in `configs/fragments/`, reference via `BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/name.fragment"` in defconfig.
 
 **Examples**
-- **Add a new package:** Create `package/<name>/<name>.mk` and `package/<name>/Config.in`, register in top-level [Config.in](Config.in), rebuild: `cd output.<board> && make <pkg>-dirclean && make`.
+- **Add a new package:** Create `package/<name>/<name>.mk` and `package/<name>/Config.in`, register in top-level [Config.in](Config.in), rebuild: `cd output/<board> && make <pkg>-dirclean && make`.
 - **Add a new board:** Create `configs/<board>_defconfig` (ideally using fragments) + `board/<board>/{BOOT,rootfs}` and optional `overlay_upper` or `ROMS`; set DT/U-Boot/kernel options in defconfig or fragments.
-- **Modify package build:** Edit `package/<name>/<name>.mk`, then `cd output.<board> && make <pkg>-dirclean && make` to force rebuild from scratch.
+- **Modify package build:** Edit `package/<name>/<name>.mk`, then `cd output/<board> && make <pkg>-dirclean && make` to force rebuild from scratch.
 - **Quick rootfs iteration:** For squashfs builds, modify `board/<board>/overlay_upper/`, rebuild: `make cleantarget && make && make img`. For rootrw, modify `board/<board>/rootfs/`.
 
 **Testing and Debugging**
-- **QEMU testing:** Use `pc_qemu_aarch64_virt` or `pc_qemu_aarch64_virt_consoleonly` configs for rapid kernel/userspace testing without hardware. Build, then `cd output.pc_qemu_aarch64_virt && ZIP=0 make img && make runqemu` (headless) or `make runqemugui` (with virtio-gpu). For rootrw variants, use `make runqemurootrw`.
+- **QEMU testing:** Use `pc_qemu_aarch64_virt` or `pc_qemu_aarch64_virt_consoleonly` configs for rapid kernel/userspace testing without hardware. Build, then `cd output/pc_qemu_aarch64_virt && ZIP=0 make img && make runqemu` (headless) or `make runqemugui` (with virtio-gpu). For rootrw variants, use `make runqemurootrw`.
 - **Kernel/initramfs debugging:** Kernel args in `board/<board>/BOOT/extlinux/extlinux.conf` control boot behavior. Add `console=ttyAMA0` (QEMU/serial) or `console=tty0` (physical display). Initramfs source in [package/initramfs](package/initramfs).
-- **Build failures:** Check `output.<board>/build/<pkg>-<ver>/` for logs. For persistent failures, `make <pkg>-dirclean` and retry. For target install issues, `make cleantarget` forces reinstall of all target packages.
+- **Build failures:** Check `output/<board>/build/<pkg>-<ver>/` for logs. For persistent failures, `make <pkg>-dirclean` and retry. For target install issues, `make cleantarget` forces reinstall of all target packages.
 - **CI builds:** GitHub Actions workflow supports manual dispatch with board selection. Uses Actions cache for `dl/` and `.buildroot-ccache/` to speed up repeated builds. See [.github/workflows/build.yaml](.github/workflows/build.yaml) for cache key patterns.
 
 If anything here seems off or incomplete for your workflow, tell me which board/flow you're targeting and I'll refine these notes.

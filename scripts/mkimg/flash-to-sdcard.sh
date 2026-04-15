@@ -7,12 +7,8 @@ echo "  TiniLinux Flash to SD Card"
 echo "=========================================="
 echo ""
 
-# Find the TiniLinux root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TINILINUX_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
 # Determine the image file path
-IMG_FILE="$TINILINUX_ROOT/output.$BOARD/images/tinilinux-$BOARD.img"
+IMG_FILE="$(BR2_EXTERNAL_TiniLinux_PATH)/output/$BOARD/images/tinilinux-$BOARD.img"
 
 if [ ! -f "$IMG_FILE" ]; then
     echo "  ✗ Error: Image file not found: $IMG_FILE"

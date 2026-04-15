@@ -3,15 +3,14 @@
 set -euo pipefail
 
 # This script saves a defconfig while preserving BR2_DEFCONFIG_FRAGMENT
-# Usage: run from output.<board> directory
+# Usage: run from output/<board> directory
 
 # Get the TiniLinux root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Check if we're in an output directory
-if [[ ! "$PWD" =~ output\. ]]; then
-    echo "Error: This script must be run from an output.<board> directory"
-    echo "Example: cd output.h700 && ../save-fragment-defconfig.sh"
+if [[ ! "$PWD" =~ "output/" ]]; then
+    echo "Error: This script must be run from an output/<board> directory"
     exit 1
 fi
 

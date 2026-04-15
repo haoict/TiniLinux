@@ -1,1 +1,0 @@
-The binary populatefs is compiled from "host populatefs" package, it can be copied from "output.${BOARD}$/host/bin/populatefs" after built

@@ -27,9 +27,9 @@ echo "Board name: $BOARDNAME"
 # if $2 exists and is "docker", set IS_DOCKER to true
 if [ $# -eq 2 ] && [ "$2" == "docker" ]; then
     IS_DOCKER="true"
-    OUTPUT_DIR="../buildroot/output.${BOARDNAME}"
+    OUTPUT_DIR="../buildroot/output/${BOARDNAME}"
 else
-    OUTPUT_DIR="../TiniLinux/output.${BOARDNAME}"
+    OUTPUT_DIR="../TiniLinux/output/${BOARDNAME}"
 fi
 
 # Check if ../buildroot exists, if not clone it

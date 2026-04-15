@@ -33,7 +33,7 @@ cd TiniLinux
 ./scripts/make-board-build.sh configs/<boardname>_defconfig
 
 # Build
-cd output.<boardname>
+cd output/<boardname>
 make menuconfig # adjust anything if you want, otherwise just exit. If you add/remove packages, you can save changes with "make savefconf" command to update board's defconfig file.
 make -j$(nproc)
 ## The kernel, bootloader, root filesystem, etc. are in output images directory
@@ -84,14 +84,14 @@ docker exec -it tinilinux-builder bash
 # NOTE: Commands from here are executed inside docker container
 cd TiniLinux
 ./scripts/make-board-build.sh configs/<boardname>_defconfig docker
-cd /home/ubuntu/buildroot/output.<boardname>
+cd /home/ubuntu/buildroot/output/<boardname>
 make -j$(nproc)
 make img
 
 # copy output images dir to the TiniLinux folder
 cd /home/ubuntu/TiniLinux
-mkdir -p output.<boardname>
-cp -r /home/ubuntu/buildroot/output.<boardname>/images output.<boardname>
+mkdir -p output/<boardname>
+cp -r /home/ubuntu/buildroot/output/<boardname>/images output/<boardname>
 ```
 
 ## Test with qemu
@@ -100,7 +100,7 @@ With pc_qemu_targetArch_virt build, we can test kernel, initramfs, rootfs disk w
 
 ```bash
 sudo apt install qemu-system-aarch64
-cd output.pc_qemu_aarch64_virt (or _consoleonly variant)
+cd output/pc_qemu_aarch64_virt (or _consoleonly variant)
 make -j$(nproc)
 ZIP=0 make img
 make runqemu (or make runqemugui)
@@ -112,7 +112,7 @@ Ref: https://stackoverflow.com/questions/47320800/how-to-clean-only-target-in-bu
 
 ```bash
 # list all built packages
-cd output.${BOARD}
+cd output/${BOARD}
 make show-targets
 
 # clean some packages that usually change
@@ -157,7 +157,7 @@ To save build time, instead of building buildroot toolchain every time for each 
 
 ```bash
 ./scripts/make-board-build.sh configs/toochain_aarch64_defconfig
-cd output.toochain_aarch64
+cd output/toochain_aarch64
 make -j$(nproc)
 cd host
 tar -Jcf ../tinilinux-toolchain-$(uname -m)-aarch64-glibc-gcc14.3-kernel6.6.x-binutils2.43.1.tar.xz .

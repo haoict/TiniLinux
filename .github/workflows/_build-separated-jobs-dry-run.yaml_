@@ -47,7 +47,7 @@ name: Build (separated jobs) (dry run)
 #           set -x
 #           cd TiniLinux
 #           ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
-#           cd output.${{ inputs.board }}
+#           cd output/${{ inputs.board }}
 #           # sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
 
 #           # Simulate build output files
@@ -77,7 +77,7 @@ name: Build (separated jobs) (dry run)
 #         with:
 #           name: images_dir
 #           path: |
-#             output.${{ inputs.board }}/images/
+#             output/${{ inputs.board }}/images/
 #           retention-days: 2
 
 #   mkflashableimg:
@@ -90,12 +90,12 @@ name: Build (separated jobs) (dry run)
 #         uses: actions/download-artifact@v8
 #         with:
 #           name: images_dir
-#           path: output.${{ inputs.board }}/images/
+#           path: output/${{ inputs.board }}/images/
 #       - name: Make flashable image
 #         run: |
 #           set -x
 #           if [ "${{ inputs.board }}" = "pi3b" ]; then
-#             mv output.${{ inputs.board }}/images/sdcard.img output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
+#             mv output/${{ inputs.board }}/images/sdcard.img output/${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
 #           elif sudo -n true &> /dev/null; then
 #             echo "Current user has passwordless sudo privileges. Calling faster mk-flashable-img script"
 #             sudo BOARD=${{ inputs.board }} ZIP=0 scripts/mk-flashable-img.sh
@@ -111,13 +111,13 @@ name: Build (separated jobs) (dry run)
 #         uses: actions/upload-artifact@v7
 #         with:
 #           name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
-#           path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
+#           path: TiniLinux/output/${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
 #           retention-days: 2
 #       - name: Create Release
 #         if: github.ref_type == 'tag'
 #         uses: softprops/action-gh-release@v2
 #         with:
-#           files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
+#           files: TiniLinux/output/${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
 #           generate_release_notes: false
 #           name: ${{ inputs.create_release }}
 #           tag_name: ${{ inputs.create_release }}

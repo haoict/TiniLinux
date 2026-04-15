@@ -96,9 +96,9 @@ tar -Jcf $rootfstmp/overlay_upper/root/roms.tar.xz -C ${romtmp}/ROMS/ .
 rm -rf ${romtmp}
 echo "  ✓ Populating filesystem"
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/mkimg/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
 elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+    ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/mkimg/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
 fi
 sync
 echo "  ✓ Verifying overlay"

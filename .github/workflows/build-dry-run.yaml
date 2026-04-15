@@ -73,7 +73,7 @@ jobs:
           set -x
           cd TiniLinux
           ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
-          cd output.${{ inputs.board }}
+          cd output/${{ inputs.board }}
           # sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
 
           # Simulate build output files
@@ -101,7 +101,7 @@ jobs:
       - name: Make flashable image
         run: |
           set -x
-          cd TiniLinux/output.${{ inputs.board }}
+          cd TiniLinux/output/${{ inputs.board }}
           ZIP=0 make img
 
           if [ -n "${{ inputs.create_release }}" ]; then
@@ -111,13 +111,13 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: tinilinux-${{ inputs.board }}.img.zip # upload-artifact automatically zipped the file
-          path: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
+          path: TiniLinux/output/${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img
           retention-days: 2
       - name: Create Release
         if: inputs.create_release != ''
         uses: softprops/action-gh-release@v2
         with:
-          files: TiniLinux/output.${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
+          files: TiniLinux/output/${{ inputs.board }}/images/tinilinux-${{ inputs.board }}.img.zip
           generate_release_notes: false
           name: ${{ inputs.create_release }}
           tag_name: ${{ inputs.create_release }}
