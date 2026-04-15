@@ -1,0 +1,2 @@
+config BR2_PACKAGE_DOCKER_CUSTOM
+	bool "docker-custom"

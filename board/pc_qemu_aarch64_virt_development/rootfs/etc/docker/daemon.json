@@ -1,7 +1,0 @@
-{
-  "ip6tables": false,
-  "features": {
-    "buildkit": false
-  },
-  "log-driver": "local"
-}
