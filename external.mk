@@ -5,14 +5,14 @@ BOARD=$(shell basename $(BR2_DEFCONFIG) _defconfig)
 img:
 	cd $(CONFIG_DIR); \
 	if [ -f $(BINARIES_DIR)/rootfs.tar ]; then \
-		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mk-flashable-img-rootrw-rootless.sh; \
+		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/mk-flashable-img-rootrw-rootless.sh; \
 	else \
-		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mk-flashable-img-squashfs-rootless.sh; \
+		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/mk-flashable-img-squashfs-rootless.sh; \
 	fi
 
 flash:
 	cd $(CONFIG_DIR); \
-	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/flash-to-sdcard.sh
+	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/flash-to-sdcard.sh
 
 cleantarget:
 	rm -rf $(BASE_TARGET_DIR); \
