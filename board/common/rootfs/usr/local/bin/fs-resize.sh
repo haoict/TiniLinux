@@ -82,8 +82,8 @@ if [ "$FS_TYPE" = "romsfs" ] || [ "$FS_TYPE" = "rootfs_romsfs" ]; then
 
         # Mount exfat partition to /roms
         rm -rf /roms && mkdir -p /roms
-        echo "${ROMS_PART_DEV_FILE} /roms exfat umask=0000,iocharset=utf8,noatime,nofail 0 0" >> /etc/fstab
-        systemctl daemon-reload
+        # echo "${ROMS_PART_DEV_FILE} /roms exfat umask=0000,iocharset=utf8,noatime,nofail 0 0" >> /etc/fstab
+        # systemctl daemon-reload
         mount -a
         mount | grep /roms
 
