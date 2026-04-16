@@ -1,5 +1,4 @@
 BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/pi.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/with-graphics.fragment"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b/rootfs"
 BR2_PACKAGE_GPTOKEYB2=n
-BR2_PACKAGE_MESA3D_NO_LLVM_GALLIUM_DRIVER_PANFROST=n
 BR2_PACKAGE_MESA3D_NO_LLVM_GALLIUM_DRIVER_VC4=y
