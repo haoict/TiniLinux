@@ -1,1 +1,2 @@
+LABEL=BOOT /boot vfat defaults,nofail 0 0
 LABEL=ROMS /roms exfat umask=0000,iocharset=utf8,noatime,nofail 0 0

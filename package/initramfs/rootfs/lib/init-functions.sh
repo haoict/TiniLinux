@@ -51,11 +51,10 @@ mount_squashfs() {
         mount -t overlay overlay -o lowerdir=/mnt/squashfsimg,upperdir=/mnt/overlayfs/overlay_upper,workdir=/mnt/overlayfs/overlay_workdir /newroot || exec sh
 
         mkdir -p /newroot/boot /newroot/mnt/squashfsimg /newroot/mnt/overlayfs
-        log "[initramfs] Moving boot partition mount to /newroot/boot..."
-        mount --move /mnt/boot /newroot/boot || exec sh
-        log "[initramfs] Moving squashfs mount to /newroot/mnt/squashfsimg..."
+        # log "[initramfs] Moving boot partition mount to /newroot/boot..."
+        # mount --move /mnt/boot /newroot/boot || exec sh
+        log "[initramfs] Moving squashfsimg, overlay mount to /newroot/mnt/..."
         mount --move /mnt/squashfsimg /newroot/mnt/squashfsimg || exec sh
-        log "[initramfs] Moving overlay mount to /newroot/mnt/overlayfs..."
         mount --move /mnt/overlayfs /newroot/mnt/overlayfs || exec sh
 
         # Check for romsfs resize flag
