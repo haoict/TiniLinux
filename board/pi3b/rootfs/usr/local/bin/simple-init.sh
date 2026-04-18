@@ -6,7 +6,10 @@ if [ -f /root/firstboot.sh ]; then
     cp /usr/share/fonts/Ubuntu.ttf /roms/simple-launcher/font.ttf
 fi
 
-amixer -c 0 set "PCM" "100%" # aplay -l && aplay /usr/share/sounds/test.wav
+amixer -c 0 set "PCM" "100%" 
+# check playback hardware: aplay -l
+# if use usb headset: export ALSA_CARD=Headset
+# test playback: aplay /usr/share/sounds/test.wav
 
 /usr/local/bin/freqfunctions.sh powersave
 
