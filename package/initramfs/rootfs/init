@@ -30,9 +30,6 @@ for param in $(cat /proc/cmdline); do
         bootpart=*)
             bootpart="${param#bootpart=}"
             ;;
-        squashfsimg=*)
-            squashfsimg="${param#squashfsimg=}"
-            ;;
         fsck.repair=*)
             case "${param#fsck.repair=}" in
                 yes)   fsck_opt="-y" ;;
@@ -67,7 +64,7 @@ fi
 mkdir -p /newroot
 INIT_UNIT=""
 
-if [ -n "$overlayfs" ] && [ -n "$bootpart" ] && [ -n "$squashfsimg" ]; then
+if [ -n "$overlayfs" ] && [ -n "$bootpart" ]; then
     # overlayfs is specified, set up squashfs mounts
     mount_squashfs
 else

@@ -50,7 +50,7 @@ esac
 # --- Resolve root mode ---
 case "$MODE_ROOT" in
     squashfs)
-        ROOT_APPEND="loglevel=3 bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2"
+        ROOT_APPEND="loglevel=3 bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2"
         ;;
     rootrw)
         ROOT_APPEND="loglevel=3 root=/dev/vda2 fsck.repair=yes"

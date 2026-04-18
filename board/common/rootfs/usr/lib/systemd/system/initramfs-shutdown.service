@@ -1,7 +1,7 @@
 [Unit]
 Description=Prepare /run/initramfs for systemd-shutdown
 DefaultDependencies=no
-ConditionKernelCommandLine=squashfsimg
+ConditionKernelCommandLine=overlayfs
 
 [Service]
 Type=oneshot

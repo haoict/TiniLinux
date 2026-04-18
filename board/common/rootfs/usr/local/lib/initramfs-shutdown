@@ -1,6 +1,6 @@
 #!/bin/busybox sh
 # systemd-shutdown pivots to /run/initramfs and execs this script. The old root is mounted at /oldroot
-# When rootfs is squashfs, the loop device holds an open fd on squashfsimg,
+# When rootfs is squashfs, the loop device holds an open fd on root.img (squashfs),
 # preventing systemd from shutdown/reboot cleanly.
 # Solution: install a /run/initramfs/shutdown script that systemd-shutdown
 # will pivot_root into.  From that clean environment we force-detach the

@@ -32,7 +32,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Save config changes:**
   - `make savefconf` → saves minimal config while preserving `BR2_DEFCONFIG_FRAGMENT` structure. Use this instead of `make savedefconfig` for fragment-based configs. Implemented in [save-fragment-defconfig.sh](scripts/save-fragment-defconfig.sh).
 - **Image creation:**
-  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](scripts/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](scripts/mk-flashable-img-squashfs-rootless.sh) based on presence of `rootfs.squashfs`.
+  - `make img` invokes [external.mk](external.mk) which selects either [mk-flashable-img-rootrw-rootless.sh](scripts/mk-flashable-img-rootrw-rootless.sh) or [mk-flashable-img-squashfs-rootless.sh](scripts/mk-flashable-img-squashfs-rootless.sh) based on presence of `root.img`.
 - **Flash to SD:**
   - `make flash` runs [flash-to-sdcard.sh](scripts/flash-to-sdcard.sh) with the current board.
 - **QEMU (virt boards):**
@@ -47,7 +47,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **BOOT content:** `Image`, `initramfs`, device trees, and `extlinux.conf` (e.g., [board/h700/BOOT/extlinux/extlinux.conf](board/h700/BOOT/extlinux/extlinux.conf)). Kernel boot args specify rootfs type.
 - **U-Boot offsets:** rgb30 uses 32KiB offset (`seek=64`), h700 uses 8KiB offset (`seek=8`). See [mk-flashable-img-squashfs-rootless.sh](scripts/mk-flashable-img-squashfs-rootless.sh) for dd commands.
 - **Rootfs:**
-  - squashfs flow (default): BOOT includes `rootfs.squashfs`; writeable overlay comes from `overlay_upper/`. Kernel args: `bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2`.
+  - squashfs flow (default): BOOT includes `root.img`; writeable overlay comes from `overlay_upper/`. Kernel args: `bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2`.
   - ext4 flow (rootrw variants): `rootfs.tar` extracted into partition by `populatefs-*` binaries. Kernel args: `root=/dev/vda2`.
 
 **Custom Package Patterns**

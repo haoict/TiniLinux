@@ -38,7 +38,7 @@ liveiso:
 	cp -r $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_x86_64_efi_liveboot/BOOT iso/boot; \
 	cp bzImage iso/boot; \
 	cp initrd.img iso/boot; \
-	cp rootfs.squashfs iso/boot; \
+	cp root.img iso/boot; \
 	grub-mkrescue -o tinilinux-x86_64-liveboot.iso iso
 
 runqemuiso:
@@ -58,7 +58,7 @@ runqemux64:
 	qemu-system-x86_64 -M q35 -smp 1 -m 512M \
 		-kernel bzImage \
 		-initrd initrd.img \
-		-append "bootpart=/dev/vda1 squashfsimg=rootfs.squashfs overlayfs=/dev/vda2 console=ttyS0" \
+		-append "bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2 console=ttyS0" \
 		-netdev user,id=eth0 \
 		-device virtio-net-pci,netdev=eth0 \
 		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
