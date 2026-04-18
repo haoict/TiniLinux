@@ -56,7 +56,7 @@ async def handle_event(device):
                     runcmd(
                         "killall retroarch; killall pico8_64; killall commander; "
                         "killall simple-terminal; killall htop; "
-                        "killall install-nothing-linux-aarch64; true",
+                        "killall install-nothing-linux-aarch64; killall fbdoom; killall -INT fbgif-linux-aarch64; true;",
                         shell=True
                     )
                 elif KEY_Z in active:
