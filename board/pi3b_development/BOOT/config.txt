@@ -1,7 +1,7 @@
 start_file=start.elf
 fixup_file=fixup.dat
 kernel=Image
-initramfs initramfs
+initramfs initrd.img
 gpu_mem=16
 arm_64bit=1
 dtoverlay=pwm,pin=18,func=2

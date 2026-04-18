@@ -54,7 +54,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Structure:** Each package has `Config.in` and `<name>.mk`. Register in the top-level [Config.in](Config.in) to appear in menuconfig.
 - **generic-package:** Packages use Buildroot’s `$(eval $(generic-package))`. Example build/install steps in [simple-launcher.mk](package/simple-launcher/simple-launcher.mk).
 - **Defconfig-aware builds:** It’s common to branch behavior on `$(BR2_DEFCONFIG)` substrings to set platform flags, e.g., `PLATFORM=h700` in [simple-launcher.mk](package/simple-launcher/simple-launcher.mk).
-- **Initramfs:** Packaged via [package/initramfs/initramfs.mk](package/initramfs/initramfs.mk) which builds BusyBox and emits `images/initramfs` for BOOT.
+- **Initramfs:** Packaged via [package/initramfs/initramfs.mk](package/initramfs/initramfs.mk) which builds BusyBox and emits `images/initrd.img` for BOOT.
 
 **Conventions and Gotchas**
 - **Defconfig naming:** Board name equals defconfig basename without `_defconfig` and equals the `output/<board>` directory name.

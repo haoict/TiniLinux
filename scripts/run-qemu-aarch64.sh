@@ -13,14 +13,14 @@ for OPT in "${OPTIONAL_MODES[@]}"; do
     esac
 done
 
-disk=$(find . -name *.img -exec basename {} \;)
+disk=$(find . -name "tinilinux-*.img" -exec basename {} \;)
 
 # --- Common args ---
 QEMU_BASE=(
     qemu-system-aarch64
     -M virt -cpu cortex-a53 -smp 1 -m 512M
     -kernel Image
-    -initrd initramfs
+    -initrd initrd.img
     -drive file=$disk,if=none,format=raw,id=hd0
     -device virtio-blk-device,drive=hd0
     -netdev user,id=eth0

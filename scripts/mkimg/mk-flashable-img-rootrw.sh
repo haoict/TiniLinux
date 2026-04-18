@@ -76,7 +76,7 @@ echo ""
 echo "[4/5] Copying files..."
 echo "  ✓ Copying boot files"
 cp images/Image /mnt/BOOT/
-cp images/initramfs /mnt/BOOT/
+cp images/initrd.img /mnt/BOOT/
 if [[ "${BOARD}" == "rgb30"* ]]; then
     cp -r images/rockchip /mnt/BOOT/dtb
     cp images/rk3566-dtbo/*.dtbo /mnt/BOOT/dtb/

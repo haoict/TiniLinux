@@ -12,5 +12,5 @@ sed -i 's/^MAIL_CHECK_ENAB.*/MAIL_CHECK_ENAB\t\tno/' ${TARGET_DIR}/etc/login.def
 echo ""
 
 echo "    - Copy initramfs.img to /usr/local/lib/ for use in initramfs-shutdown script"
-cp ${BINARIES_DIR}/initramfs ${TARGET_DIR}/usr/local/lib/initramfs.img
+cp ${BINARIES_DIR}/initrd.img ${TARGET_DIR}/usr/local/lib/initrd.img
 echo ""

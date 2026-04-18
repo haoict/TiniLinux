@@ -57,7 +57,7 @@ define INITRAMFS_INSTALL_TARGET_CMDS
 	chmod +x $(@D)/initramfs/init
 
 	# Create cpio archive
-	cd $(@D)/initramfs && find . | cpio -o -H newc | gzip > $(BINARIES_DIR)/initramfs
+	cd $(@D)/initramfs && find . | cpio -o -H newc | gzip > $(BINARIES_DIR)/initrd.img
 endef
 
 $(eval $(kconfig-package))

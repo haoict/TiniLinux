@@ -57,7 +57,7 @@ echo "  ✓ Formatting as FAT32"
 mkfs.fat -F32 -n BOOT ${P1_IMG}
 echo "  ✓ Copying boot files"
 mcopy -i ${P1_IMG} -o images/Image ::/
-mcopy -i ${P1_IMG} -o images/initramfs ::/
+mcopy -i ${P1_IMG} -o images/initrd.img ::/
 if [[ "${BOARD}" == "rgb30"* ]]; then
     mcopy -i ${P1_IMG} -o images/rockchip/ ::/dtb
     mcopy -i ${P1_IMG} -o images/rk3566-dtbo/*.dtbo ::/dtb

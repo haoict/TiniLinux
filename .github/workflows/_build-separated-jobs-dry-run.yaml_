@@ -57,7 +57,7 @@ name: Build (separated jobs) (dry run)
 #           mkdir -p images/rpi-firmware/
 #           mkdir -p images/broadcom/
 #           touch images/Image
-#           touch images/initramfs
+#           touch images/initrd.img
 #           touch images/allwinner/h700.dtb
 #           touch images/u-boot-rockchip.bin
 #           touch images/rockchip/rk3566.dtb

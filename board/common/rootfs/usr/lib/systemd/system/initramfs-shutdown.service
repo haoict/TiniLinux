@@ -6,7 +6,7 @@ ConditionKernelCommandLine=squashfsimg
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/sh -c 'mkdir -p /run/initramfs && cd /run/initramfs && gunzip -c /usr/local/lib/initramfs.img | cpio -id --quiet bin/busybox && install -m 0755 /usr/local/lib/initramfs-shutdown /run/initramfs/shutdown'
+ExecStart=/bin/sh -c 'mkdir -p /run/initramfs && cd /run/initramfs && gunzip -c /usr/local/lib/initrd.img | cpio -id --quiet bin/busybox && install -m 0755 /usr/local/lib/initramfs-shutdown /run/initramfs/shutdown'
 
 [Install]
 WantedBy=shutdown.target

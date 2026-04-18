@@ -129,7 +129,7 @@ Unpack
 ```bash
 mkdir initramfs-files
 cd initramfs-files
-zcat ../initramfs | cpio -id
+zcat ../initrd.img | cpio -id
 ```
 
 Repack
