@@ -9,6 +9,7 @@ Environment=SDL_VIDEODRIVER=wayland
 Environment=WAYLAND_DISPLAY=/run/user/0/wayland-1
 Environment=SWAYSOCK=/run/user/0/sway-ipc.0.sock
 ExecStartPre=-/bin/killall swaynag
+ExecStartPre=/bin/sh -c 'i=0; while [ $i -lt 10 ] && [ ! -d /roms/simple-launcher ]; do echo "Waiting /roms ready..."; sleep 0.5; i=$((i+1)); done; true'
 ExecStart=/usr/local/bin/simple-launcher
 Restart=on-failure
 RestartSec=5

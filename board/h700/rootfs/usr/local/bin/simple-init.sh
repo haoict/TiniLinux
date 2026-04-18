@@ -1,6 +1,10 @@
 #!/bin/sh
 
-[ -f /root/firstboot.sh ] && /root/firstboot.sh
+if [ -f /root/firstboot.sh ]; then
+    /root/firstboot.sh
+    i=0; while [ $i -lt 10 ] && [ ! -d /roms/simple-launcher ]; do echo "Waiting /roms ready..."; sleep 0.5; i=$((i+1)); done;
+    cp /usr/share/fonts/Ubuntu.ttf /roms/simple-launcher/font.ttf
+fi
 
 amixer -c 0 set "DAC" "100%"
 amixer -c 0 set "Line Out" "80%"

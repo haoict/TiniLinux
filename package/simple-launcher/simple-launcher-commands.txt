@@ -7,6 +7,8 @@ Btop
 HOME=/root /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
+Quit Launcher
+killall simple-launcher
 Reboot
 CONFIRM::chvt 1; echo "Rebooting..." >>/dev/tty0 && systemctl reboot
 Poweroff
