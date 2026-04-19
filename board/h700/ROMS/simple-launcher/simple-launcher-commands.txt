@@ -13,6 +13,10 @@ Wifi
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
 System Info
 HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch >/dev/tty0 2>&1
+fbDOOM
+TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/run-fbdoom.sh
+fbGIF
+if [ ! -e "/roms/fbgif/gif.gif" ]; then echo "Put your gif file to /roms/fbgif/gif.gif" >>/dev/tty0; sleep 5; else fbgif-linux-aarch64 -c /roms/fbgif/gif.gif; fi
 Quit launcher
 killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Menu + Select + Start to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
 Sleep
