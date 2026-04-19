@@ -5,9 +5,9 @@ set -euo pipefail
 # SETUP ENV
 #####################################################
 
-echo "================================================"
+echo "=================================================="
 echo "  Creating Flashable Image for ${BOARD} (RootRW)"
-echo "================================================"
+echo "=================================================="
 echo ""
 
 # Load partition info variables
@@ -28,7 +28,7 @@ if [[ "${BOARD}" == "rgb30"* ]]; then
 elif [[ "${BOARD}" == "h700"* ]]; then
     echo "  ✓ Writing U-Boot bootloader (offset: 8KiB)"
     dd if=images/u-boot-sunxi-with-spl.bin of=${OUT_IMG} bs=1K seek=8 conv=fsync,notrunc
-elif [[ "${BOARD}" == *"qemu"* ]]  || [[ "${BOARD}" == *"pi3b"* ]]; then
+elif [[ "${BOARD}" == *"qemu"* ]] || [[ "${BOARD}" == *"pi3b"* ]]; then
     echo "  ✓ Skipping U-Boot for board ${BOARD}"
 else
     echo "  ✗ Error: U-Boot not implemented for board ${BOARD}"
@@ -40,13 +40,12 @@ echo "[2/5] Creating partitions..."
 echo "  ✓ Creating BOOT partition (${BOOT_SIZE}M, FAT32)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary fat32 ${BOOT_PART_START} ${BOOT_PART_END}
 
-echo "  ✓ Creating rootfs partition (${ROOTFS_INIT_SIZE}M, ext4)"
+echo "  ✓ Creating rootfs/overlayfs partition (${ROOTFS_INIT_SIZE}M, ext4)"
 parted -s ${OUT_IMG} -a min unit s mkpart primary ext4 ${ROOTFS_PART_START} ${ROOTFS_PART_INIT_END}
 
 echo "  ✓ Setting boot flag"
 parted -s ${OUT_IMG} set 1 boot on
 sync
-
 
 echo ""
 echo "[3/5] Formatting BOOT partition..."
@@ -77,7 +76,7 @@ dd if=${P1_IMG} of="${OUT_IMG}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notr
 rm -f ${P1_IMG}
 
 echo ""
-echo "[4/5] Creating rootfs partition..."
+echo "[4/5] Creating rootfs/overlayfs partition..."
 P2_IMG=images/p2.img
 rm -f ${P2_IMG}
 
@@ -98,9 +97,9 @@ if [[ "${BOARD}" != *"development"* ]]; then
     rm -rf ${romtmp}
     echo "  ✓ Populating filesystem"
     if [[ "$(uname -m)" == "x86_64" ]]; then
-        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
+        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/mkimg/populatefs-amd64 -U -d $rootfstmp ${P2_IMG}
     elif [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
+        ${BR2_EXTERNAL_TiniLinux_PATH}/scripts/mkimg/populatefs-arm64 -U -d $rootfstmp ${P2_IMG}
     fi
     sync
     rm -rf ${rootfstmp}
@@ -108,10 +107,9 @@ else
     mkfs.ext4 -O ^orphan_file -L rootfs -d images/rootfs.tar ${P2_IMG} ${ROOTFS_INIT_SIZE}M
 fi
 
-echo "  ✓ Verifying rootfs"
+echo "  ✓ Verifying rootfs/overlayfs"
 e2fsck -n ${P2_IMG}
-
-echo "  ✓ Writing rootfs partition to image"
+echo "  ✓ Writing rootfs/overlayfs partition to image"
 dd if=${P2_IMG} of="${OUT_IMG}" bs=512 seek="${ROOTFS_PART_START}" conv=fsync,notrunc
 rm -f ${P2_IMG}
 

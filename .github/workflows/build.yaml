@@ -38,6 +38,18 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v5
+        with:
+          path: TiniLinux
+
+      - name: Create board build config
+        run: |
+          set -x
+          cd TiniLinux
+          ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
+          cd output/${{ inputs.board }}
+
       - name: Install deps
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
         run: |
@@ -78,16 +90,11 @@ jobs:
       #     # remove-codeql: 'true'
       #     remove-docker-images: 'true'
 
-      - name: Checkout main repo
-        uses: actions/checkout@v5
-        with:
-          path: TiniLinux
-
       - name: Restore dl cache
         uses: actions/cache@v5
         with:
           path: TiniLinux/dl
-          key: dl-cache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
+          key: dl-cache-${{ inputs.board }}-${{ hashFiles(format('TiniLinux/output/{0}/.config', inputs.board)) }}
           restore-keys: |
             dl-cache-${{ inputs.board }}-
 
@@ -95,18 +102,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: TiniLinux/.buildroot-ccache
-          key: ccache-${{ inputs.board }}-${{ hashFiles('TiniLinux/configs/fragments/common.fragment', format('TiniLinux/configs/{0}_defconfig', inputs.board)) }}
+          key: ccache-${{ inputs.board }}-${{ hashFiles(format('TiniLinux/output/{0}/.config', inputs.board)) }}
           restore-keys: |
             ccache-${{ inputs.board }}-
 
       - name: Build
         run: |
           set -x
-          cd TiniLinux
-
-          # create board config
-          ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
-          cd output/${{ inputs.board }}
+          cd TiniLinux/output/${{ inputs.board }}
 
           # download packages
           make source -s
@@ -114,6 +117,7 @@ jobs:
           # build
           time make -j$(nproc) -s
 
+          make ccache-stats
           # remove some heavy packages after built to save space (for dl-cache optimization)
           find ../../dl -name '*git' -type d -exec rm -rf {} +
           rm -rf ../../dl/linux

@@ -38,6 +38,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v5
+        with:
+          path: TiniLinux
+      - name: Create board build config
+        run: |
+          set -x
+          cd TiniLinux
+          ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
+          cd output/${{ inputs.board }}
       - name: Install deps
         if: ${{ inputs.runner == 'github-hosted_ubuntu-24.04' || inputs.runner == 'github-hosted_ubuntu-24.04-arm' }}
         run: |
@@ -64,17 +74,11 @@ jobs:
           sudo dpkg -i libext2fs-dev_1.47.1-1ubuntu1_amd64.deb
           sudo dpkg -i e2fsprogs_1.47.1-1ubuntu1_amd64.deb
           sudo apt -f install
-      - name: Checkout main repo
-        uses: actions/checkout@v5
-        with:
-          path: TiniLinux
+
       - name: Build
         run: |
           set -x
-          cd TiniLinux
-          ./scripts/make-board-build.sh configs/${{ inputs.board }}_defconfig
-          cd output/${{ inputs.board }}
-          # sed -i '/^BR2_CCACHE/d' .config # disable ccache because this is one time build
+          cd TiniLinux/output/${{ inputs.board }}
 
           # Simulate build output files
           mkdir -p images/allwinner
@@ -95,7 +99,12 @@ jobs:
           mkdir -p target/etc
           touch target/root/init.sh
           echo "BUILD_ID=buildroot" > target/etc/os-release
-          tar -cvf images/rootfs.tar -C target/ .
+
+          if [[ "${{ inputs.board }}" == *"rootrw"* ]] || [[ "${{ inputs.board }}" == *"development"* ]]; then
+            tar -cvf images/rootfs.tar -C target/ .
+          else
+            mksquashfs target/ images/root.img #-comp gzip -Xcompression-level 1 -noappend -all-root
+          fi
 
           cd ..
       - name: Make flashable image
