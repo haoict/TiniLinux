@@ -22,14 +22,20 @@ mount_squashfs() {
     mkdir -p /mnt/boot /mnt/squashfs /mnt/overlayfs
     log "[initramfs] Mounting boot partition $bootpart..."
     mount -o rw "$bootpart" /mnt/boot || exec sh
-    log "[initramfs] Mounting root from squashfs image /mnt/boot/$root (read-only)..."
-    mount -t squashfs -o loop,ro "/mnt/boot/$root" /mnt/squashfs || exec sh
     log "[initramfs] Mounting overlay partition $overlayfs (read-write)..."
     if [ "$overlayfs" = "tmpfs" ]; then
         mount -o rw -t tmpfs tmpfs /mnt/overlayfs || exec sh
     else
         mount -o rw "$overlayfs" /mnt/overlayfs || exec sh
     fi
+    # Check for update
+    if [ -f /mnt/overlayfs/.update/$root ]; then
+        log "[initramfs] Found .update, applying update to /mnt/boot/$root..."
+        rm -f /mnt/boot/$root
+        mv /mnt/overlayfs/.update/$root /mnt/boot/$root
+    fi
+    log "[initramfs] Mounting root from squashfs image /mnt/boot/$root (read-only)..."
+    mount -t squashfs -o loop,ro "/mnt/boot/$root" /mnt/squashfs || exec sh
 
     # Check for rootfs resize flags
     if [ -f /mnt/overlayfs/overlay_upper/root/.resize-rootfs ]; then
