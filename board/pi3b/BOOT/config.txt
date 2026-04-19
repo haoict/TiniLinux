@@ -20,9 +20,9 @@ disable_overscan=1
 
 # How much memory in MB to assign to the GPU on Pi models having
 # 256, 512 or 1024 MB total memory
-gpu_mem_256=100
-gpu_mem_512=200
-gpu_mem_1024=300
+gpu_mem_256=16
+gpu_mem_512=32
+gpu_mem_1024=64
 
 framebuffer_width=240
 framebuffer_height=240
