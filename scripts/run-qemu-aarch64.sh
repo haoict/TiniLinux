@@ -18,7 +18,7 @@ disk=$(find . -name "tinilinux-*.img" -exec basename {} \;)
 # --- Common args ---
 QEMU_BASE=(
     qemu-system-aarch64
-    -M virt -cpu cortex-a53 -smp 1 -m 512M
+    -M virt -cpu cortex-a53 -smp 2 -m 1024M
     -kernel Image
     -initrd initrd.img
     -drive file=$disk,if=none,format=raw,id=hd0
@@ -30,17 +30,20 @@ QEMU_BASE=(
 )
 
 # --- Resolve display mode ---
+DISPLAY_APPEND="console=ttyAMA0"
+DISPLAY_EXTRA=(    
+    -serial mon:stdio
+)
 case "$MODE_DISPLAY" in
     nographic)
-        DISPLAY_APPEND="console=ttyAMA0"
-        DISPLAY_EXTRA=(    
-            -serial mon:stdio
+        DISPLAY_APPEND+=""
+        DISPLAY_EXTRA+=(
             -nographic
         )
         ;;
     gui)
-        DISPLAY_APPEND="console=tty1 video=640x480"
-        DISPLAY_EXTRA=(
+        DISPLAY_APPEND+=" console=tty1 video=640x480 splash"
+        DISPLAY_EXTRA+=(
             -device virtio-gpu-gl-pci,xres=640,yres=480
             -display gtk,gl=on
         )
@@ -71,4 +74,4 @@ echo ""
 echo "${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append \"$APPEND\""
 echo ""
 
-${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append "$APPEND"
+exec ${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append "$APPEND"
