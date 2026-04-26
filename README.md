@@ -23,7 +23,7 @@ Clone TiniLinux and buildroot repo and setup environments
 ```bash
 # Install required packages
 sudo apt update
-sudo apt install build-essential cmake mtools libncurses-dev dosfstools parted
+sudo apt install build-essential cmake mtools libncurses-dev dosfstools parted rsync
 
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
