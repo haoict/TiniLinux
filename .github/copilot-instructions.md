@@ -7,16 +7,16 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Boards as Variants:** Each board name maps 1:1 to a defconfig in [configs/](../configs). Matching board directories live under [board/](../board) for BOOT, rootfs overlays, and board-specific assets. Board variants (e.g., `h700`, `h700_sway`, `h700_rootrw`, `h700_consoleonly`) share configs via fragments.
 - **Custom Packages:** All packages reside in [package/](../package) and are auto-included via `include $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk)` in [external.mk](../external.mk). A top-level [Config.in](../Config.in) exposes package menus grouped by function: "TiniLinux Common Packages" (btop, gptokeyb2, initramfs, etc.), "TiniLinux Graphic Packages" (mesa3d-no-llvm, retroarch, simple-launcher, etc.), and "TiniLinux RK3566 Packages" (rk3566-dtbo).
 - **Init System + Kernel:** Systemd-based images with board-specific kernels (Linux 6.18.16) and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](../configs/h700_sway_defconfig).
-- **Architecture:** Targets embedded ARM64 devices (Rockchip RK3326/RK3566, Allwinner H700) with GPU acceleration via Panfrost Mesa driver. Also supports QEMU virtual boards (`pc_qemu_aarch64_virt`) and Raspberry Pi 3B (including `pi3b_docker` variant with Docker support).
+- **Architecture:** Targets embedded ARM64 devices (Rockchip RK3326/RK3566, Allwinner H700) with GPU acceleration via Panfrost Mesa driver. Also supports QEMU virtual boards (`qemu_aarch64`) and Raspberry Pi 3B (including `pi3b_docker` variant with Docker support).
 
 **Repo Layout**
-- **Boards:** [board/h700](../board/h700), [board/rgb30](../board/rgb30), [board/pc_qemu_aarch64_virt](../board/pc_qemu_aarch64_virt), [board/pi3b](../board/pi3b) plus `_rootrw`, `_sway`, `_consoleonly`, `_docker` variants. Default configs (h700, rgb30) use squashfs rootfs. Each board dir contains:
+- **Boards:** [board/h700](../board/h700), [board/rgb30](../board/rgb30), [board/qemu_aarch64](../board/qemu_aarch64), [board/pi3b](../board/pi3b) plus `_rootrw`, `_sway`, `_consoleonly`, `_docker` variants. Default configs (h700, rgb30) use squashfs rootfs. Each board dir contains:
   - `BOOT/` - bootloader assets, device trees, extlinux config
   - `rootfs/` - overlay files for ext4 rootrw variants
   - `overlay_upper/` - overlay files for squashfs variants (persistent overlay partition)
   - `ROMS/` - optional RetroArch configs and cores (mainly in `board/common/ROMS`)
 - **Configs:** [configs/](../configs) holds all `<board>_defconfig` and toolchain-only defconfigs. Most defconfigs use fragments via `BR2_DEFCONFIG_FRAGMENT` to reduce duplication. Example: `h700_defconfig` is just 2 lines referencing fragments and overlay paths.
-- **Config Fragments:** [configs/fragments/](../configs/fragments) contains reusable config fragments: `common.fragment` (shared by all), `h700.fragment`/`rgb30.fragment`/`pi.fragment` (board-specific), `with-graphics.fragment` (GUI packages), `rootrw.fragment`, `sway.fragment`, `pc_qemu.fragment`.
+- **Config Fragments:** [configs/fragments/](../configs/fragments) contains reusable config fragments: `common.fragment` (shared by all), `h700.fragment`/`rgb30.fragment`/`pi.fragment` (board-specific), `with-graphics.fragment` (GUI packages), `rootrw.fragment`, `sway.fragment`, `qemu.fragment`.
 - **Packages:** Examples: [package/initramfs](../package/initramfs), [package/simple-launcher](../package/simple-launcher), [package/mesa3d-no-llvm](../package/mesa3d-no-llvm), [package/rk3566-dtbo](../package/rk3566-dtbo). Each package has `<name>.mk` (Makefile) and `Config.in` (menu entry).
 - **Tooling:** [make-board-build.sh](../scripts/make-board-build.sh) bootstraps an out-of-tree Buildroot output, auto-clones buildroot if needed, and merges fragments; [Dockerfile](../Dockerfile) provides Ubuntu 24.04 build container with all deps.
 - **CI/CD:** [.github/workflows/build.yaml](../.github/workflows/build.yaml) defines manual workflow_dispatch builds with caching for `dl/` (downloads) and `.buildroot-ccache/` (compiled objects). Supports multiple runner types including GitHub-hosted and self-hosted ARM runners.
@@ -43,7 +43,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
   - Target cleanup: `make cleantarget` removes staged files and forces target reinstall.
 
 **Images and Partitions**
-- **Partition metadata:** Per-board sizing is defined in `rootfs/root/partition-info.sh` (e.g., [pc_qemu_aarch64_virt](../board/pc_qemu_aarch64_virt/rootfs/root/partition-info.sh)) with variables like `DISK_SIZE`, `BOOT_SIZE`, `OVERLAY_SIZE`.
+- **Partition metadata:** Per-board sizing is defined in `rootfs/root/partition-info.sh` (e.g., [qemu_aarch64](../board/qemu_aarch64/rootfs/root/partition-info.sh)) with variables like `DISK_SIZE`, `BOOT_SIZE`, `OVERLAY_SIZE`.
 - **BOOT content:** `Image`, `initramfs`, device trees, and `extlinux.conf` (e.g., [board/h700/BOOT/extlinux/extlinux.conf](../board/h700/BOOT/extlinux/extlinux.conf)). Kernel boot args specify rootfs type.
 - **U-Boot offsets:** rgb30 uses 32KiB offset (`seek=64`), h700 uses 8KiB offset (`seek=8`). See [mk-flashable-img-squashfs-rootless.sh](../scripts/mkimg/mk-flashable-img-squashfs-rootless.sh) for dd commands.
 - **Rootfs:**
@@ -77,7 +77,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Quick rootfs iteration:** For squashfs builds, modify `board/<board>/overlay_upper/`, rebuild: `make cleantarget && make && make img`. For rootrw, modify `board/<board>/rootfs/`.
 
 **Testing and Debugging**
-- **QEMU testing:** Use `pc_qemu_aarch64_virt` or `pc_qemu_aarch64_virt_consoleonly` configs for rapid kernel/userspace testing without hardware. Build, then `cd output/pc_qemu_aarch64_virt && ZIP=0 make img && make runqemu` (headless) or `make runqemugui` (with virtio-gpu). For rootrw variants, use `make runqemurootrw`.
+- **QEMU testing:** Use `qemu_aarch64` or `qemu_aarch64_consoleonly` configs for rapid kernel/userspace testing without hardware. Build, then `cd output/qemu_aarch64 && ZIP=0 make img && make runqemu` (headless) or `make runqemugui` (with virtio-gpu). For rootrw variants, use `make runqemurootrw`.
 - **Kernel/initramfs debugging:** Kernel args in `board/<board>/BOOT/extlinux/extlinux.conf` control boot behavior. Add `console=ttyAMA0` (QEMU/serial) or `console=tty0` (physical display). Initramfs source in [package/initramfs](../package/initramfs).
 - **Build failures:** Check `output/<board>/build/<pkg>-<ver>/` for logs. For persistent failures, `make <pkg>-dirclean` and retry. For target install issues, `make cleantarget` forces reinstall of all target packages.
 - **CI builds:** GitHub Actions workflow supports manual dispatch with board selection. Uses Actions cache for `dl/` and `.buildroot-ccache/` to speed up repeated builds. See [.github/workflows/build.yaml](../.github/workflows/build.yaml) for cache key patterns.

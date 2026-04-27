@@ -1,0 +1,5 @@
+BR2_DEFCONFIG_FRAGMENT="$(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/common.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/with-graphics.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/sway.fragment $(BR2_EXTERNAL_TiniLinux_PATH)/configs/fragments/qemu.fragment"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/rootfs $(BR2_EXTERNAL_TiniLinux_PATH)/board/qemu_aarch64/rootfs"
+BR2_PACKAGE_LIBDRM_INSTALL_TESTS=y
+BR2_PACKAGE_MESA3D_NO_LLVM_GALLIUM_DRIVER_SOFTPIPE=y
+BR2_PACKAGE_MESA3D_NO_LLVM_GALLIUM_DRIVER_VIRGL=y

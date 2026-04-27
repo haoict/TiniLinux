@@ -13,7 +13,7 @@
 | xxx_rootrw           | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
 | xxx_consoleonly      | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
 | xxx_sway             | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
-| pc_qemu_aarch64_virt | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
+| qemu_aarch64 | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
 | toolchain_targetArch | N/A                  | N/A      | N/A    | N/A     | N/A              | build toolchain only to be reused for other builds                                      |
 
 # Build
@@ -96,11 +96,11 @@ cp -r /home/ubuntu/buildroot/output/<boardname>/images output/<boardname>
 
 ## Test with qemu
 
-With pc_qemu_targetArch_virt build, we can test kernel, initramfs, rootfs disk with qemu
+With qemu_aarch64 build, we can test kernel, initramfs, rootfs disk with qemu
 
 ```bash
 sudo apt install qemu-system-aarch64
-cd output/pc_qemu_aarch64_virt (or _consoleonly variant)
+cd output/qemu_aarch64 (or _consoleonly variant)
 make -j$(nproc)
 ZIP=0 make img
 make runqemu (or make runqemugui)

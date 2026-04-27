@@ -59,7 +59,7 @@ case "$MODE_ROOT" in
         ROOT_APPEND="loglevel=3 root=/dev/vda2 fsck.repair=yes"
         ;;
     rootnfs)
-        ROOT_APPEND="loglevel=3 root=nfs:10.0.2.2:/srv/nfs/pc_qemu_development_rootfs networkconf=dhcp"
+        ROOT_APPEND="loglevel=3 root=nfs:10.0.2.2:/srv/nfs/qemu_development_rootfs networkconf=dhcp"
         ;;
 esac
 
