@@ -1,10 +1,10 @@
 # <device>        <dir>        <type>        <options>        <dump> <fsck>
 # https://wiki.archlinux.org/title/fstab
-/dev/vda1	/boot	vfat	defaults,nofail								0	2
-/dev/vda2	/		auto	defaults,noatime,nofail						0	1
-LABEL=ROMS	/roms	exfat	umask=0000,iocharset=utf8,noatime,nofail	0	0
+LABEL=BOOT		/boot	vfat	defaults,nofail								0	2
+LABEL=rootfs	/		auto	defaults,noatime,nofail						0	1
+LABEL=ROMS		/roms	exfat	umask=0000,iocharset=utf8,noatime,nofail	0	0
 
 # shared directory in UTM (https://docs.getutm.app/settings-qemu/sharing/)
 # get "Shared Directory Tag" field: $ grep . /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag
 # mount command:                    $ sudo mount -t 9p -o trans=virtio share /mnt/shared
-share		/mnt/shared	9p	trans=virtio,nofail							0	0
+share			/mnt/shared	9p	trans=virtio,nofail							0	0
