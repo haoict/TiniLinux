@@ -30,38 +30,3 @@ runqemu:
 	# refer to run-qemu-aarch64.sh for available options
 	cd $(BINARIES_DIR); \
 	$(BR2_EXTERNAL_TiniLinux_PATH)/scripts/run-qemu-aarch64.sh nographic squashfs $(OPT)
-
-liveiso:
-	cd $(BINARIES_DIR); \
-	rm -rf iso; \
-	mkdir -p iso; \
-	cp -r $(BR2_EXTERNAL_TiniLinux_PATH)/board/pc_x86_64_efi_liveboot/BOOT iso/boot; \
-	cp bzImage iso/boot; \
-	cp initrd.img iso/boot; \
-	cp root.img iso/boot; \
-	grub-mkrescue -o tinilinux-x86_64-liveboot.iso iso
-
-runqemuiso:
-	cd $(BINARIES_DIR); \
-	qemu-system-x86_64 -enable-kvm -cpu host -smp 1 -m 512M \
-		-drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/OVMF.fd \
-		-boot d \
-		-cdrom tinilinux-x86_64-liveboot.iso \
-		-device virtio-gpu-gl,xres=640,yres=480 -display gtk,gl=on \
-		-device virtio-keyboard \
-		-device virtio-mouse \
-		-vga none
-
-# unused
-runqemux64:
-	cd $(BINARIES_DIR); \
-	qemu-system-x86_64 -M q35 -smp 1 -m 512M \
-		-kernel bzImage \
-		-initrd initrd.img \
-		-append "bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2 console=ttyS0" \
-		-netdev user,id=eth0 \
-		-device virtio-net-pci,netdev=eth0 \
-		-drive file=tinilinux-$(BOARD).img,if=none,format=raw,id=hd0 \
-		-device virtio-blk-pci,drive=hd0 \
-		-nographic \
-		-serial mon:stdio
