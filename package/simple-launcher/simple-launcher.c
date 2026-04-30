@@ -91,6 +91,10 @@ TTF_Font *lFont;
 TTF_Font *xlFont;
 TTF_Font *titleFont;
 
+int buttonUpHeld = 0;
+int buttonDownHeld = 0;
+Uint32 lastScrollTime = 0;
+
 typedef struct Command Command;
 struct Command {
     char name[MAX_NAME_LENGTH];
@@ -466,6 +470,17 @@ void executeShellScript(const char *script) {
         SDL_RenderSetScale(renderer, windowScale, windowScale);  // scale down to make it look sharper on high-res screens
     }
     joystick = SDL_JoystickOpen(0);
+
+    // Fix ghost presses: Flush all stale events accumulated during execution
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+    // Give the joystick driver a moment to settle, then flush again
+    SDL_Delay(100);
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+    // Reset held state so ghost presses don't carry over
+    buttonUpHeld = 0;
+    buttonDownHeld = 0;
+    lastScrollTime = SDL_GetTicks();
+
 }
 
 int main(int argc, char *argv[]) {
@@ -557,10 +572,8 @@ int main(int argc, char *argv[]) {
     int running = 1;
     int suspend = 0;
     int selectedItem = 0;
+    int shouldRerender = 0;
 
-    int buttonUpHeld = 0;
-    int buttonDownHeld = 0;
-    Uint32 lastScrollTime = 0;
     const Uint32 SCROLL_DELAY = 150;  // milliseconds between auto-scroll
 
     Uint32 lastHwUpdate = 0;
@@ -803,6 +816,7 @@ int main(int argc, char *argv[]) {
             else
                 selectedItem = numCommands - 1;
             lastScrollTime = now;
+            shouldRerender = 1;
         }
         if (buttonDownHeld && now - lastScrollTime > SCROLL_DELAY) {
             if (selectedItem < numCommands - 1)
@@ -810,16 +824,21 @@ int main(int argc, char *argv[]) {
             else
                 selectedItem = 0;
             lastScrollTime = now;
+            shouldRerender = 1;
         }
 
         // Update hardware info
         if (now - lastHwUpdate >= HW_UPDATE_INTERVAL) {
             updateHwInfo();
             lastHwUpdate = now;
+            shouldRerender = 1;
         }
 
         // Update render
-        updateRender(selectedItem, color, highlightColor);
+        if (shouldRerender) {
+            updateRender(selectedItem, color, highlightColor);
+            shouldRerender = 0;
+        }
         SDL_Delay(16);  // ~60 FPS
     }
 
