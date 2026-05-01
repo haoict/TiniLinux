@@ -15,6 +15,8 @@ on:
           - rgb30_consoleonly
           - pi3b
           - pi3b_development
+          - qemu_aarch64
+          - qemu_aarch64_development
       runner:
         description: 'Select runner type'
         required: true
