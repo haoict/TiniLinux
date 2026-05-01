@@ -1,1 +1,1 @@
-# root=/dev/vda2 console=ttyAMA0
+# (Not being used) root=/dev/vda2 console=ttyAMA0 console=tty1

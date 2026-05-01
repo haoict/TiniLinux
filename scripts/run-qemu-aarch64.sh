@@ -5,10 +5,11 @@ OPTIONAL_MODES=("$@")
 for OPT in "${OPTIONAL_MODES[@]}"; do
     case "$OPT" in
         nographic) MODE_DISPLAY="nographic" ;;
-        gui)       MODE_DISPLAY="gui"     ;;
+        gui)       MODE_DISPLAY="gui"       ;;
         squashfs)  MODE_ROOT="squashfs"     ;;
-        rootrw)    MODE_ROOT="rootrw"     ;;
-        rootnfs)   MODE_ROOT="rootnfs"    ;;
+        rootrw)    MODE_ROOT="rootrw"       ;;
+        rootnfs)   MODE_ROOT="rootnfs"      ;;
+        efi)       MODE_BOOT="efi"          ;;
         *) echo "Error: Unknown mode '$OPT'"; exit 1 ;;
     esac
 done
@@ -19,8 +20,6 @@ disk=$(find . -name "tinilinux-*.img" -exec basename {} \;)
 QEMU_BASE=(
     qemu-system-aarch64
     -M virt -cpu cortex-a53 -smp 2 -m 1024M
-    -kernel Image
-    -initrd initrd.img
     -drive file=$disk,if=none,format=raw,id=hd0
     -device virtio-blk-device,drive=hd0
     -netdev user,id=eth0
@@ -28,6 +27,17 @@ QEMU_BASE=(
     -device virtio-keyboard-pci
     -device virtio-mouse-pci
 )
+
+if [ "${MODE_BOOT:-}" = "efi" ]; then
+    QEMU_BASE+=(
+    -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd
+    )
+else
+    QEMU_BASE+=(
+    -kernel Image
+    -initrd initrd.img
+    )
+fi
 
 # --- Resolve display mode ---
 DISPLAY_APPEND="console=ttyAMA0"
@@ -71,7 +81,14 @@ EXTRA=(
 )
 
 echo ""
-echo "${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append \"$APPEND\""
-echo ""
+if [ "${MODE_BOOT:-}" = "efi" ]; then
+    echo "${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]}"
+    echo ""
+    exec ${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]}
+else
+    echo "${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append \"$APPEND\""
+    echo ""
+    exec ${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append "$APPEND"
+fi
 
-exec ${QEMU_BASE[@]} ${DISPLAY_EXTRA[@]} ${EXTRA[@]} -append "$APPEND"
+

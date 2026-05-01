@@ -1,1 +1,1 @@
-# bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2 console=tty0 video=640x480
+# (Not being used) console=ttyAMA0 console=tty1 video=640x480 splash loglevel=3 bootpart=/dev/vda1 root=root.img overlayfs=/dev/vda2
