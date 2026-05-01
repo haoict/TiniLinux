@@ -682,6 +682,7 @@ int main(int argc, char *argv[]) {
                         default:
                             break;
                     }
+                    shouldRerender = 1;
                     break;
 
 #if defined(RG35XXP) || defined(TRIMUISP)
