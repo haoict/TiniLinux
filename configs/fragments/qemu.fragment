@@ -7,3 +7,5 @@ BR2_PACKAGE_BLUEZ5_UTILS=n
 BR2_PACKAGE_WPA_SUPPLICANT=n
 BR2_PACKAGE_GPTOKEYB2=n
 BR2_PACKAGE_ROCKNIX_JOYPAD=n
+BR2_TARGET_GRUB2=y
+BR2_TARGET_GRUB2_BUILTIN_MODULES_EFI="boot linux ext2 fat squash4 part_msdos part_gpt normal efi_gop configfile search search_fs_file gzio"

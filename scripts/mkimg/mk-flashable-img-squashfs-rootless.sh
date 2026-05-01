@@ -66,8 +66,10 @@ elif [[ "${BOARD}" == "h700"* ]]; then
 elif [[ "${BOARD}" == *"pi3b"* ]]; then
     mcopy -i ${P1_IMG} -o images/rpi-firmware/* ::/
     mcopy -i ${P1_IMG} -o images/broadcom/* ::/
+elif [[ "${BOARD}" == *"qemu"* ]]; then
+    mcopy -i ${P1_IMG} -o -s images/efi-part/* ::/
 fi
-mcopy -i ${P1_IMG} -o ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* ::/
+mcopy -i ${P1_IMG} -o -s ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/BOOT/* ::/
 echo "  ✓ Verifying BOOT partition"
 mdir -i images/p1.img ::/
 sync
