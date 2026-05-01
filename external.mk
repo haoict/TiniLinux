@@ -10,6 +10,10 @@ img:
 		BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/mk-flashable-img-squashfs-rootless.sh; \
 	fi
 
+install-aarch64-grub:
+	cd $(CONFIG_DIR); \
+	$(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/install-grub-efi-aarch64.sh $(BINARIES_DIR)/tinilinux-qemu_aarch64.img
+
 flash:
 	cd $(CONFIG_DIR); \
 	BOARD=$(BOARD) $(BR2_EXTERNAL_TiniLinux_PATH)/scripts/mkimg/flash-to-sdcard.sh
