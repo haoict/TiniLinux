@@ -641,11 +641,9 @@ int main(int argc, char *argv[]) {
                                     break;
                                 }
                                 if (dialogSelectedButton == 0) {
-                                    printf("Ok button pressed\n");
                                     executeShellScript(commands[selectedItem].command);
                                     showDialogBox = 0;
                                 } else {
-                                    printf("Cancel button pressed\n");
                                     showDialogBox = 0;
                                 }
                                 break;
@@ -682,6 +680,7 @@ int main(int argc, char *argv[]) {
                         default:
                             break;
                     }
+                    shouldRerender = 1;
                     break;
 
 #if defined(RG35XXP) || defined(TRIMUISP)
@@ -702,28 +701,10 @@ int main(int argc, char *argv[]) {
                     }
                     break;
                 */
-                case SDL_JOYHATMOTION:  // D-Pad motion
-                    if (event.jhat.value == SDL_HAT_UP) {
-                        if (selectedItem > 0)
-                            selectedItem--;
-                        else
-                            selectedItem = numCommands - 1;
-                    } else if (event.jhat.value == SDL_HAT_DOWN) {
-                        if (selectedItem < numCommands - 1)
-                            selectedItem++;
-                        else
-                            selectedItem = 0;
-                    } else if (event.jhat.value == SDL_HAT_LEFT) {
-                        selectedItem = MAX(0, selectedItem - itemsPerPage);
-                    } else if (event.jhat.value == SDL_HAT_RIGHT) {
-                        selectedItem = MIN(selectedItem + itemsPerPage, numCommands - 1);
-                    }
-                    break;
 #endif
 
-#if defined(BR2)
                 case SDL_JOYBUTTONDOWN:
-                    printf("Button pressed: %d\n", event.jbutton.button);
+                    // printf("Button pressed: %d\n", event.jbutton.button);
                     switch (event.jbutton.button) {
                         case BTN_A:
                             if (showDialogBox) {
@@ -734,11 +715,9 @@ int main(int argc, char *argv[]) {
                                     break;
                                 }
                                 if (dialogSelectedButton == 0) {
-                                    printf("Ok button pressed\n");
                                     executeShellScript(commands[selectedItem].command);
                                     showDialogBox = 0;
                                 } else {
-                                    printf("Cancel button pressed\n");
                                     showDialogBox = 0;
                                 }
                                 break;
@@ -796,12 +775,48 @@ int main(int argc, char *argv[]) {
                             }
                             break;
                     }
+                    shouldRerender = 1;
                     break;
                 case SDL_JOYBUTTONUP:
                     buttonUpHeld = SDL_JoystickGetButton(joystick, BTN_UP);
                     buttonDownHeld = SDL_JoystickGetButton(joystick, BTN_DOWN);
                     break;
-#endif
+                case SDL_JOYHATMOTION:  // D-Pad motion
+                    printf("Hat value: %d\n", event.jhat.value);
+                    if (event.jhat.value == SDL_HAT_UP) {
+                        if (showDialogBox) {
+                            break;
+                        }
+                        if (selectedItem > 0)
+                            selectedItem--;
+                        else
+                            selectedItem = numCommands - 1;
+                        shouldRerender = 1;
+                    } else if (event.jhat.value == SDL_HAT_DOWN) {
+                        if (showDialogBox) {
+                            break;
+                        }
+                        if (selectedItem < numCommands - 1)
+                            selectedItem++;
+                        else
+                            selectedItem = 0;
+                        shouldRerender = 1;
+                    } else if (event.jhat.value == SDL_HAT_LEFT) {
+                        if (showDialogBox) {
+                            dialogSelectedButton = !dialogSelectedButton;
+                            break;
+                        }
+                        selectedItem = MAX(0, selectedItem - itemsPerPage);
+                        shouldRerender = 1;
+                    } else if (event.jhat.value == SDL_HAT_RIGHT) {
+                        if (showDialogBox) {
+                            dialogSelectedButton = !dialogSelectedButton;
+                            break;
+                        }
+                        selectedItem = MIN(selectedItem + itemsPerPage, numCommands - 1);
+                        shouldRerender = 1;
+                    }
+                    break;
 
                 default:
                     continue;
@@ -836,6 +851,7 @@ int main(int argc, char *argv[]) {
 
         // Update render
         if (shouldRerender) {
+            // printf("Rerendering... Selected item: %d\n", selectedItem);
             updateRender(selectedItem, color, highlightColor);
             shouldRerender = 0;
         }
