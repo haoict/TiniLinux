@@ -58,7 +58,7 @@
 #define BATTERY_CAPACITY_FILE ""  // no battery
 #define BATTERY_STATUS_FILE ""    // no battery
 #define BRIGHTNESS_FILE ""        // no brightness
-#define VOLUME_COMMAND "amixer get -c 0 PCM | awk -F'[][]' '/Mono: Playback/ { print $2 }'"
+#define VOLUME_COMMAND "wpctl get-volume @DEFAULT_SINK@ | awk '{print $2*100}'"
 #define CREDIT "TiniLinux " VERSION " (RPI)"
 
 #else

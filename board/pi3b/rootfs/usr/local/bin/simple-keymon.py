@@ -14,6 +14,8 @@ KEY_X   = 45
 KEY_Z   = 44
 KEY_UP  = 103
 KEY_DOWN = 108
+KEY_LEFT = 105
+KEY_RIGHT = 106
 
 def find_all_keyboards():
     """Find all keyboard-capable input devices (including gpio-keys)."""
@@ -43,7 +45,15 @@ def brightness(direction):
     runcmd(f"echo -e '\nSetting brightness: {cur}' > /dev/tty0", shell=True)
     with open(brightness_path, "w") as f:
         f.write(f"{int(cur)}\n")
-    
+
+def volume(direction):
+    # get current volume: wpctl get-volume @DEFAULT_SINK@ | awk '{print $2*100}'
+    cur = subprocess.run("wpctl get-volume @DEFAULT_SINK@ | awk '{{print $2*100}}'", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    cur = int(cur.stdout.strip())
+    adj = 10 # 10%
+    cur = max(0, min(cur + adj * direction, 100))
+    runcmd(f"echo -e '\nSetting volume: {cur}%' > /dev/tty0", shell=True)
+    runcmd(f"wpctl set-volume @DEFAULT_SINK@ {cur}%", shell=True)
 
 async def handle_event(device):
     # event.value: 1 = press, 0 = release, 2 = repeat
@@ -65,7 +75,10 @@ async def handle_event(device):
                     brightness(1)
                 elif KEY_DOWN in active:
                     brightness(-1)
-
+                elif KEY_LEFT in active:
+                    volume(-1)
+                elif KEY_RIGHT in active:
+                    volume(1)
         time.sleep(0.001)
 
 def run():

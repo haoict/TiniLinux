@@ -27,6 +27,7 @@ QEMU_BASE=(
     -device virtio-net-device,netdev=eth0
     -device virtio-keyboard-pci
     -device virtio-mouse-pci
+    #-device virtio-sound-pci,audiodev=snd0 -audiodev pa,id=snd0
 )
 
 if [ "${MODE_BOOT:-}" = "efi" ]; then
