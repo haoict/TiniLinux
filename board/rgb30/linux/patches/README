@@ -10,6 +10,7 @@ linux.conf: https://github.com/ROCKNIX/distribution/blob/next/projects/ROCKNIX/d
 git clone https://github.com/ROCKNIX/distribution.git
 cd distribution
 export PROJECT=ROCKNIX DEVICE=RK3566 ARCH=aarch64
+./scripts/clean linux
 ./scripts/build linux
 # after it downloaded and patched the linux source, you can cancel the build
 ```
@@ -17,7 +18,7 @@ export PROJECT=ROCKNIX DEVICE=RK3566 ARCH=aarch64
 ## create .patch file
 ```bash
 export LINUX_VERSION=6.x.x
-wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz
+wget https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-${LINUX_VERSION}.tar.xz
 tar -xvf linux-${LINUX_VERSION}.tar.xz
 cd linux-${LINUX_VERSION}
 git init

@@ -6,15 +6,17 @@
 
 # Boards & defconfig
 
-| Board Name           | CPU/Arch             | GPU      | Kernel | Init    | Rootfs           | Notes                                                                                   |
-| -------------------- | -------------------- | -------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
-| rgb30                | aarch64 (Cortex-A55) | Panfrost | 6.18.16 | systemd | squashfs/overlay | Rockchip, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                 |
-| h700                 | aarch64 (Cortex-A53) | Panfrost | 6.18.16 | systemd | squashfs/overlay | Sun50i, EGL/ES, U-Boot, SDL2 KSMDRM, Python3, OpenSSL, SSH, Retroarch                   |
-| xxx_rootrw           | -                    | Panfrost | -      | systemd | ext4 (rw)        | uses ext4 read-write rootfs instead of squashfs                                         |
-| xxx_consoleonly      | -                    | N/A      | -      | systemd | squashfs/overlay | include only base components for console, no GPU and GUI apps                           |
-| xxx_sway             | -                    | Panfrost | -      | systemd | squashfs/overlay | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
-| qemu_aarch64 | aarch64              | virgl    | -      | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
-| toolchain_targetArch | N/A                  | N/A      | N/A    | N/A     | N/A              | build toolchain only to be reused for other builds                                      |
+| Board Name           | CPU/Arch             | GPU      | Bootloader | Kernel | Init    | Rootfs           | Notes                                                                                   |
+| -------------------- | -------------------- | -------- | ---------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
+| rgb30                | aarch64 (Cortex-A55) | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs/overlay | Rockchip, U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)    |
+| h700                 | aarch64 (Cortex-A53) | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs/overlay | Sun50i , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)     |
+| pi3b                 | aarch64 (Cortex-A53) | Panfrost | bootrom    | 7.0.x  | systemd | squashfs/overlay | BCM , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)        |
+| qemu_aarch64         | aarch64              | virgl    | grub2      | 7.0.x  | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
+| xxx_rootrw           | -                    | -        | -          | -      | -       | -                | uses ext4 read-write rootfs instead of squashfs                                         |
+| xxx_consoleonly      | -                    | -        | -          | -      | -       | -                | include only base components for console, no GPU and GUI apps                           |
+| xxx_sway             | -                    | -        | -          | -      | -       | -                | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
+| xxx_development      | -                    | -        | -          | -      | -       | -                | No GUI, addds extra packages for developemnt purpose (docker, libcurl, git, ...)        |
+| toolchain_targetArch | N/A                  | N/A      | N/A        | N/A    | N/A     | N/A              | build toolchain only to be reused for other builds                                      |
 
 # Build
 

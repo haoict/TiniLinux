@@ -1,5 +1,5 @@
 # Partitions size, in MiB
-BOOT_SIZE=33 # Default by buildroot raspberry config
+BOOT_SIZE=60 # Default by buildroot raspberry config
 ROOTFS_INIT_SIZE=600 # the initial rootfs size to make flashable image
 ROOTFS_TO_EXTEND_SIZE=-1 # the extra size to extend rootfs on first boot (-1 means use all remaining space)
 # Sector size is 512 bytes & Default boot partition offset, in sectors (don't change this, it is required by u-boot)
