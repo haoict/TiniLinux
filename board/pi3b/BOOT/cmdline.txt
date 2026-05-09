@@ -1,3 +1,3 @@
-bootpart=/dev/mmcblk0p1 root=root.img overlayfs=/dev/mmcblk0p2 net.ifnames=0 console=tty1 consoleblank=0 setfont=spleen-5x8.psfu fbcon=map:10 video=240x240-16@60
+bootpart=/dev/mmcblk0p1 root=root.img overlayfs=/dev/mmcblk0p2 loglevel=3 net.ifnames=0 console=tty1 consoleblank=0 setfont=spleen-5x8.psfu fbcon=map:10 video=240x240-16@60
 # "fbcon=map:10" - This maps consoles across all framebuffers in order — fb0 first, fb1 second. If SPI is fb1 and HDMI is fb0, both get console output simultaneously. No blank HDMI.
 # "fbcon=map:1"  - This maps consoles only for fb1. HDMI is disabled

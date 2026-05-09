@@ -6,7 +6,7 @@
 #
 #####
 
-echo "TiniLinux Booting..."
+echo "Booting TiniLinux..."
 . /lib/init-functions.sh
 
 # Mount pseudo filesystems
@@ -64,8 +64,7 @@ fi
 mkdir -p /newroot
 INIT_UNIT=""
 
-if [ -n "$overlayfs" ] && [ -n "$bootpart" ]; then
-    # overlayfs is specified, set up squashfs mounts
+if [ -n "$overlayfs" ]; then
     mount_squashfs
 else
     # mount root from NFS or from local disk
@@ -86,14 +85,10 @@ else
     fi
 fi
 
-# if debug=yes, drop to shell before switching root
 if [ "$debug" = "yes" ]; then
-    if [ -n "$bootpart" ] && [ -z "$overlayfs" ]; then
-        mkdir -p /mnt/boot
-        log "[initramfs] Mounting boot partition $bootpart for debugging..."
-        mount -o rw "$bootpart" /mnt/boot
-    fi
     echo "[initramfs] Debug mode enabled - dropping to shell before switching root. Run ". /lib/init-functions.sh" then "do_switch_root" to continue booting after debugging"
+    mkdir -p /boot
+    mount -o rw "$bootpart" /boot || true
     sh
 fi
 
