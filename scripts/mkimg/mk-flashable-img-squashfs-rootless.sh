@@ -12,6 +12,8 @@ echo ""
 
 # Load partition info variables
 source ${BR2_EXTERNAL_TiniLinux_PATH}/board/${BOARD}/rootfs/root/partition-info.sh
+source ${BR2_EXTERNAL_TiniLinux_PATH}/board/common/rootfs/usr/local/bin/partition-info-helper.sh
+
 OUT_IMG=images/tinilinux-${BOARD}.img
 rm -f ${OUT_IMG}
 

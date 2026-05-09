@@ -1,3 +1,3 @@
-root=/dev/mmcblk0p2 net.ifnames=0 console=tty1 consoleblank=300 setfont=spleen-5x8.psfu
+bootpart=/dev/mmcblk0p1 root=/dev/mmcblk0p2 loglevel=3 net.ifnames=0 console=tty1 consoleblank=300 setfont=spleen-5x8.psfu
 #bootpart=/dev/mmcblk0p1 root=nfs:192.168.1.4:/srv/nfs/pi3b_development_rootfs console=tty1 consoleblank=300 setfont=spleen-5x8.psfu loglevel=3 net.ifnames=0 networkconf=192.168.1.204/24:192.168.1.1
 #bootpart=/dev/mmcblk0p1 root=nfs:192.168.1.4:/srv/nfs/pi3b_development_rootfs console=tty1 consoleblank=300 setfont=spleen-5x8.psfu loglevel=3 net.ifnames=0 networkconf=dhcp
