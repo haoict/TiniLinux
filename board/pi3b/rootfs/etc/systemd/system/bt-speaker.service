@@ -1,0 +1,13 @@
+[Unit]
+Description=Connect to Bluetooth Speaker
+Requires=bluetooth.service
+After=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/bluetoothctl connect 48:D6:D5:8D:3B:42
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
