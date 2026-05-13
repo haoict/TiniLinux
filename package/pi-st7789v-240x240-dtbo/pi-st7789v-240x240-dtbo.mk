@@ -24,7 +24,7 @@ define PI_ST7789V_240X240_DTBO_INSTALL_TARGET_CMDS
 	# can skip copy to /lib/firmware if it's built-in in kernel
 	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(TARGET_DIR)/lib/firmware/
 	# for built-in kernel firmware
-	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b_development/linux/external-firmware/panels/
+	$(INSTALL) -m 0644 $(@D)/panel-mipi-dbi-spi.bin $(BR2_EXTERNAL_TiniLinux_PATH)/board/pi3b/linux/external-firmware/panels/
 endef
 
 $(eval $(generic-package))

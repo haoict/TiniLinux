@@ -1,7 +1,7 @@
 PI_UTILS_VERSION = 061dfd3abd1155aa068738deec8feac3fe7806e1
 PI_UTILS_SITE = https://github.com/raspberrypi/utils.git
 PI_UTILS_SITE_METHOD = git
-PI_UTILS_DEPENDENCIES = host-pkgconf host-dtc
+PI_UTILS_DEPENDENCIES = host-pkgconf host-dtc dtc
 PI_UTILS_INSTALL_TARGET = YES
 
 PI_UTILS_CMAKE_OPTS = \

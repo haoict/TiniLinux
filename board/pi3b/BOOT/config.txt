@@ -31,7 +31,7 @@ framebuffer_height=240
 dtparam=audio=on
 
 # Enable KMS
-dtoverlay=vc4-kms-v3d
+#dtoverlay=vc4-kms-v3d -> commentted for now, since we use st7789v lcd hat with built-in kenrel firmware, will enable vc4-kms-v3d in launcher.service
 
 # enable 64bits support
 arm_64bit=1
