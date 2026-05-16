@@ -1,0 +1,5 @@
+config BR2_PACKAGE_TIC_80
+  bool "tic-80"
+  select BR2_PACKAGE_RETROARCH
+  help
+    TIC-80 libretro (Retroarch core for TIC-80)
