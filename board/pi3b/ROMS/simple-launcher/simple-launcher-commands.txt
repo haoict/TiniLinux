@@ -17,6 +17,8 @@ fbDOOM
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/run-fbdoom.sh -fb /dev/fb0
 fbGIF
 fbgif-linux-aarch64 -d /dev/fb0 -c /usr/share/images/winxp240.gif
+Unimatrix
+TERM=xterm-256color /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/unimatrix.py -s 95
 Install Nothing
 /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/install-nothing-linux-aarch64 -c >/dev/tty0 2>&1
 Quit launcher

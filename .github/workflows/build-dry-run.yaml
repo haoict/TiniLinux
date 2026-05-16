@@ -60,7 +60,7 @@ jobs:
           # install packages
           sudo apt update && sudo apt install -y mtools
       - name: Install deps (fix)
-        if: ${{ inputs.board == 'pi3b_development' }}
+        if: ${{ inputs.board == 'pi3b_development' || inputs.board == 'qemu_aarch64_development' }}
         run: |
           ### FIX for development boards on ubuntu 24.04 as mkfs.ext4 didn't accept tar (mk-flashable-img-rootrw-rootless.sh:L108)
           wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libext2fs2t64_1.47.1-1ubuntu1_amd64.deb
@@ -88,6 +88,7 @@ jobs:
           mkdir -p images/rk3566-dtbo/
           mkdir -p images/rpi-firmware/
           mkdir -p images/broadcom/
+          mkdir -p images/efi-part/EFI/BOOT/
           touch images/Image
           touch images/initrd.img
           touch images/allwinner/h700.dtb
@@ -97,6 +98,7 @@ jobs:
           touch images/u-boot-sunxi-with-spl.bin
           touch images/rpi-firmware/config.txt
           touch images/broadcom/bcm.dtb
+          touch images/efi-part/EFI/BOOT/BOOTAA64.EFI
           mkdir -p target/root
           mkdir -p target/etc
           touch target/root/init.sh

@@ -22,4 +22,9 @@ if [ -f /boot/config.txt ]; then
     if ! grep -q "dtparam=audio=on" /boot/config.txt; then
         sed -i 's/^arm_64bit=1$/arm_64bit=1\ndtparam=audio=on/g' /boot/config.txt
     fi
+    if ! grep -q "LD_LIBRARY_PATH" /root/.bashrc; then
+        echo '' >> /root/.bashrc
+        echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> /root/.bashrc
+        echo '' >> /root/.bashrc
+    fi
 fi

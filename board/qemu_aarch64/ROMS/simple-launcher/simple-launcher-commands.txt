@@ -15,6 +15,8 @@ fbDOOM
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/run-fbdoom.sh
 fbGIF
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/fbgif-linux-aarch64 -c /usr/share/images/winxp.gif
+Unimatrix
+TERM=xterm-256color /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/unimatrix.py
 Quit launcher
 /usr/bin/swaynag -m "Press Esc+Z to restart launcher" -t warning
 Quit Sway
