@@ -63,7 +63,7 @@ jobs:
           sudo apt update && sudo apt install -y build-essential cmake mtools
 
       - name: Install deps (fix)
-        if: ${{ inputs.board == 'pi3b_development' }}
+        if: ${{ inputs.board == 'pi3b_development' || inputs.board == 'qemu_aarch64_development' }}
         run: |
           ### FIX for development boards on ubuntu 24.04 as mkfs.ext4 didn't accept tar (mk-flashable-img-rootrw-rootless.sh:L108)
           wget https://code.launchpad.net/ubuntu/+source/e2fsprogs/1.47.1-1ubuntu1/+build/28603966/+files/libext2fs2t64_1.47.1-1ubuntu1_amd64.deb

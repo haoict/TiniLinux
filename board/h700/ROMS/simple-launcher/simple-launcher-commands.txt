@@ -17,6 +17,8 @@ fbDOOM
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/run-fbdoom.sh
 fbGIF
 if [ ! -e "/roms/fbgif/gif.gif" ]; then echo "Put your gif file to /roms/fbgif/gif.gif" >>/dev/tty0; sleep 5; else fbgif-linux-aarch64 -c /roms/fbgif/gif.gif; fi
+Unimatrix
+TERM=xterm-256color /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/unimatrix.py
 Quit launcher
 killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Menu + Select + Start to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
 Sleep
