@@ -30,9 +30,13 @@ mount_squashfs() {
     fi
     # Check for update
     if [ -f /mnt/overlayfs/.update/$root ]; then
-        log "[initramfs] Found .update, applying update to /mnt/boot/$root..."
+        log ""
+        log "-----------------------------------------------"
+        log "[initramfs] Update found, applying to /mnt/boot/$root..."
         rm -f /mnt/boot/$root
         mv /mnt/overlayfs/.update/$root /mnt/boot/$root
+        log "-----------------------------------------------"
+        log ""
     fi
     log "[initramfs] Mounting root from squashfs image /mnt/boot/$root (read-only)..."
     mount -t squashfs -o loop,ro "/mnt/boot/$root" /mnt/squashfs || exec sh

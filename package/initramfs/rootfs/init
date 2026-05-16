@@ -56,7 +56,7 @@ done
 
 # Set console font if specified
 if [ -n "$setfont" ]; then
-    log "[initramfs] Setting console font to $setfont..."
+    log "[initramfs] Setting font"
     setfont -C /dev/console "/usr/share/consolefonts/$setfont" || log "[initramfs] Warning: Failed to set console font to $setfont"
 fi
 
