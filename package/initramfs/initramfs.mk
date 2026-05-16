@@ -6,9 +6,10 @@
 # ```bash
 # sudo apt install bdf2psf
 # git clone https://github.com/IT-Studio-Rech/bdf-fonts.git
-# cd bdf-fonts.git
-# export font=tom-thumb.bdf
+# cd bdf-fonts
+# export font=tom-thumb
 # bdf2psf --fb ${font}.bdf /usr/share/bdf2psf/standard.equivalents /usr/share/bdf2psf/ascii.set+/usr/share/bdf2psf/linux.set+/usr/share/bdf2psf/useful.set 512 ${font}.psfu
+# gzip -k ${font}.psfu
 # ```
 #
 ################################################################################
