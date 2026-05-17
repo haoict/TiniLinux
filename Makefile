@@ -6,6 +6,8 @@ board:
 	@echo "  2) rgb30"
 	@echo "  3) pi3b"
 	@echo "  4) pi3b_development"
+	@echo "  5) qemu_aarch64"
+	@echo "  6) qemu_aarch64_development"
 	@while true; do \
 		printf "Your choice: "; \
 		read choice; \
@@ -14,6 +16,8 @@ board:
 			2) BOARD=rgb30; break;; \
 			3) BOARD=pi3b; break;; \
 			4) BOARD=pi3b_development; break;; \
+			5) BOARD=qemu_aarch64; break;; \
+			6) BOARD=qemu_aarch64_development; break;; \
 			*) BOARD=$$choice; break;; \
 		esac; \
 	done; \

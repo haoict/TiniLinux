@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
 # Install necessary packages
-RUN apt update && apt install -y sudo git build-essential cmake libncurses-dev dosfstools parted mtools curl nano file wget zip unzip cpio rsync bc
+RUN apt update && apt install -y sudo git build-essential cmake libncurses-dev dosfstools parted mtools curl nano file wget zip unzip cpio rsync bc python3
 
 # ubuntu user exists, create home directory and set password
 RUN mkdir -p /home/ubuntu && \

@@ -6,17 +6,17 @@
 
 # Boards & defconfig
 
-| Board Name           | CPU/Arch             | GPU      | Bootloader | Kernel | Init    | Rootfs           | Notes                                                                                   |
-| -------------------- | -------------------- | -------- | ---------- | ------ | ------- | ---------------- | --------------------------------------------------------------------------------------- |
-| rgb30                | aarch64 (Cortex-A55) | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs/overlay | Rockchip, U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)    |
-| h700                 | aarch64 (Cortex-A53) | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs/overlay | Sun50i , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)     |
-| pi3b                 | aarch64 (Cortex-A53) | Panfrost | bootrom    | 7.0.x  | systemd | squashfs/overlay | BCM , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)        |
-| qemu_aarch64         | aarch64              | virgl    | grub2      | 7.0.x  | systemd | squashfs/overlay | build kernel, initramfs, rootfs to test wit qemu                                        |
-| xxx_rootrw           | -                    | -        | -          | -      | -       | -                | uses ext4 read-write rootfs instead of squashfs                                         |
-| xxx_consoleonly      | -                    | -        | -          | -      | -       | -                | include only base components for console, no GPU and GUI apps                           |
-| xxx_sway             | -                    | -        | -          | -      | -       | -                | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
-| xxx_development      | -                    | -        | -          | -      | -       | -                | No GUI, addds extra packages for developemnt purpose (docker, libcurl, git, ...)        |
-| toolchain_targetArch | N/A                  | N/A      | N/A        | N/A    | N/A     | N/A              | build toolchain only to be reused for other builds                                      |
+| Board Name      | CPU/Arch | GPU      | Bootloader | Kernel | Init    | Rootfs   | Notes                                                                                   |
+| --------------- | -------- | -------- | ---------- | ------ | ------- | -------- | --------------------------------------------------------------------------------------- |
+| rgb30           | aarch64  | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs | Rockchip, U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)    |
+| h700            | aarch64  | Panfrost | U-Boot     | 7.0.x  | systemd | squashfs | Sun50i , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)     |
+| pi3b            | aarch64  | Panfrost | bootrom    | 7.0.x  | systemd | squashfs | BCM , U-Boot, Python3, OpenSSL, SSH, GUI stack (EGL/ES, KSMDRM, SDL2, Retroarch)        |
+| qemu_aarch64    | aarch64  | virgl    | grub2      | 7.0.x  | systemd | squashfs | build kernel, initramfs, rootfs to test wit qemu                                        |
+| xxx_rootrw      | -        | -        | -          | -      | -       | -        | uses ext4 read-write rootfs instead of squashfs                                         |
+| xxx_consoleonly | -        | -        | -          | -      | -       | -        | include only base components for console, no GPU and GUI apps                           |
+| xxx_sway        | -        | -        | -          | -      | -       | -        | uses sway compositor instead of KMSDRM, helps to deal with RG28xx screen rotation issue |
+| xxx_development | -        | -        | -          | -      | -       | -        | No GUI, addds extra packages for developemnt purpose (docker, libcurl, git, ...)        |
+| toolchain       | N/A      | N/A      | N/A        | N/A    | N/A     | N/A      | build toolchain only to be reused for other builds                                      |
 
 # Build
 
@@ -25,14 +25,14 @@ Clone TiniLinux and buildroot repo and setup environments
 ```bash
 # Install required packages
 sudo apt update
-sudo apt install build-essential cmake mtools libncurses-dev dosfstools parted rsync
+sudo apt install git build-essential cmake mtools libncurses-dev dosfstools parted rsync bc python3
 
 # Clone sources
 git clone https://github.com/haoict/TiniLinux.git
 
 # Create board config
 cd TiniLinux
-./scripts/make-board-build.sh configs/<boardname>_defconfig
+make # input board name
 
 # Build
 cd output/<boardname>
@@ -77,23 +77,24 @@ git clone https://github.com/haoict/TiniLinux.git
 
 cd TiniLinux
 
-# Build the image and run container (if the image already built and the container already ran, skip to the "docker exec..." command below)
-docker build -t ghcr.io/haoict/tinilinux-builder:latest .
+# Pull the image and run container (if the container already ran, skip to the "docker exec..." command below)
 docker run --name tinilinux-builder -d -v $(pwd):/home/ubuntu/TiniLinux -v tinilinux-builder-buildroot:/home/ubuntu/buildroot ghcr.io/haoict/tinilinux-builder:latest
+# Currently only amd64 images provided, if there's no image for your aarch, build it with:
+# docker build -t ghcr.io/haoict/tinilinux-builder:latest .
 
 docker exec -it tinilinux-builder bash
 
 # NOTE: Commands from here are executed inside docker container
 cd TiniLinux
-./scripts/make-board-build.sh configs/<boardname>_defconfig docker
+make # For macos, run this instead: ./scripts/make-board-build.sh configs/<boardname>_defconfig docker
 cd /home/ubuntu/buildroot/output/<boardname>
 make -j$(nproc)
 make img
 
-# copy output images dir to the TiniLinux folder
-cd /home/ubuntu/TiniLinux
-mkdir -p output/<boardname>
-cp -r /home/ubuntu/buildroot/output/<boardname>/images output/<boardname>
+# For macos, copy output images dir to the TiniLinux folder
+# cd /home/ubuntu/TiniLinux
+# mkdir -p output/<boardname>
+# cp -r /home/ubuntu/buildroot/output/<boardname>/images output/<boardname>
 ```
 
 ## Test with qemu
