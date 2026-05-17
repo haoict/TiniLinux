@@ -4,3 +4,10 @@
 chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
 # Done
 mv /root/firstboot.sh /root/.firstboot-done.sh
+
+# Persist /var
+systemctl mask var.mount
+
+echo "Rebooting..."
+sleep 1
+reboot
