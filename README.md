@@ -86,7 +86,7 @@ docker exec -it tinilinux-builder bash
 
 # NOTE: Commands from here are executed inside docker container
 cd TiniLinux
-make # For macos, run this instead: ./scripts/make-board-build.sh configs/<boardname>_defconfig docker
+make # For macos, run this instead: OUTPUT_TO_DOCKER_NATIVE_VOLUME=1 make
 cd /home/ubuntu/buildroot/output/<boardname>
 make -j$(nproc)
 make img

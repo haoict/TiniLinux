@@ -7,10 +7,10 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Boards as Variants:** Each board name maps 1:1 to a defconfig in [configs/](../configs). Matching board directories live under [board/](../board) for BOOT, rootfs overlays, and board-specific assets. Board variants (e.g., `h700`, `h700_sway`, `h700_rootrw`, `h700_consoleonly`) share configs via fragments.
 - **Custom Packages:** All packages reside in [package/](../package) and are auto-included via `include $(wildcard $(BR2_EXTERNAL_TiniLinux_PATH)/package/*/*.mk)` in [external.mk](../external.mk). A top-level [Config.in](../Config.in) exposes package menus grouped by function: "TiniLinux Common Packages" (btop, gptokeyb2, initramfs, etc.), "TiniLinux Graphic Packages" (mesa3d-no-llvm, retroarch, simple-launcher, etc.), and "TiniLinux RK3566 Packages" (rk3566-dtbo).
 - **Init System + Kernel:** Systemd-based images with board-specific kernels and U-Boot patches defined in each `*_defconfig`. Example: [h700_sway_defconfig](../configs/h700_sway_defconfig).
-- **Architecture:** Targets embedded ARM64 devices (Rockchip RK3326/RK3566, Allwinner H700) with GPU acceleration via Panfrost Mesa driver. Also supports QEMU virtual boards (`qemu_aarch64`) and Raspberry Pi 3B (including `pi3b_docker` variant with Docker support).
+- **Architecture:** Targets embedded ARM64 devices (Rockchip RK3326/RK3566, Allwinner H700) with GPU acceleration via Panfrost Mesa driver. Also supports QEMU virtual boards (`qemu_aarch64`) and Raspberry Pi 3B.
 
 **Repo Layout**
-- **Boards:** [board/h700](../board/h700), [board/rgb30](../board/rgb30), [board/qemu_aarch64](../board/qemu_aarch64), [board/pi3b](../board/pi3b) plus `_rootrw`, `_sway`, `_consoleonly`, `_docker` variants. Default configs (h700, rgb30) use squashfs rootfs. Each board dir contains:
+- **Boards:** [board/h700](../board/h700), [board/rgb30](../board/rgb30), [board/qemu_aarch64](../board/qemu_aarch64), [board/pi3b](../board/pi3b) plus  `_sway`, `_consoleonly`, `_development` variants. Default configs (h700, rgb30) use squashfs rootfs. Each board dir contains:
   - `BOOT/` - bootloader assets, device trees, extlinux config
   - `rootfs/` - overlay files for ext4 rootrw variants
   - `overlay_upper/` - overlay files for squashfs variants (persistent overlay partition)
@@ -26,7 +26,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Prerequisites:** Build environment requires `build-essential cmake mtools libncurses-dev dosfstools parted`. The buildroot repo is auto-cloned by [make-board-build.sh](../scripts/make-board-build.sh) if not present as a sibling `../buildroot/`.
 - **Directory structure:** Expected layout is `TiniLinux/` (this repo) and `buildroot/` (auto-cloned) as siblings, with build outputs in `TiniLinux/output/<board>` or `buildroot/output/<board>` (for Docker builds).
 - **Bootstrap build dir:**
-  - `./scripts/make-board-build.sh configs/<board>_defconfig` → creates `output/<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths for containerized builds.
+  - `./scripts/make-board-build.sh configs/<board>_defconfig` → creates `output/<board>`, merges fragments if used, and wires `BR2_EXTERNAL`. Pass `docker` as second arg to adjust paths to use native docker volume.
 - **Configure and build:**
   - `cd output/<board>` → `make menuconfig` (optional) → `make -j$(nproc)`.
 - **Save config changes:**
@@ -61,7 +61,7 @@ These notes make AI agents productive quickly in this Buildroot-based distro. Fo
 - **Overlays:** `BR2_ROOTFS_OVERLAY` composes common + board overlays (see [h700_sway_defconfig](../configs/h700_sway_defconfig)). Place files in `board/<board>/rootfs` for ext4 rootrw variants or `overlay_upper` for squashfs variants (default).
 - **Phony helpers:** `img`, `flash`, `clean-target`, `savefconf`, `runqemu`, `runqemugui` are defined in [external.mk](../external.mk) and run from `output/<board>`.
 - **Toolchains:** Toolchain-only defconfigs live in [configs/](../configs) (e.g., `toolchain_aarch64_defconfig`, `toolchain_x86_64_defconfig`) for building reusable cross-compilation SDKs without a full image.
-- **Docker builds:** [Dockerfile](../Dockerfile) creates an Ubuntu 24.04 container with user `ubuntu:ubuntu`, all build deps, and mounts for TiniLinux source and buildroot cache. Use `./scripts/make-board-build.sh configs/<board>_defconfig docker` to adjust paths for containerized builds. See [README.md](../README.md) for full workflow.
+- **Docker builds:** [Dockerfile](../Dockerfile) creates an Ubuntu 24.04 container with user `ubuntu:ubuntu`, all build deps, and mounts for TiniLinux source and buildroot cache. Use `OUTPUT_TO_DOCKER_NATIVE_VOLUME=1 make` to adjust volumes for containerized builds. See [README.md](../README.md) for full workflow.
 
 **Config Fragments System**
 - **Fragment-based defconfigs:** Most defconfigs use `BR2_DEFCONFIG_FRAGMENT` to reference multiple fragment files, dramatically reducing duplication.

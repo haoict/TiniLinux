@@ -10,7 +10,6 @@ if [ $# -lt 1 ]; then
 fi
 
 DEFCONFIG_PATH="$1"
-IS_DOCKER="false"
 
 # check if defconfig file exists
 if [ ! -f "$DEFCONFIG_PATH" ]; then
@@ -24,11 +23,10 @@ BOARDNAME=$(basename "$DEFCONFIG_PATH" _defconfig)
 
 echo "Board name: $BOARDNAME"
 
-# if $2 exists and is "docker", set IS_DOCKER to true
-if [ $# -eq 2 ] && [ "$2" == "docker" ]; then
-    IS_DOCKER="true"
+if [ "${OUTPUT_TO_DOCKER_NATIVE_VOLUME:-0}" == "1" ]; then
     OUTPUT_DIR="../buildroot/output/${BOARDNAME}"
 else
+    OUTPUT_TO_DOCKER_NATIVE_VOLUME=0
     OUTPUT_DIR="../TiniLinux/output/${BOARDNAME}"
 fi
 
@@ -89,9 +87,8 @@ else
     make O=${OUTPUT_DIR} BR2_EXTERNAL=../TiniLinux ${BOARDNAME}_defconfig
 fi
 
-# if IS_DOCKER is true, replace BR2_DL_DIR="$(BR2_EXTERNAL_TiniLinux_PATH)/dl" to $(TOPDIR)/dl
-if [ "$IS_DOCKER" == "true" ]; then
-    echo "Adjusting download directory for Docker..."
+if [ "$OUTPUT_TO_DOCKER_NATIVE_VOLUME" == "1" ]; then
+    echo "Adjusting dl and ccache directories..."
     sed -i 's|BR2_DL_DIR="$(BR2_EXTERNAL_TiniLinux_PATH)/dl"|BR2_DL_DIR="$(TOPDIR)/dl"|g' "${OUTPUT_DIR}/.config"
     sed -i 's|BR2_CCACHE_DIR="$(BR2_EXTERNAL_TiniLinux_PATH)/.buildroot-ccache"|BR2_CCACHE_DIR="$(TOPDIR)/.buildroot-ccache""|g' "${OUTPUT_DIR}/.config"
 fi
