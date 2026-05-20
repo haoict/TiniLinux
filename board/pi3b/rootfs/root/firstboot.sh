@@ -5,6 +5,7 @@ chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
 # Done
 mv /root/firstboot.sh /root/.firstboot-done.sh
 
+systemctl disable --now nfs-blkmap
 # Persist /var
 systemctl mask var.mount
 

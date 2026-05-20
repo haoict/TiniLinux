@@ -5,6 +5,8 @@
 # fix nmconnection files permissions so it can autoconnect
 chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
 
+systemctl disable --now nfs-blkmap
+
 # Fix DNS
 resolvectl dns eth0 8.8.8.8 8.8.4.4
 
