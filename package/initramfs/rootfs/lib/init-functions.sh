@@ -38,6 +38,7 @@ mount_squashfs() {
         log "-----------------------------------------------"
         log ""
     fi
+    mount -o remount,ro /mnt/boot
     log "[initramfs] Mounting root from squashfs image /mnt/boot/$root (read-only)..."
     mount -t squashfs -o loop,ro "/mnt/boot/$root" /mnt/squashfs || exec sh
 

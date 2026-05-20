@@ -1,6 +1,6 @@
 # <device>        <dir>        <type>        <options>        <dump> <fsck>
 # https://wiki.archlinux.org/title/fstab
-LABEL=BOOT		/boot	vfat	defaults,nofail								0	2
+LABEL=BOOT		/boot	vfat	ro,nofail								0	2
 LABEL=rootfs	/		auto	defaults,noatime,nofail						0	1
 LABEL=ROMS		/roms	exfat	umask=0000,iocharset=utf8,noatime,nofail	0	0
 
