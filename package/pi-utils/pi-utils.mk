@@ -28,6 +28,9 @@ define PI_UTILS_INSTALL_TARGET_CMDS
     $(INSTALL) -D -m 0755 $(BR2_EXTERNAL_TiniLinux_PATH)/package/pi-utils/pi-get-throttled.sh $(TARGET_DIR)/usr/local/bin
     $(INSTALL) -D -m 0755 $(@D)/dtmerge/build/dtoverlay $(TARGET_DIR)/usr/local/bin
 
+    $(INSTALL) -D -m 0644 $(BR2_EXTERNAL_TiniLinux_PATH)/package/pi-utils/libtinfo.so.6 $(TARGET_DIR)/usr/lib/
+    $(INSTALL) -D -m 0755 $(BR2_EXTERNAL_TiniLinux_PATH)/package/pi-utils/ttyplot $(TARGET_DIR)/usr/local/bin
+    $(INSTALL) -D -m 0755 $(BR2_EXTERNAL_TiniLinux_PATH)/package/pi-utils/pi-monitor-temp.sh $(TARGET_DIR)/usr/local/bin
 endef
 
 $(eval $(generic-package))
