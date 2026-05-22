@@ -1,5 +1,6 @@
 BR2_ROOTFS_DEVICE_TABLE="system/device_table.txt $(BR2_EXTERNAL_TiniLinux_PATH)/board/common/development/files_tables.txt"
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_TiniLinux_PATH)/board/common/development/users_tables.txt"
+BR2_INIT_SYSTEMD_VAR_NONE=y
 BR2_ENABLE_LOCALE_WHITELIST="C en_US en_US.UTF-8 en_US.utf8"
 BR2_GENERATE_LOCALE="en_US.UTF-8"
 BR2_PACKAGE_IPTABLES=y
