@@ -7,6 +7,8 @@ File Commander
 HOME=/root /usr/local/bin/commander >/dev/tty0 2>&1
 Simple Terminal
 HOME=/root /usr/local/bin/simple-terminal >/dev/tty0 2>&1
+Random Artwork
+TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/makapix.sh
 Btop
 HOME=/root /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
