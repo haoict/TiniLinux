@@ -1,0 +1,38 @@
+name: Daily refresh cache (qemu_aarch64)
+
+on:
+  schedule:
+    - cron: '0 11 */4 * *' # every 4th day-of-month at 11AM UTC
+  workflow_dispatch: {}
+
+jobs:
+  refresh-cache:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v5
+        with:
+          path: TiniLinux
+
+      - name: Create board build config
+        run: |
+          set -x
+          cd TiniLinux
+          ./scripts/make-board-build.sh configs/qemu_aarch64_defconfig
+          cd output/qemu_aarch64
+
+      - name: Restore dl cache
+        uses: actions/cache@v5
+        with:
+          path: TiniLinux/dl
+          key: dl-cache-qemu_aarch64-${{ hashFiles('TiniLinux/output/qemu_aarch64/.config') }}
+          restore-keys: |
+            dl-cache-qemu_aarch64-
+
+      - name: Restore ccache
+        uses: actions/cache@v5
+        with:
+          path: TiniLinux/.buildroot-ccache
+          key: ccache-qemu_aarch64-${{ hashFiles('TiniLinux/output/qemu_aarch64/.config') }}
+          restore-keys: |
+            ccache-qemu_aarch64-
