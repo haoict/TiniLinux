@@ -66,11 +66,11 @@ if [ "$FS_TYPE" = "romsfs" ] || [ "$FS_TYPE" = "rootfs_romsfs" ]; then
     if [ ! -e $ROMS_PART ]; then
         # romfs partition doesn't exist, create a new partition using the rest of the disk
         echo "Creating ROMS partition starting at sector $ROMS_PART_START..."
-        echo -e "n\np\n3\n$ROMS_PART_START\n\nw\n" | busybox fdisk $DISK_DEVICE
+        echo -e "n\np\n3\n$ROMS_PART_START\n\nw\n" | busybox fdisk -u $DISK_DEVICE
         sleep 3
 
         # Changes the partition type of partition 3 on $DISK_DEVICE to type 7 (NTFS/exFAT/HPFS)
-        echo -e "t\n3\n7\nw\n" | busybox fdisk $DISK_DEVICE
+        echo -e "t\n3\n7\nw\n" | busybox fdisk -u $DISK_DEVICE
         # sleep 3
 
         # Refreshes the partition table information of the device $DISK_DEVICE

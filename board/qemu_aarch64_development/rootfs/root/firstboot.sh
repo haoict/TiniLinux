@@ -6,6 +6,8 @@
 chmod 600 /etc/NetworkManager/system-connections/*.nmconnection
 
 systemctl disable --now nfs-blkmap
+systemctl disable --now NetworkManager-initrd.service
+systemctl daemon-reload
 
 # Fix DNS
 resolvectl dns eth0 8.8.8.8 8.8.4.4
