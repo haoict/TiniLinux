@@ -7,20 +7,10 @@ File Commander
 HOME=/root /usr/local/bin/commander >/dev/tty0 2>&1
 Simple Terminal
 HOME=/root /usr/local/bin/simple-terminal >/dev/tty0 2>&1
-Random Artwork
-TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/makapix.sh
 Btop
 HOME=/root /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/btop --force-utf
 Wifi
 TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/wifi-manager.sh
-System Info
-HOME=/root /usr/local/bin/simple-terminal -font 2 -scale 1.0 -q -r /usr/local/bin/fastfetch >/dev/tty0 2>&1
-fbDOOM
-TERM=linux /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/run-fbdoom.sh
-fbGIF
-if [ ! -e "/roms/fbgif/gif.gif" ]; then echo "Put your gif file to /roms/fbgif/gif.gif" >>/dev/tty0; sleep 5; else fbgif-linux-aarch64 -c /roms/fbgif/gif.gif; fi
-Unimatrix
-TERM=xterm-256color /usr/local/bin/run-with-vt-kb.sh /usr/local/bin/unimatrix.py
 Quit launcher
 killall simple-launcher && echo -e "You have exited the GUI Launcher application.\n\nYou can either:\n  - Press Select + B + Start to restart the Launcher\n  - Or connect an external keyboard and press Alt+F1 to access the command line\n\nLogin credentials:\n  User: root\n  Password: root" >>/dev/tty0
 Sleep
