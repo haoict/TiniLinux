@@ -1,0 +1,8 @@
+# Start a per-card mount service when a removable SD card is detected.  eMMC
+# devices report type "MMC" and are intentionally excluded.
+ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", KERNEL=="mmcblk[0-9]*", ATTRS{type}=="SD", TAG+="systemd", ENV{SYSTEMD_WANTS}+="external-media-mount@%k.service"
+
+# Mount USB mass-storage partitions (for example /dev/sda1) as they appear.
+# Restrict the rule to partitions so the filesystem is ready before the mount
+# service starts.
+ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", KERNEL=="sd[a-z]*[0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}+="external-media-mount@%k.service"

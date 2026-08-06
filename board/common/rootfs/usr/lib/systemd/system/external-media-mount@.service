@@ -1,0 +1,10 @@
+[Unit]
+Description=Mount hot-plug external media %I
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/external-media-mount.sh %I
+ExecStop=/usr/local/bin/external-media-mount.sh --unmount %I
