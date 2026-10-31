@@ -1,5 +1,6 @@
 # H700 board-specific settings
 BR2_TARGET_GENERIC_HOSTNAME="h700"
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="7.2"
 BR2_LINUX_KERNEL_PATCH="$(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/linux/patches"
 BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_TiniLinux_PATH)/board/h700/linux/linux.conf"
 BR2_LINUX_KERNEL_INTREE_DTS_NAME="allwinner/sun50i-h700-anbernic-rg35xx-plus allwinner/sun50i-h700-anbernic-rg35xx-plus-rev6-panel allwinner/sun50i-h700-anbernic-rg35xx-pro allwinner/sun50i-h700-anbernic-rg35xx-h allwinner/sun50i-h700-anbernic-rg35xx-h-rev6-panel allwinner/sun50i-h700-anbernic-rg35xx-sp allwinner/sun50i-h700-anbernic-rg35xx-sp-v2-panel allwinner/sun50i-h700-anbernic-rg35xx-2024 allwinner/sun50i-h700-anbernic-rg35xx-2024-rev6-panel allwinner/sun50i-h700-anbernic-rg40xx-h allwinner/sun50i-h700-anbernic-rg40xx-v allwinner/sun50i-h700-anbernic-rgcubexx allwinner/sun50i-h700-anbernic-rg28xx allwinner/sun50i-h700-anbernic-rg34xx allwinner/sun50i-h700-anbernic-rg34xx-sp"

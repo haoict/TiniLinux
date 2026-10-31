@@ -18,7 +18,7 @@ export PROJECT=ROCKNIX DEVICE=H700 ARCH=aarch64
 ## create .patch file
 ```bash
 export LINUX_VERSION=7.x.x
-wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz
+wget https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-${LINUX_VERSION}.tar.xz
 tar -xvf linux-${LINUX_VERSION}.tar.xz
 cd linux-${LINUX_VERSION}
 git init
