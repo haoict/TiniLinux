@@ -12,7 +12,7 @@ def find_device_by_name(name):
             return device
     raise Exception(f"Input device with name '{name}' not found")
 
-joypadInput = find_device_by_name("retrogame_joypad")
+joypadInput = find_device_by_name("Sony Interactive Entertainment DualSense Wireless Controller")
 volumeInput = find_device_by_name("gpio-keys-vol")
 powerKeyInput = find_device_by_name("rk805 pwrkey")
 devices = [joypadInput, volumeInput, powerKeyInput]
@@ -28,10 +28,10 @@ class Joypad:
     l2 = 312
     r2 = 313
 
-    up = 544
-    down = 545
-    left = 546
-    right = 547
+    up = 315
+    down = 316
+    left = 317
+    right = 318
 
     x = 307
     y = 308
@@ -70,8 +70,10 @@ async def handle_event(device):
     # event.value is 1 for press, 0 for release
     # event.type is 1 for button, 3 for axis
     async for event in device.async_read_loop():
-        if device.name == "retrogame_joypad":
+        if device.name == "Sony Interactive Entertainment DualSense Wireless Controller":
             keys = joypadInput.active_keys()
+            print(f"Keys pressed: {keys}")
+            print(f"Event: {event}")
 
             if Joypad.select in keys:
                 if Joypad.b in keys:
@@ -79,9 +81,9 @@ async def handle_event(device):
                         runcmd("systemctl restart launcher\n", shell=True)
                 if event.code == Joypad.start and event.value == 1:
                     runcmd("killall retroarch; killall pico8_64; killall commander; killall simple-terminal; killall fbdoom; killall -INT fbgif-linux-aarch64; true;\n", shell=True)
-                if event.code == Joypad.up and event.value == 1:
+                if event.value == -1 and event.type == 3:
                     brightness(1)
-                if event.code == Joypad.down and event.value == 1:
+                if event.value == 1 and event.type == 3:
                     brightness(-1)
         elif device.name == "gpio-keys-vol":
             if event.code == 115 and event.value == 1:

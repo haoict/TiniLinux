@@ -566,6 +566,12 @@ int main(int argc, char *argv[]) {
     }
 
     joystick = SDL_JoystickOpen(0);
+    if (joystick)
+        printf("Opened joystick: %s\n", SDL_JoystickName(joystick));
+    else {
+        fprintf(stderr, "Open failed: %s\n", SDL_GetError());
+        exit(1);
+    }
 
     loadCommands();
 

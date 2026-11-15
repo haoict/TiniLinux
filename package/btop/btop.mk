@@ -18,7 +18,7 @@ BTOP_INSTALL_TARGET = YES
 define BTOP_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/local/bin
 	cp $(@D)/btop/bin/btop $(TARGET_DIR)/usr/local/bin
-	chmod +x $(TARGET_DIR)/usr/local/bin
+	chmod +x $(TARGET_DIR)/usr/local/bin/btop
 endef
 
 $(eval $(generic-package))
